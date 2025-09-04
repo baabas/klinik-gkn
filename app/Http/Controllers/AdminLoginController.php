@@ -32,12 +32,12 @@ class AdminLoginController extends Controller
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $user = Auth::user();
 
-            // 3. Cek apakah user memiliki peran 'DOKTER'
-            if ($user->roles()->where('name', 'DOKTER')->exists()) {
+            // 3. Cek apakah user memiliki peran 'DOKTER' ATAU 'PENGADAAN'
+            if ($user->roles()->whereIn('name', ['DOKTER', 'PENGADAAN'])->exists()) {
                 $request->session()->regenerate();
                 return redirect()->intended(route('dashboard'));
             } else {
-                // Jika user bukan DOKTER, logout dan kembalikan ke login admin
+                // Jika bukan DOKTER atau PENGADAAN (misal: Pasien), tolak akses
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();

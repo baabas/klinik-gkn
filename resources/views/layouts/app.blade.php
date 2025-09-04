@@ -30,7 +30,7 @@
                             <a class="nav-link {{ (request()->routeIs('pasien.index') || request()->routeIs('pasien.show')) ? 'active' : '' }}" href="{{ route('pasien.index') }}">Daftar Pasien</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('obat.*') ? 'active' : '' }}" href="{{ route('obat.index') }}">Stok Obat</a>
+                            <a class="nav-link {{ request()->routeIs('barang-medis.*') ? 'active' : '' }}" href="{{ route('barang-medis.index') }}">Obat & Alat Medis</a>
                         </li>
                          <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">

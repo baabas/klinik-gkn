@@ -1,15 +1,20 @@
 <?php
+
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Role;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Seeder;
 
 class RoleSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
-        Role::create(['name' => 'DOKTER']);
-        Role::create(['name' => 'PASIEN']);
-        Role::create(['name' => 'PENGADAAN']);
+        Role::firstOrCreate(['name' => 'DOKTER']);
+        Role::firstOrCreate(['name' => 'PASIEN']);
+        Role::firstOrCreate(['name' => 'PENGADAAN']);
     }
 }

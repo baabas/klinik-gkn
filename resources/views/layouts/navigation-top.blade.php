@@ -1,9 +1,26 @@
 <nav class="navbar navbar-dark bg-dark fixed-top">
     <div class="container-fluid">
-        <a class="navbar-brand fw-bold d-flex align-items-center" href="#">
+        <a class="navbar-brand fw-bold d-flex align-items-center" href="{{ route('dashboard') }}">
             <img src="{{ asset('images/logo-klinik.png') }}" alt="Logo Klinik" style="height: 30px;" class="me-2">
             Klinik GKN
         </a>
+
+        {{-- ==================== PERUBAHAN DI SINI ==================== --}}
+        <ul class="navbar-nav d-flex flex-row me-auto">
+
+            {{-- Tampilkan link ini HANYA jika role adalah PENGADAAN --}}
+            @if(Auth::user()->hasRole('PENGADAAN'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('barang-medis.*') || request()->routeIs('permintaan.*') ? 'active' : '' }}"
+                       href="{{ route('barang-medis.index') }}">
+                        Obat & Alat Medis
+                    </a>
+                </li>
+            @endif
+
+        </ul>
+        {{-- ========================================================== --}}
+
         <div class="d-flex align-items-center text-white">
             <span>Hallo, {{ Auth::user()->nama_karyawan }}</span>
             <div class="nav-item dropdown ms-3">
