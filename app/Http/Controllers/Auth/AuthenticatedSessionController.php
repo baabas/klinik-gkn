@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-//use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,7 +12,7 @@ use Illuminate\View\View;
 class AuthenticatedSessionController extends Controller
 {
     /**
-     * Display the login view.
+     * Menampilkan halaman login.
      */
     public function create(): View
     {
@@ -20,46 +20,46 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * Handle an incoming authentication request.
+     * Menangani permintaan autentikasi yang masuk.
      */
-public function store(Request $request): RedirectResponse
-{
-    $credentials = $request->validate([
-        'nip' => ['required', 'string'],
-        'password' => ['required', 'string'],
-    ]);
+    public function store(LoginRequest $request): RedirectResponse
+    {
+        $request->authenticate();
 
-    if (Auth::attempt(['nip' => $request->nip, 'password' => $request->password], $request->boolean('remember'))) {
         $request->session()->regenerate();
-        $user = Auth::user();
+        
+        // Atur peran aktif untuk sesi ini sebagai PASIEN.
+        $request->session()->put('active_role', 'PASIEN');
 
-        // Cek peran pengguna
-        if ($user->roles()->where('name', 'PASIEN')->exists()) {
-            // Jika PASIEN, arahkan ke kartu pasien
-            return redirect()->intended(route('pasien.my_card'));
-        }
-
-        // Untuk peran lain (DOKTER), arahkan ke dashboard
-        return redirect()->intended(route('dashboard'));
+        return redirect()->intended(route('dashboard', absolute: false));
     }
 
-    return back()->withErrors([
-        'nip' => 'NIP atau Password yang Anda masukkan salah.',
-    ])->onlyInput('nip');
-}
-
-
     /**
-     * Destroy an authenticated session.
+     * Hancurkan sesi yang terautentikasi.
      */
     public function destroy(Request $request): RedirectResponse
     {
+        // ================== PERUBAHAN PRESISI DI SINI ==================
+
+        // 1. Ambil peran AKTIF dari sesi SEBELUM sesi dihancurkan.
+        $activeRole = $request->session()->get('active_role');
+
+        // 2. Lakukan proses logout seperti biasa.
         Auth::guard('web')->logout();
-
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        // 3. Arahkan pengguna berdasarkan peran AKTIF yang sudah kita simpan.
+        if ($activeRole === 'DOKTER' || $activeRole === 'PENGADAAN') {
+            // Jika sesi yang logout adalah DOKTER atau PENGADAAN,
+            // arahkan kembali ke halaman login admin.
+            return redirect()->route('admin.login');
+        }
+
+        // Jika bukan (berarti sesi yang logout adalah PASIEN),
+        // arahkan ke halaman login biasa.
+        return redirect()->route('login');
+        
+        // ===============================================================
     }
 }

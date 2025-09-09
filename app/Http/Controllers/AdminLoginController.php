@@ -4,13 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class AdminLoginController extends Controller
 {
     /**
-     * Menampilkan form login admin.
+     * Menampilkan halaman login admin.
      */
     public function create(): View
     {
@@ -18,37 +18,36 @@ class AdminLoginController extends Controller
     }
 
     /**
-     * Menangani permintaan login dari admin.
+     * Menangani permintaan autentikasi admin.
      */
     public function store(Request $request): RedirectResponse
     {
-        // 1. Validasi input
         $credentials = $request->validate([
             'nip' => ['required', 'string'],
             'password' => ['required', 'string'],
         ]);
 
-        // 2. Coba lakukan autentikasi
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (Auth::attempt($credentials)) {
             $user = Auth::user();
 
-            // 3. Cek apakah user memiliki peran 'DOKTER'
-            if ($user->roles()->where('name', 'DOKTER')->exists()) {
+            // Cek apakah user punya peran DOKTER atau PENGADAAN
+            if ($user->hasRole('DOKTER') || $user->hasRole('PENGADAAN')) {
                 $request->session()->regenerate();
-                return redirect()->intended(route('dashboard'));
-            } else {
-                // Jika user bukan DOKTER, logout dan kembalikan ke login admin
-                Auth::logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
 
-                return back()->withErrors([
-                    'nip' => 'Akun ini tidak memiliki hak akses sebagai admin.',
-                ])->onlyInput('nip');
+                // Tentukan peran aktif berdasarkan prioritas (Dokter > Pengadaan)
+                $activeRole = $user->hasRole('DOKTER') ? 'DOKTER' : 'PENGADAAN';
+                $request->session()->put('active_role', $activeRole);
+
+                return redirect()->intended(route('dashboard'));
             }
+
+            // Jika tidak punya peran admin, logout dan tolak
+            Auth::logout();
+            return back()->withErrors([
+                'nip' => 'Anda tidak memiliki hak akses admin.',
+            ])->onlyInput('nip');
         }
 
-        // Jika NIP atau password salah
         return back()->withErrors([
             'nip' => 'NIP atau Password yang Anda masukkan salah.',
         ])->onlyInput('nip');
