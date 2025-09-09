@@ -6,59 +6,85 @@ use App\Http\Controllers\PasienController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminLoginController;
 use App\Http\Controllers\RekamMedisController;
-use App\Http\Controllers\ObatController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\LaporanViewController;
+use App\Http\Controllers\BarangMedisController;
+use App\Http\Controllers\PermintaanBarangController;
+use App\Http\Controllers\DistribusiController;
+use App\Http\Controllers\CheckupController;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "web" middleware group. Make something great!
+|
+*/
 
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// Rute login untuk admin
+// Rute login untuk admin (Dokter & Pengadaan)
 Route::get('/admin/login', [AdminLoginController::class, 'create'])->name('admin.login');
 Route::post('/admin/login', [AdminLoginController::class, 'store']);
 
+
 Route::middleware(['auth'])->group(function () {
-    // Rute Pasien
-    Route::get('/kartu-pasien', [PasienController::class, 'myCard'])->name('pasien.my_card');
 
-    // Rute yang hanya bisa diakses DOKTER
-    Route::middleware(['role:DOKTER'])->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-        Route::get('/pasien', [PasienController::class, 'index'])->name('pasien.index');
-        Route::get('/pasien/{user:nip}', [PasienController::class, 'show'])->name('pasien.show');
-        Route::get('/pasien/{user:nip}/rekam-medis/create', [RekamMedisController::class, 'create'])->name('rekam-medis.create');
-
-        Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
-
-
-        Route::get('/laporan/obat', [LaporanController::class, 'cetakLaporanObat'])->name('laporan.obat');
-
-
-        Route::get('/laporan/penyakit-kunjungan', [LaporanController::class, 'cetakLaporanPenyakitKunjungan'])->name('laporan.penyakit-kunjungan');
-        Route::post('/pasien/{user:nip}/rekam-medis', [RekamMedisController::class, 'store'])->name('rekam-medis.store');
-
-        Route::get('/laporan/pemakaian-obat', [LaporanViewController::class, 'pemakaianObat'])->name('laporan.pemakaian_obat');
-
-        Route::get('/laporan/penyakit', [LaporanViewController::class, 'daftarPenyakit'])->name('laporan.penyakit');
-        Route::get('/laporan/pemakaian-obat', [LaporanViewController::class, 'pemakaianObat'])->name('laporan.pemakaian_obat');
-        Route::get('/laporan/kunjungan', [LaporanViewController::class, 'daftarKunjungan'])->name('laporan.kunjungan');
-
-
-        Route::resource('obat', ObatController::class);
-
-        Route::get('/laporan/harian', [LaporanViewController::class, 'laporanHarian'])->name('laporan.harian');
-
-        Route::resource('obat', ObatController::class);
-
-        Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
-        Route::get('/laporan/obat', [LaporanController::class, 'cetakLaporanObat'])->name('laporan.obat');
-    });
-
-    // Rute profil untuk semua user yang login
+    // --- RUTE UNTUK SEMUA ROLE (PASIEN, DOKTER, PENGADAAN) ---
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // --- RUTE KHUSUS PASIEN ---
+    Route::middleware(['role:PASIEN'])->group(function () {
+        Route::get('/kartu-pasien', [PasienController::class, 'myCard'])->name('pasien.my_card');
+    });
+
+    // --- RUTE BERSAMA (DOKTER & PENGADAAN) ---
+    Route::middleware(['role:DOKTER,PENGADAAN'])->group(function () {
+        Route::resource('barang-medis', BarangMedisController::class);
+        Route::resource('permintaan', PermintaanBarangController::class);
+    });
+
+    // --- RUTE KHUSUS DOKTER ---
+    Route::middleware(['role:DOKTER'])->group(function () {
+        Route::get('/pasien', [PasienController::class, 'index'])->name('pasien.index');
+        Route::get('/pasien/{user:nip}', [PasienController::class, 'show'])->name('pasien.show');
+
+        // Rute Rekam Medis
+        Route::get('/pasien/{user:nip}/rekam-medis/create', [RekamMedisController::class, 'create'])->name('rekam-medis.create');
+        Route::post('/pasien/{user:nip}/rekam-medis', [RekamMedisController::class, 'store'])->name('rekam-medis.store');
+
+        // --- RUTE CHECK-UP BARU ---
+        Route::get('/pasien/{user:nip}/checkup/create', [CheckupController::class, 'create'])->name('checkup.create');
+        Route::post('/pasien/{user:nip}/checkup', [CheckupController::class, 'store'])->name('checkup.store');
+        // -----------------------------
+
+        // Laporan View
+        Route::get('/laporan/harian', [LaporanViewController::class, 'laporanHarian'])->name('laporan.harian');
+        Route::get('/laporan/pemakaian-obat', [LaporanViewController::class, 'pemakaianObat'])->name('laporan.pemakaian_obat');
+        Route::get('/laporan/penyakit', [LaporanViewController::class, 'daftarPenyakit'])->name('laporan.penyakit');
+        Route::get('/laporan/kunjungan', [LaporanViewController::class, 'daftarKunjungan'])->name('laporan.kunjungan');
+
+        // Laporan PDF
+        Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
+        Route::get('/laporan/obat', [LaporanController::class, 'cetakLaporanObat'])->name('laporan.obat');
+        Route::get('/laporan/penyakit-kunjungan', [LaporanController::class, 'cetakLaporanPenyakitKunjungan'])->name('laporan.penyakit-kunjungan');
+    });
+
+    // --- RUTE KHUSUS PENGADAAN ---
+    Route::middleware(['role:PENGADAAN'])->group(function () {
+        Route::get('/distribusi', [DistribusiController::class, 'index'])->name('distribusi.index');
+        Route::get('/distribusi/create/{lokasi}', [DistribusiController::class, 'create'])->name('distribusi.create');
+        Route::post('/distribusi/store', [DistribusiController::class, 'store'])->name('distribusi.store');
+    });
+
 });
 
 require __DIR__.'/auth.php';

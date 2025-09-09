@@ -9,13 +9,22 @@ class ResepObat extends Model
 {
     use HasFactory;
     protected $table = 'resep_obat';
-    protected $primaryKey = 'id_resep';
-    public $timestamps = false;
+    protected $primaryKey = 'id_resep_obat';
+    public $timestamps = true; // Sebaiknya timestamps diaktifkan
 
-    protected $fillable = ['id_obat', 'kuantitas'];
+    /**
+     * ================== PERBAIKAN DI SINI ==================
+     * Menghapus 'dosis' dari fillable
+     */
+    protected $fillable = [
+        'id_rekam_medis',
+        'id_obat',
+        'kuantitas',
+    ];
+    // =======================================================
 
     public function obat()
     {
-        return $this->belongsTo(Obat::class, 'id_obat', 'id_obat');
+        return $this->belongsTo(BarangMedis::class, 'id_obat', 'id_obat');
     }
 }

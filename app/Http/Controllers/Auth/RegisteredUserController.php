@@ -74,6 +74,12 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
+        // ================== PERBAIKAN DI SINI ==================
+        // Setelah login, kita harus mengatur peran aktif di sesi.
+        // Untuk pendaftaran, peran-nya sudah pasti PASIEN.
+        $request->session()->put('active_role', 'PASIEN');
+        // =======================================================
+
         return redirect()->route('pasien.my_card');
     }
 }

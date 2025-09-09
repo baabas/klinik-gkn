@@ -49,8 +49,9 @@ class LaporanViewController extends Controller
     {
         $filter = $this->getFilterBulanTahun($request);
 
+        // Mengubah 'obat as o' menjadi 'barang_medis as o'
         $daftar_obat = DB::table('resep_obat as ro')
-            ->join('obat as o', 'ro.id_obat', '=', 'o.id_obat')
+            ->join('barang_medis as o', 'ro.id_obat', '=', 'o.id_obat')
             ->join('rekam_medis as rm', 'ro.id_rekam_medis', '=', 'rm.id_rekam_medis')
             ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])
             ->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
@@ -60,7 +61,7 @@ class LaporanViewController extends Controller
             ->pluck('nama_obat');
 
         $data_pemakaian_harian = DB::table('resep_obat as ro')
-            ->join('obat as o', 'ro.id_obat', '=', 'o.id_obat')
+            ->join('barang_medis as o', 'ro.id_obat', '=', 'o.id_obat')
             ->join('rekam_medis as rm', 'ro.id_rekam_medis', '=', 'rm.id_rekam_medis')
             ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])
             ->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
@@ -70,7 +71,7 @@ class LaporanViewController extends Controller
             ->groupBy('nama_obat');
 
         $data_pemakaian_mingguan = DB::table('resep_obat as ro')
-            ->join('obat as o', 'ro.id_obat', '=', 'o.id_obat')
+            ->join('barang_medis as o', 'ro.id_obat', '=', 'o.id_obat')
             ->join('rekam_medis as rm', 'ro.id_rekam_medis', '=', 'rm.id_rekam_medis')
             ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])
             ->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
@@ -78,6 +79,7 @@ class LaporanViewController extends Controller
             ->groupBy('o.nama_obat', 'minggu_ke')
             ->get()
             ->groupBy('nama_obat');
+        // =======================================================
 
         return view('laporan.pemakaian_obat', compact('daftar_obat', 'data_pemakaian_harian', 'data_pemakaian_mingguan', 'filter'));
     }

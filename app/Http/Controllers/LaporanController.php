@@ -24,26 +24,49 @@ class LaporanController extends Controller
     {
         $filter = $this->getFilterBulanTahun($request);
 
+        // Data Daftar Obat
         $daftar_obat = DB::table('resep_obat as ro')
-            ->join('obat as o', 'ro.id_obat', '=', 'o.id_obat')
+            ->join('barang_medis as o', 'ro.id_obat', '=', 'o.id_obat')
             ->join('rekam_medis as rm', 'ro.id_rekam_medis', '=', 'rm.id_rekam_medis')
             ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])
             ->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
-            ->select('o.nama_obat', 'o.stok_saat_ini')
+            ->select('o.nama_obat')
             ->distinct()->orderBy('o.nama_obat')->get();
 
-        $data_pemakaian = DB::table('resep_obat as ro')
-            ->join('obat as o', 'ro.id_obat', '=', 'o.id_obat')
+        // Data Stok Obat
+        $stok_obat = DB::table('barang_medis as bm')
+            ->leftJoin('stok_barang as sb', 'bm.id_obat', '=', 'sb.id_barang')
+            ->select('bm.nama_obat', DB::raw('SUM(sb.jumlah) as stok_saat_ini'))
+            ->groupBy('bm.nama_obat')
+            ->get()->keyBy('nama_obat');
+
+        // Data Pemakaian Mingguan
+        $data_pemakaian_mingguan = DB::table('resep_obat as ro')
+            ->join('barang_medis as o', 'ro.id_obat', '=', 'o.id_obat')
             ->join('rekam_medis as rm', 'ro.id_rekam_medis', '=', 'rm.id_rekam_medis')
             ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])
             ->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
             ->select('o.nama_obat', DB::raw("CASE WHEN DAY(rm.tanggal_kunjungan) BETWEEN 1 AND 7 THEN 1 WHEN DAY(rm.tanggal_kunjungan) BETWEEN 8 AND 14 THEN 2 WHEN DAY(rm.tanggal_kunjungan) BETWEEN 15 AND 21 THEN 3 WHEN DAY(rm.tanggal_kunjungan) BETWEEN 22 AND 28 THEN 4 ELSE 5 END as minggu_ke"), DB::raw("SUM(ro.kuantitas) as jumlah"))
             ->groupBy('o.nama_obat', 'minggu_ke')->get()->groupBy('nama_obat');
+            
+        // ================== PENAMBAHAN QUERY HARIAN ==================
+        $data_pemakaian_harian = DB::table('resep_obat as ro')
+            ->join('barang_medis as o', 'ro.id_obat', '=', 'o.id_obat')
+            ->join('rekam_medis as rm', 'ro.id_rekam_medis', '=', 'rm.id_rekam_medis')
+            ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])
+            ->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
+            ->select('o.nama_obat', DB::raw('DAY(rm.tanggal_kunjungan) as hari'), DB::raw('SUM(ro.kuantitas) as jumlah'))
+            ->groupBy('o.nama_obat', 'hari')
+            ->get()
+            ->groupBy('nama_obat');
+        // =============================================================
 
         $pdf = Pdf::loadView('laporan.pdf_obat', [
             'daftar_obat' => $daftar_obat,
-            'data_pemakaian' => $data_pemakaian,
-            'nama_bulan_tahun' => $filter['nama_bulan_upper']
+            'data_pemakaian_mingguan' => $data_pemakaian_mingguan,
+            'data_pemakaian_harian' => $data_pemakaian_harian, // <-- Kirim data harian ke view
+            'stok_obat' => $stok_obat,
+            'filter' => $filter // <-- Kirim data filter ke view
         ])->setPaper('a4', 'landscape');
 
         return $pdf->download('laporan-pemakaian-obat-'.$filter['string'].'.pdf');

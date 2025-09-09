@@ -5,12 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
-use App\Notifications\CustomResetPasswordNotification; // Pastikan ini ada
+use App\Notifications\CustomResetPasswordNotification;
+use App\Models\Role;
+use App\Models\LokasiKlinik;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -22,6 +23,7 @@ class User extends Authenticatable
         'nama_karyawan',
         'email',
         'password',
+        'id_lokasi', 
     ];
 
     /**
@@ -35,25 +37,20 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be cast.
+     * Get the attributes that should be cast.
      *
-     * @var array<string, string>
+     * @return array<string, string>
      */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-    ];
-
-    /**
-     * Relasi many-to-many ke model Role.
-     */
-    public function roles()
+    protected function casts(): array
     {
-        return $this->belongsToMany(Role::class);
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
     }
 
     /**
-     * Relasi ke data karyawan (untuk detail profil).
+     * Relasi ke model Karyawan.
      */
     public function karyawan()
     {
@@ -61,21 +58,52 @@ class User extends Authenticatable
     }
 
     /**
-     * Relasi ke data rekam medis.
+     * Relasi ke model RekamMedis.
      */
     public function rekamMedis()
     {
-        return $this->hasMany(RekamMedis::class, 'id_pasien', 'id');
+        return $this->hasMany(RekamMedis::class, 'id_pasien', 'id')->orderBy('tanggal_kunjungan', 'desc');
+    }
+
+    /**
+     * Relasi ke model Checkup.
+     */
+    public function checkups()
+    {
+        return $this->hasMany(Checkup::class)->orderBy('tanggal_pemeriksaan', 'desc');
     }
 
     /**
      * Mengirim notifikasi reset password kustom.
-     *
-     * @param  string  $token
-     * @return void
      */
     public function sendPasswordResetNotification($token)
     {
         $this->notify(new CustomResetPasswordNotification($token));
+    }
+
+    // --- FUNGSI PENTING UNTUK ROLE DAN LOKASI ---
+
+    /**
+     * Relasi ke LokasiKlinik.
+     */
+    public function lokasi()
+    {
+        return $this->belongsTo(LokasiKlinik::class, 'id_lokasi', 'id');
+    }
+
+    /**
+     * Relasi many-to-many ke Role.
+     */
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'role_user');
+    }
+
+    /**
+     * Fungsi pembantu untuk memeriksa role.
+     */
+    public function hasRole(string $roleName): bool
+    {
+        return $this->roles()->where('name', $roleName)->exists();
     }
 }
