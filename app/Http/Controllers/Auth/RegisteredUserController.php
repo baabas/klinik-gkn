@@ -17,7 +17,7 @@ use Illuminate\View\View;
 class RegisteredUserController extends Controller
 {
     /**
-     * Display the registration view.
+     * Menampilkan halaman registrasi.
      */
     public function create(): View
     {
@@ -25,16 +25,16 @@ class RegisteredUserController extends Controller
     }
 
     /**
-     * Handle an incoming registration request.
+     * Menangani permintaan registrasi yang masuk.
      *
      * @throws \Illuminate\Validation\ValidationException
      */
     public function store(Request $request): RedirectResponse
     {
-        // 1. Validasi input dasar
+        // 1. Validasi input, termasuk pengecekan NIP dan Email unik di tabel users
         $request->validate([
-            'nip' => ['required', 'string', 'max:30'],
-            'email' => ['required', 'string', 'email', 'max:255'],
+            'nip' => ['required', 'string', 'max:30', 'unique:users,nip'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -49,22 +49,16 @@ class RegisteredUserController extends Controller
             ])->onlyInput('nip', 'email');
         }
 
-        // 3. Cek apakah NIP sudah terdaftar di tabel users
-        if (User::where('nip', $request->nip)->exists()) {
-            return back()->withErrors([
-                'nip' => 'Akun untuk NIP ini sudah terdaftar. Silakan login.',
-            ])->onlyInput('nip');
-        }
-
-        // 4. Buat user baru
+        // 3. Buat user baru
         $user = User::create([
             'nama_karyawan' => $karyawan->nama_karyawan,
             'nip' => $request->nip,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'akses' => 'PASIEN', // Mengatur kolom 'akses' menjadi 'PASIEN'
         ]);
 
-        // 5. Berikan peran "PASIEN" kepada user baru
+        // 4. Berikan peran "PASIEN" kepada user baru
         $pasienRole = Role::where('name', 'PASIEN')->first();
         if ($pasienRole) {
             $user->roles()->attach($pasienRole);
@@ -74,12 +68,10 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        // ================== PERBAIKAN DI SINI ==================
-        // Setelah login, kita harus mengatur peran aktif di sesi.
-        // Untuk pendaftaran, peran-nya sudah pasti PASIEN.
+        // 5. Atur peran aktif di sesi untuk memastikan alur aplikasi benar
         $request->session()->put('active_role', 'PASIEN');
-        // =======================================================
 
+        // 6. Arahkan ke halaman kartu pasien setelah berhasil mendaftar
         return redirect()->route('pasien.my_card');
     }
 }

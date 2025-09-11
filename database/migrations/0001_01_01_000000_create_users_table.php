@@ -17,8 +17,10 @@ return new class extends Migration
             $table->string('nama_karyawan');
             $table->string('email')->unique();
             $table->string('password');
-            $table->enum('akses', ['DOKTER', 'PENGADAAN']);
-            // Kolom id_lokasi dan foreign key DIHAPUS dari sini
+            // ===== PERBAIKAN DI SINI =====
+            // Menambahkan 'PASIEN' ke dalam daftar ENUM yang diizinkan
+            $table->enum('akses', ['DOKTER', 'PENGADAAN', 'PASIEN']);
+            // =============================
             $table->rememberToken();
             $table->timestamps();
         });
