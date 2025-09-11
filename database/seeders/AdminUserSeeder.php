@@ -28,6 +28,16 @@ class AdminUserSeeder extends Seeder
                 'email' => 'ani.lestari@example.com',
                 'password' => Hash::make('12345678'),
                 'akses' => 'DOKTER',
+                'id_lokasi' => 1, // <-- id_lokasi diisi untuk DOKTER
+                'role_id' => $dokterRole->id ?? null,
+            ],
+            [
+                'nip' => '199901202022032001',
+                'nama_karyawan' => 'Putri Amelia',
+                'email' => 'putri.a@example.com',
+                'password' => Hash::make('12345678'),
+                'akses' => 'DOKTER',
+                'id_lokasi' => 2, 
                 'role_id' => $dokterRole->id ?? null,
             ],
             [
@@ -36,22 +46,23 @@ class AdminUserSeeder extends Seeder
                 'email' => 'budi.santoso@example.com',
                 'password' => Hash::make('12345678'),
                 'akses' => 'PENGADAAN',
+                'id_lokasi' => null, // <-- id_lokasi diatur menjadi null untuk PENGADAAN
                 'role_id' => $pengadaanRole->id ?? null,
             ],
         ];
 
         foreach ($users as $userData) {
-            $user = User::where('nip', $userData['nip'])->first();
-
-            if (!$user) {
-                $user = User::create([
-                    'nip' => $userData['nip'],
+            // Menggunakan updateOrCreate untuk efisiensi, akan membuat user jika belum ada, atau update jika sudah ada
+            $user = User::updateOrCreate(
+                ['nip' => $userData['nip']], // Kunci untuk mencari pengguna
+                [
                     'nama_karyawan' => $userData['nama_karyawan'],
                     'email' => $userData['email'],
                     'password' => $userData['password'],
                     'akses' => $userData['akses'],
-                ]);
-            }
+                    'id_lokasi' => $userData['id_lokasi'], // Menyimpan id_lokasi (bisa null)
+                ]
+            );
             
             // Cek jika role ditemukan sebelum menyinkronkan
             if ($userData['role_id']) {

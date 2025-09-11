@@ -42,7 +42,7 @@
             <form action="{{ route('admin.login') }}" method="POST">
                 @csrf
                 <div class="mb-3">
-                    <label for="nip" class="form-label">NIP</label>
+                    <label for="nip" class="form-label">NIP/NIK</label>
                     <input type="text" class="form-control" id="nip" name="nip" value="{{ old('nip') }}" required autofocus>
                 </div>
                 <div class="mb-3">
