@@ -8,14 +8,33 @@ use Illuminate\Database\Eloquent\Model;
 class DetailDiagnosa extends Model
 {
     use HasFactory;
-    protected $table = 'detail_diagnosa';
+
     protected $primaryKey = 'id_detail_diagnosa';
-    public $timestamps = false;
+    protected $table = 'detail_diagnosa';
 
-    protected $fillable = ['kode_penyakit'];
+    /**
+     * Atribut yang dapat diisi secara massal.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'id_rekam_medis',
+        'ICD10', // [DIPERBAIKI] Mengganti 'kode_penyakit' menjadi 'ICD10'
+    ];
 
+    /**
+     * Relasi ke model DaftarPenyakit.
+     */
     public function penyakit()
     {
-        return $this->belongsTo(DaftarPenyakit::class, 'kode_penyakit', 'kode_penyakit');
+        return $this->belongsTo(DaftarPenyakit::class, 'ICD10', 'ICD10');
+    }
+
+    /**
+     * Relasi ke model RekamMedis.
+     */
+    public function rekamMedis()
+    {
+        return $this->belongsTo(RekamMedis::class, 'id_rekam_medis', 'id_rekam_medis');
     }
 }

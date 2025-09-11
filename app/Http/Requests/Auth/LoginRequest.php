@@ -11,43 +11,29 @@ use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\Rule|array|string>
-     */
     public function rules(): array
     {
-        // --- PERUBAHAN DI SINI: Validasi untuk NIP, bukan email ---
+        // [DIKEMBALIKAN] Validasi untuk NIP
         return [
             'nip' => ['required', 'string'],
             'password' => ['required', 'string'],
         ];
     }
 
-    /**
-     * Attempt to authenticate the request's credentials.
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
 
-        // --- PERUBAHAN DI SINI: Coba login menggunakan NIP dan password ---
+        // [DIKEMBALIKAN] Coba login menggunakan NIP dan password
         if (! Auth::attempt($this->only('nip', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                // Pesan error ditampilkan untuk field 'nip'
                 'nip' => trans('auth.failed'),
             ]);
         }
@@ -55,11 +41,12 @@ class LoginRequest extends FormRequest
         RateLimiter::clear($this->throttleKey());
     }
 
-    /**
-     * Ensure the login request is not rate limited.
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
+    public function throttleKey(): string
+    {
+        // [DIKEMBALIKAN] Throttle key berdasarkan NIP
+        return Str::transliterate(Str::lower($this->input('nip')).'|'.$this->ip());
+    }
+    
     public function ensureIsNotRateLimited(): void
     {
         if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
@@ -76,13 +63,5 @@ class LoginRequest extends FormRequest
                 'minutes' => ceil($seconds / 60),
             ]),
         ]);
-    }
-
-    /**
-     * Get the rate limiting throttle key for the request.
-     */
-    public function throttleKey(): string
-    {
-        return Str::transliterate(Str::lower($this->input('nip')).'|'.$this->ip());
     }
 }

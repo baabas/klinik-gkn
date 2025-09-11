@@ -24,45 +24,54 @@
             <div class="card shadow-sm mb-4">
                 <div class="card-header"><h5 class="mb-0 form-section-title">1. Anamnesa (Pemeriksaan Subjektif)</h5></div>
                 <div class="card-body">
-                    <div class="row"><div class="col-md-6 mb-3">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
                             <label for="tanggal_kunjungan" class="form-label fw-bold">Tanggal Kunjungan <span class="text-danger">*</span></label>
                             <input type="datetime-local" class="form-control @error('tanggal_kunjungan') is-invalid @enderror" id="tanggal_kunjungan" name="tanggal_kunjungan" value="{{ old('tanggal_kunjungan', now()->format('Y-m-d\TH:i')) }}" required>
                             @error('tanggal_kunjungan') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                    </div></div>
+                        </div>
+                    </div>
                     <div class="mb-3">
-                        <label for="riwayat_sakit" class="form-label fw-bold">Keluhan & Riwayat Sakit</label>
-                        <textarea class="form-control" id="riwayat_sakit" name="riwayat_sakit" rows="4" placeholder="Contoh: Pasien datang dengan keluhan demam selama 3 hari, batuk, dan sakit tenggorokan.">{{ old('riwayat_sakit') }}</textarea>
+                        <label for="anamnesa" class="form-label fw-bold">Keluhan & Riwayat Sakit</label>
+                        <textarea class="form-control" id="anamnesa" name="anamnesa" rows="4" placeholder="Contoh: Pasien datang dengan keluhan demam selama 3 hari, batuk, dan sakit tenggorokan.">{{ old('riwayat_sakit') }}</textarea>
                     </div>
                 </div>
             </div>
 
             <div class="card shadow-sm mb-4">
-                <div class="card-header"><h5 class="mb-0 form-section-title">2. Assessment (Diagnosa)</h5></div>
+                <div class="card-header"><h5 class="mb-0 form-section-title">2. Diagnosa</h5></div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <label for="diagnosa" class="form-label fw-bold">Diagnosa Penyakit <span class="text-danger">*</span></label>
-                        <select id="diagnosa" name="diagnosa[]" class="form-select @error('diagnosa') is-invalid @enderror" multiple="multiple" required data-placeholder="Cari dan pilih diagnosa...">
-                            @foreach($penyakit as $p)
-                                <option value="{{ $p->kode_penyakit }}" {{ (collect(old('diagnosa'))->contains($p->kode_penyakit)) ? 'selected' : '' }}>
-                                    {{ $p->nama_penyakit }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('diagnosa') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                    {{-- [DIPERBARUI] Menggunakan input dinamis untuk ICD-10 --}}
+                    <label class="form-label fw-bold">Diagnosa Penyakit <span class="text-danger">*</span></label>
+                    <div id="diagnosa-container">
+                        <div class="row g-2 mb-2 align-items-center diagnosa-entry">
+                            <div class="col-sm-3">
+                                <input type="text" name="diagnosa[0][kode_penyakit]" class="form-control icd10-input" placeholder="Ketik Kode ICD-10" required>
+                            </div>
+                            <div class="col-sm-8">
+                                <input type="text" class="form-control nama-penyakit-output" placeholder="Nama Penyakit (otomatis)" readonly style="background-color: #e9ecef;">
+                            </div>
+                            <div class="col-sm-1 text-end">
+                                </div>
+                        </div>
                     </div>
+                    <button type="button" id="add-diagnosa" class="btn btn-sm btn-outline-success mt-2">
+                        <i class="bi bi-plus-circle"></i> Tambah Diagnosa
+                    </button>
+                    @error('diagnosa.*.kode_penyakit') <div class="text-danger small mt-2">{{ $message }}</div> @enderror
                 </div>
             </div>
 
             <div class="card shadow-sm mb-4">
-                <div class="card-header"><h5 class="mb-0 form-section-title">3. Plan (Terapi & Resep Obat)</h5></div>
+                <div class="card-header"><h5 class="mb-0 form-section-title">3. Resep Obat</h5></div>
                 <div class="card-body">
                     <label class="form-label fw-bold">Resep Obat</label>
                     <div id="resep-obat-container"></div>
                     <button type="button" id="add-resep" class="btn btn-sm btn-outline-primary mt-2"><i class="bi bi-plus-circle"></i> Tambah Obat</button>
                     <hr class="my-3">
                     <div class="mb-3">
-                        <label for="pengobatan" class="form-label fw-bold">Catatan Pengobatan / Lainnya</label>
-                        <textarea class="form-control" id="pengobatan" name="pengobatan" rows="3" placeholder="Contoh: Istirahat yang cukup, perbanyak minum air putih.">{{ old('pengobatan') }}</textarea>
+                        <label for="terapi" class="form-label fw-bold">Catatan Pengobatan / Lainnya</label>
+                        <textarea class="form-control" id="terapi" name="terapi" rows="3" placeholder="Contoh: Istirahat yang cukup, perbanyak minum air putih.">{{ old('pengobatan') }}</textarea>
                     </div>
                 </div>
             </div>
@@ -112,30 +121,78 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
-            $('#diagnosa').select2({ theme: 'bootstrap-5', closeOnSelect: false });
+            // --- FUNGSI AUTOCOMPLETE ICD-10 ---
+            $('#diagnosa-container').on('keyup', '.icd10-input', function() {
+                let icd10Input = $(this);
+                let namaPenyakitOutput = icd10Input.closest('.diagnosa-entry').find('.nama-penyakit-output');
+                let query = icd10Input.val();
 
+                if (query.length >= 3) {
+                    $.ajax({
+                        url: `/api/penyakit/${query}`, // Panggil API route
+                        type: 'GET',
+                        success: function(data) {
+                            if (data.success) {
+                                namaPenyakitOutput.val(data.nama_penyakit);
+                                // Optional: isi kembali input dengan kode yang valid jika ada typo
+                                icd10Input.val(data.kode_penyakit); 
+                            } else {
+                                namaPenyakitOutput.val('Kode tidak ditemukan');
+                            }
+                        },
+                        error: function() {
+                            namaPenyakitOutput.val('Gagal memuat data');
+                        }
+                    });
+                } else {
+                    namaPenyakitOutput.val('');
+                }
+            });
+
+            // --- FUNGSI TAMBAH DIAGNOSA ---
+            let diagnosaIndex = 1;
+            $('#add-diagnosa').on('click', function() {
+                const newDiagnosa = `
+                    <div class="row g-2 mb-2 align-items-center diagnosa-entry">
+                        <div class="col-sm-3">
+                            <input type="text" name="diagnosa[${diagnosaIndex}][kode_penyakit]" class="form-control icd10-input" placeholder="Ketik Kode ICD-10" required>
+                        </div>
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control nama-penyakit-output" placeholder="Nama Penyakit (otomatis)" readonly style="background-color: #e9ecef;">
+                        </div>
+                        <div class="col-sm-1 text-end">
+                            <button type="button" class="btn btn-sm btn-outline-danger remove-diagnosa"><i class="bi bi-x-lg"></i></button>
+                        </div>
+                    </div>`;
+                $('#diagnosa-container').append(newDiagnosa);
+                diagnosaIndex++;
+            });
+            $('#diagnosa-container').on('click', '.remove-diagnosa', function() {
+                $(this).closest('.diagnosa-entry').remove();
+            });
+
+
+            // --- FUNGSI TAMBAH RESEP OBAT (KODE LAMA ANDA) ---
             let resepIndex = 0;
-            const obatList = @json($obat);
+            const obatList = @json($obat ?? []);
 
             function addResepRow() {
                 resepIndex++;
-                // ================== PERBAIKAN DI SINI (menghapus input dosis) ==================
                 const newResep = `
                     <div class="row g-2 mb-2 align-items-center resep-entry" id="resep-entry-${resepIndex}">
                         <div class="col-sm-8">
-                            <select name="obat[]" class="form-select select-obat" data-placeholder="Pilih Obat..." required><option></option>
+                            <select name="obat[${resepIndex}][id_obat]" class="form-select select-obat" data-placeholder="Pilih Obat..." required><option></option>
                                 ${obatList.map(o => `<option value="${o.id_obat}">${o.nama_obat}</option>`).join('')}
                             </select>
                         </div>
                         <div class="col-sm-2">
-                            <input type="number" name="kuantitas[]" class="form-control" placeholder="Qty" min="1" required>
+                            <input type="number" name="obat[${resepIndex}][kuantitas]" class="form-control" placeholder="Qty" min="1" required>
                         </div>
                         <div class="col-sm-2 text-end">
                             <button type="button" class="btn btn-sm btn-outline-danger remove-resep"><i class="bi bi-x-lg"></i></button>
                         </div>
                     </div>
                 `;
-                // ==============================================================================
                 $('#resep-obat-container').append(newResep);
                 $(`#resep-entry-${resepIndex} .select-obat`).select2({ theme: 'bootstrap-5' });
             }

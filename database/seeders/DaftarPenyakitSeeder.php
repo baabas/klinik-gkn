@@ -2,47 +2,53 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 
 class DaftarPenyakitSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
-        DB::table('daftar_penyakit')->delete();
-        DB::table('daftar_penyakit')->insert([
-            ['kode_penyakit' => 'ALR', 'nama_penyakit' => 'Alergi'],
-            ['kode_penyakit' => 'ANM', 'nama_penyakit' => 'Anemia'],
-            ['kode_penyakit' => 'AUR', 'nama_penyakit' => 'Asam Urat'],
-            ['kode_penyakit' => 'ASM', 'nama_penyakit' => 'Asma'],
-            ['kode_penyakit' => 'BGN', 'nama_penyakit' => 'Batu Ginjal'],
-            ['kode_penyakit' => 'BRK', 'nama_penyakit' => 'Bronkitis'],
-            ['kode_penyakit' => 'CAR', 'nama_penyakit' => 'Cacar Air'],
-            ['kode_penyakit' => 'CPK', 'nama_penyakit' => 'Campak'],
-            ['kode_penyakit' => 'DMM', 'nama_penyakit' => 'Demam'],
-            ['kode_penyakit' => 'DBD', 'nama_penyakit' => 'Demam Berdarah Dengue'],
-            ['kode_penyakit' => 'DMT', 'nama_penyakit' => 'Dermatitis'],
-            ['kode_penyakit' => 'DM', 'nama_penyakit' => 'Diabetes Melitus'],
-            ['kode_penyakit' => 'DRE', 'nama_penyakit' => 'Diare'],
-            ['kode_penyakit' => 'GTS', 'nama_penyakit' => 'Gastritis (Maag)'],
-            ['kode_penyakit' => 'HPS', 'nama_penyakit' => 'Hepatitis'],
-            ['kode_penyakit' => 'HPT', 'nama_penyakit' => 'Hipertensi'],
-            ['kode_penyakit' => 'ISK', 'nama_penyakit' => 'Infeksi Saluran Kemih'],
-            ['kode_penyakit' => 'FLU', 'nama_penyakit' => 'Influenza'],
-            ['kode_penyakit' => 'INS', 'nama_penyakit' => 'Insomnia'],
-            ['kode_penyakit' => 'KJT', 'nama_penyakit' => 'Konjungtivitis (Sakit Mata)'],
-            ['kode_penyakit' => 'LKM', 'nama_penyakit' => 'Leukemia'],
-            ['kode_penyakit' => 'MGR', 'nama_penyakit' => 'Migrain'],
-            ['kode_penyakit' => 'PNM', 'nama_penyakit' => 'Pneumonia'],
-            ['kode_penyakit' => 'RUB', 'nama_penyakit' => 'Radang Usus Buntu'],
-            ['kode_penyakit' => 'SJG', 'nama_penyakit' => 'Serangan Jantung'],
-            ['kode_penyakit' => 'SNS', 'nama_penyakit' => 'Sinusitis'],
-            ['kode_penyakit' => 'STR', 'nama_penyakit' => 'Stroke'],
-            ['kode_penyakit' => 'TFS', 'nama_penyakit' => 'Tifus'],
-            ['kode_penyakit' => 'TBC', 'nama_penyakit' => 'Tuberkulosis'],
-            ['kode_penyakit' => 'VTG', 'nama_penyakit' => 'Vertigo']
+        $csvFile = database_path('seeders/data/gabungan_icd10.csv');
 
-        ]);
+        if (!File::exists($csvFile)) {
+            $this->command->error("File CSV tidak ditemukan di: " . $csvFile);
+            return;
+        }
+
+        Schema::disableForeignKeyConstraints();
+        DB::table('daftar_penyakit')->truncate();
+        Schema::enableForeignKeyConstraints();
+
+        // [PERBAIKAN] Membaca file dan mengonversi encoding ke UTF-8
+        $fileContent = File::get($csvFile);
+        $utf8Content = mb_convert_encoding($fileContent, 'UTF-8', 'auto');
+        $rows = array_map('str_getcsv', explode("\n", $utf8Content));
+        
+        // Menghapus baris header (baris pertama)
+        array_shift($rows);
+
+        foreach ($rows as $data) {
+            // Lewati baris kosong
+            if (empty($data[0])) {
+                continue;
+            }
+
+            if (isset($data[0]) && isset($data[1])) {
+                DB::table('daftar_penyakit')->insert([
+                    'ICD10' => $data[0],
+                    'nama_penyakit' => $data[1],
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+        
+        $this->command->info('Seeding data ICD-10 dari file CSV berhasil.');
     }
 }

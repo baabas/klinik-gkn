@@ -34,7 +34,7 @@
     <h1 class="h2">Kartu Pasien Digital</h1>
 </div>
 
-{{-- BIODATA KARTU (SESUAI REVISI ANDA) --}}
+{{-- BIODATA KARTU (TELAH DIMODIFIKASI) --}}
 <div class="card shadow-sm mb-4">
     <div class="card-header bg-primary text-white">
         <h4 class="mb-0">Nomor Index Pasien: {{ $user->id }}</h4>
@@ -45,11 +45,16 @@
                 <div class="col-md-6">
                     <p><strong>NIP:</strong><br> {{ $user->nip }}</p>
                     <p><strong>Nama:</strong><br> {{ $user->nama_karyawan }}</p>
-                    <p class="mb-0"><strong>Alamat:</strong><br> {{ $karyawan->alamat ?? '-' }}</p>
+                    <p><strong>Tanggal Lahir:</strong><br> 
+                        {{ $karyawan->tanggal_lahir ? \Carbon\Carbon::parse($karyawan->tanggal_lahir)->translatedFormat('d F Y') : '-' }}
+                    </p>
+                    <p class="mb-md-0"><strong>Usia:</strong><br> 
+                        {{ $karyawan->tanggal_lahir ? \Carbon\Carbon::parse($karyawan->tanggal_lahir)->age . ' Tahun' : '-' }}
+                    </p>
                 </div>
                 <div class="col-md-6">
-                    <p><strong>Jabatan:</strong><br> {{ $karyawan->jabatan ?? '-' }}</p>
-                    <p class="mb-0"><strong>Kantor:</strong><br> {{ $karyawan->kantor ?? '-' }}</p>
+                    <p><strong>Kantor:</strong><br> {{ $karyawan->kantor ?? '-' }}</p>
+                    <p class="mb-0"><strong>Alamat:</strong><br> {{ $karyawan->alamat ?? '-' }}</p>
                 </div>
             </div>
         @else

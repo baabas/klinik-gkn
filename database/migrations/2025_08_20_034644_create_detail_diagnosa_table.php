@@ -6,18 +6,29 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('detail_diagnosa', function (Blueprint $table) {
             $table->id('id_detail_diagnosa');
-            $table->foreignId('id_rekam_medis')->constrained('rekam_medis', 'id_rekam_medis')->onDelete('cascade');
-            $table->string('kode_penyakit', 20);
+            $table->unsignedBigInteger('id_rekam_medis');
+            
+            // Mengubah nama kolom foreign key agar konsisten
+            $table->string('ICD10', 20); 
+            $table->timestamps();
 
-            // Foreign key constraint to daftar_penyakit table
-            $table->foreign('kode_penyakit')->references('kode_penyakit')->on('daftar_penyakit')->onUpdate('cascade');
+            $table->foreign('id_rekam_medis')->references('id_rekam_medis')->on('rekam_medis')->onDelete('cascade');
+            
+            // Mengubah referensi foreign key ke kolom ICD10 di tabel daftar_penyakit
+            $table->foreign('ICD10')->references('ICD10')->on('daftar_penyakit')->onDelete('cascade');
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('detail_diagnosa');

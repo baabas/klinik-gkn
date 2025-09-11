@@ -10,20 +10,19 @@ return new class extends Migration
     {
         Schema::create('rekam_medis', function (Blueprint $table) {
             $table->id('id_rekam_medis');
-
-            // PERUBAHAN DI SINI:
-            // Merujuk ke kolom 'id' di tabel 'users'
-            $table->foreignId('id_pasien')->constrained('users')->onDelete('cascade');
-
-            $table->string('nip', 30); // Ini NIP dokter
-            $table->dateTime('tanggal_kunjungan');
-            $table->string('riwayat_sakit')->nullable();
-            $table->string('pengobatan')->nullable();
+            // PASTIKAN NAMA KOLOM INI ADALAH 'nip_pasien'
+            $table->string('nip_pasien', 30);
+            $table->unsignedBigInteger('id_dokter');
+            $table->date('tanggal_kunjungan');
+            $table->text('anamnesa')->nullable();
+            $table->text('terapi')->nullable();
             $table->string('nama_sa')->nullable();
-            $table->string('jenis_kelamin_sa', 10)->nullable();
+            $table->string('jenis_kelamin_sa')->nullable();
+            $table->timestamps();
 
-            // Foreign key untuk NIP dokter ke tabel karyawan
-            $table->foreign('nip')->references('nip')->on('karyawan')->onUpdate('cascade');
+            // PASTIKAN FOREIGN KEY JUGA MENGGUNAKAN 'nip_pasien'
+            $table->foreign('nip_pasien')->references('nip')->on('karyawan')->onDelete('cascade');
+            $table->foreign('id_dokter')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

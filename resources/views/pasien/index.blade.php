@@ -21,7 +21,7 @@
                             <th>No. Index</th>
                             <th>NIP</th>
                             <th>Nama Karyawan</th>
-                            <th>Jabatan</th>
+                            <th>Tanggal Lahir</th>
                             <th>Kantor</th>
                             <th>Aksi</th>
                         </tr>
@@ -33,7 +33,7 @@
                             <td>{{ $p->id }}</td>
                             <td>{{ $p->nip }}</td>
                             <td>{{ $p->nama_karyawan }}</td>
-                            <td>{{ $p->karyawan->jabatan ?? '-' }}</td>
+                            <td>{{ $p->karyawan->tanggal_lahir ?? '-' }}</td>
                             <td>{{ $p->karyawan->kantor ?? '-' }}</td>
                             <td>
                                 <a href="{{ route('pasien.show', $p->nip) }}" class="btn btn-info btn-sm">Lihat Kartu</a>

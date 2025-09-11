@@ -35,7 +35,7 @@
         <h1 class="h2">Kartu Pasien Digital Anda</h1>
     </div>
 
-    {{-- BIODATA KARTU --}}
+    {{-- BIODATA KARTU (TELAH DIMODIFIKASI) --}}
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-primary text-white">
             <h4 class="mb-0">Nomor Index Pasien: {{ $user->id }}</h4>
@@ -46,11 +46,16 @@
                     <div class="col-md-6">
                         <p><strong>NIP:</strong><br> {{ $user->nip }}</p>
                         <p><strong>Nama:</strong><br> {{ $user->nama_karyawan }}</p>
-                        <p class="mb-0"><strong>Alamat:</strong><br> {{ $user->karyawan->alamat ?? '-' }}</p>
+                        <p><strong>Tanggal Lahir:</strong><br> 
+                            {{ $user->karyawan->tanggal_lahir ? \Carbon\Carbon::parse($user->karyawan->tanggal_lahir)->translatedFormat('d F Y') : '-' }}
+                        </p>
+                        <p class="mb-md-0"><strong>Usia:</strong><br> 
+                            {{ $user->karyawan->tanggal_lahir ? \Carbon\Carbon::parse($user->karyawan->tanggal_lahir)->age . ' Tahun' : '-' }}
+                        </p>
                     </div>
                     <div class="col-md-6">
-                        <p><strong>Jabatan:</strong><br> {{ $user->karyawan->jabatan ?? '-' }}</p>
-                        <p class="mb-0"><strong>Kantor:</strong><br> {{ $user->karyawan->kantor ?? '-' }}</p>
+                        <p><strong>Kantor:</strong><br> {{ $user->karyawan->kantor ?? '-' }}</p>
+                        <p class="mb-0"><strong>Alamat:</strong><br> {{ $user->karyawan->alamat ?? '-' }}</p>
                     </div>
                 </div>
             @else
@@ -78,7 +83,7 @@
 
         <div class="card-body">
             <div class="tab-content" id="riwayatTabContent">
-                {{-- KONTEN TAB 1: RIWAYAT KUNJUNGAN --}}
+                {{-- KONTEN TAB 1: RIWAYAT KUNJungan --}}
                 <div class="tab-pane fade show active" id="kunjungan-tab-pane" role="tabpanel">
                     <div class="table-responsive">
                         <table class="table table-hover">

@@ -12,9 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('checkups', function (Blueprint $table) {
-            $table->id();
-            // Foreign key ke tabel users
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->id('id_checkup');
+            
+            // [DIPERBAIKI] Menggunakan NIP Pasien dan ID Dokter agar konsisten
+            $table->string('nip_pasien', 30);
+            $table->unsignedBigInteger('id_dokter');
             
             $table->date('tanggal_pemeriksaan');
 
@@ -35,6 +37,10 @@ return new class extends Migration
             $table->string('jenis_kelamin_sa', 20)->nullable();
 
             $table->timestamps();
+
+            // [DIPERBAIKI] Mendefinisikan foreign key yang baru
+            $table->foreign('nip_pasien')->references('nip')->on('karyawan')->onDelete('cascade');
+            $table->foreign('id_dokter')->references('id')->on('users')->onDelete('cascade');
         });
     }
 
