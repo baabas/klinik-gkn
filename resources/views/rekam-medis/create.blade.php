@@ -186,7 +186,7 @@
             function addResepRow() {
                 resepIndex++;
                 const options = obatList.length
-                ${obatList.map(o => `<option value="${o.id_obat}">${o.nama_obat} (stok: ${o.stok[0].jumlah})</option>`).join('')}
+                    ? obatList.map(o => `<option value="${o.id_obat}">${o.nama_obat} (stok: ${o.stok[0].jumlah})</option>`).join('')
                     : '<option value="">Tidak ada obat tersedia</option>';
                 const selectAttr = obatList.length ? 'required' : 'disabled';
                 const newResep = `
@@ -197,7 +197,7 @@
                             </select>
                         </div>
                         <div class="col-sm-2">
-                            <input type="number" name="obat[${resepIndex}][kuantitas]" class="form-control" placeholder="Qty" min="1" required>
+                            <input type="number" name="obat[${resepIndex}][jumlah]" class="form-control" placeholder="Qty" min="1" required>
                         </div>
                         <div class="col-sm-2 text-end">
                             <button type="button" class="btn btn-sm btn-outline-danger remove-resep"><i class="bi bi-x-lg"></i></button>
@@ -208,10 +208,8 @@
                 $(`#resep-entry-${resepIndex} .select-obat`).select2({ theme: 'bootstrap-5' });
             }
 
-                if (obatList.length === 0) {
+            if (obatList.length === 0) {
                 $('#resep-obat-container').html('<div class="alert alert-warning">Tidak ada obat tersedia di lokasi ini</div>');
-            } else {
-                addResepRow();
             }
 
             if (obatList.length === 0) {

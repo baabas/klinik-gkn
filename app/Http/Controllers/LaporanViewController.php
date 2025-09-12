@@ -44,7 +44,7 @@ class LaporanViewController extends Controller
         return view('laporan.harian', compact('daftar_penyakit', 'data_kasus', 'daftar_kantor', 'data_kunjungan', 'filter'));
     }
 
-   
+
     public function pemakaianObat(Request $request): View
     {
         $filter = $this->getFilterBulanTahun($request);
@@ -65,7 +65,7 @@ class LaporanViewController extends Controller
             ->join('rekam_medis as rm', 'ro.id_rekam_medis', '=', 'rm.id_rekam_medis')
             ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])
             ->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
-            ->select('o.nama_obat', DB::raw('DAY(rm.tanggal_kunjungan) as hari'), DB::raw('SUM(ro.kuantitas) as jumlah'))
+            ->select('o.nama_obat', DB::raw('DAY(rm.tanggal_kunjungan) as hari'), DB::raw('SUM(ro.jumlah) as jumlah'))
             ->groupBy('o.nama_obat', 'hari')
             ->get()
             ->groupBy('nama_obat');
@@ -75,7 +75,7 @@ class LaporanViewController extends Controller
             ->join('rekam_medis as rm', 'ro.id_rekam_medis', '=', 'rm.id_rekam_medis')
             ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])
             ->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
-            ->select('o.nama_obat', DB::raw("CASE WHEN DAY(rm.tanggal_kunjungan) BETWEEN 1 AND 7 THEN 1 WHEN DAY(rm.tanggal_kunjungan) BETWEEN 8 AND 14 THEN 2 WHEN DAY(rm.tanggal_kunjungan) BETWEEN 15 AND 21 THEN 3 WHEN DAY(rm.tanggal_kunjungan) BETWEEN 22 AND 28 THEN 4 ELSE 5 END as minggu_ke"), DB::raw("SUM(ro.kuantitas) as jumlah"))
+            ->select('o.nama_obat', DB::raw("CASE WHEN DAY(rm.tanggal_kunjungan) BETWEEN 1 AND 7 THEN 1 WHEN DAY(rm.tanggal_kunjungan) BETWEEN 8 AND 14 THEN 2 WHEN DAY(rm.tanggal_kunjungan) BETWEEN 15 AND 21 THEN 3 WHEN DAY(rm.tanggal_kunjungan) BETWEEN 22 AND 28 THEN 4 ELSE 5 END as minggu_ke"), DB::raw("SUM(ro.jumlah) as jumlah"))
             ->groupBy('o.nama_obat', 'minggu_ke')
             ->get()
             ->groupBy('nama_obat');

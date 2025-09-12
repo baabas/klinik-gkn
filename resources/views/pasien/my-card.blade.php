@@ -46,10 +46,10 @@
                     <div class="col-md-6">
                         <p><strong>NIP:</strong><br> {{ $user->nip }}</p>
                         <p><strong>Nama:</strong><br> {{ $user->nama_karyawan }}</p>
-                        <p><strong>Tanggal Lahir:</strong><br> 
+                        <p><strong>Tanggal Lahir:</strong><br>
                             {{ $user->karyawan->tanggal_lahir ? \Carbon\Carbon::parse($user->karyawan->tanggal_lahir)->translatedFormat('d F Y') : '-' }}
                         </p>
-                        <p class="mb-md-0"><strong>Usia:</strong><br> 
+                        <p class="mb-md-0"><strong>Usia:</strong><br>
                             {{ $user->karyawan->tanggal_lahir ? \Carbon\Carbon::parse($user->karyawan->tanggal_lahir)->age . ' Tahun' : '-' }}
                         </p>
                     </div>
@@ -112,7 +112,7 @@
                                                 <span class="section-title">Resep Obat:</span>
                                                 <ul class="list-unstyled list-resep">
                                                     @foreach($rekam->resepObat as $resep)
-                                                        <li><i class="bi bi-prescription me-2"></i>{{ $resep->obat->nama_obat ?? 'N/A' }} <span class="badge bg-secondary rounded-pill">{{ $resep->kuantitas }}</span></li>
+                                                        <li><i class="bi bi-prescription me-2"></i>{{ $resep->obat->nama_obat ?? 'N/A' }} <span class="badge bg-secondary rounded-pill">{{ $resep->jumlah }}</span></li>
                                                     @endforeach
                                                 </ul>
                                             @endif

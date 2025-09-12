@@ -69,7 +69,7 @@ class LaporanController extends Controller
             ->where('sb.id_lokasi', $lokasiId)
             ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])
             ->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
-            ->select('o.nama_obat', DB::raw('DAY(rm.tanggal_kunjungan) as hari'), DB::raw('SUM(ro.kuantitas) as jumlah'))
+            ->select('o.nama_obat', DB::raw('DAY(rm.tanggal_kunjungan) as hari'), DB::raw('SUM(ro.jumlah) as jumlah'))
             ->groupBy('o.nama_obat', 'hari')
             ->get()
             ->groupBy('nama_obat');

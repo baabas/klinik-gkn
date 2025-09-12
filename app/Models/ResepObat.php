@@ -10,18 +10,17 @@ class ResepObat extends Model
     use HasFactory;
     protected $table = 'resep_obat';
     protected $primaryKey = 'id_resep_obat';
-    public $timestamps = true; // Sebaiknya timestamps diaktifkan
+    public $timestamps = true; 
 
-    /**
-     * ================== PERBAIKAN DI SINI ==================
-     * Menghapus 'dosis' dari fillable
-     */
+
     protected $fillable = [
         'id_rekam_medis',
         'id_obat',
         'kuantitas',
+        'jumlah',
+        'aturan_pakai',
     ];
-    // =======================================================
+
 
     public function obat()
     {

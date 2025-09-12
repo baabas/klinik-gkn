@@ -45,7 +45,7 @@ class RekamMedisController extends Controller
             'diagnosa.*.kode_penyakit' => ['required_with:diagnosa', 'string', 'exists:daftar_penyakit,ICD10'],
             'obat' => ['nullable', 'array'],
             'obat.*.id_obat' => ['required_with:obat', 'integer', 'exists:barang_medis,id_obat'],
-            'obat.*.kuantitas' => ['required_with:obat', 'integer', 'min:1'],
+            'obat.*.jumlah' => ['required_with:obat', 'integer', 'min:1'],
             'nama_sa' => ['nullable', 'string', 'max:255'],
             'jenis_kelamin_sa' => ['nullable', 'string', 'max:20'],
         ]);
@@ -79,13 +79,12 @@ class RekamMedisController extends Controller
                 foreach ($validated['obat'] as $resep) {
                     if (!empty($resep['id_obat'])) {
                         $id_obat = $resep['id_obat'];
-                        $kuantitas = $resep['kuantitas'];
+                        $jumlah = $resep['jumlah'];
 
                         $stok = StokBarang::where('id_barang', $id_obat)
                                           ->where('id_lokasi', $idLokasiDokter)
                                           ->first();
-
-                        if (!$stok || $stok->jumlah < $kuantitas) {
+                            if (!$stok || $stok->jumlah < $jumlah) {
                             DB::rollBack();
                             $namaObat = BarangMedis::find($id_obat)->nama_obat ?? 'Obat';
                             return redirect()->back()->withInput()->with('error', "Stok untuk {$namaObat} tidak mencukupi. Stok tersedia: " . ($stok->jumlah ?? 0));
@@ -93,11 +92,11 @@ class RekamMedisController extends Controller
 
                         $rekamMedis->resepObat()->create([
                             'id_obat' => $id_obat,
-                            'jumlah' => $kuantitas,
+                            'jumlah' => $jumlah,
                             'aturan_pakai' => $resep['aturan_pakai'] ?? 'Aturan pakai belum diisi',
                         ]);
 
-                        $stok->decrement('jumlah', $kuantitas);
+                        $stok->decrement('jumlah', $jumlah);
                     }
                 }
             }
