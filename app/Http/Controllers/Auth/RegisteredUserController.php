@@ -9,7 +9,6 @@ use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
@@ -66,12 +65,7 @@ class RegisteredUserController extends Controller
 
         event(new Registered($user));
 
-        Auth::login($user);
-
-        // 5. Atur peran aktif di sesi untuk memastikan alur aplikasi benar
-        $request->session()->put('active_role', 'PASIEN');
-
-        // 6. Arahkan ke halaman kartu pasien setelah berhasil mendaftar
-        return redirect()->route('pasien.my_card');
+        return redirect()->route('login')
+            ->with('status', 'Anda berhasil registrasi. Silakan login kembali.');
     }
 }

@@ -20,10 +20,10 @@ class PermintaanBarangController extends Controller
         // Memuat relasi 'lokasiPeminta' dan 'userPeminta' untuk efisiensi query
         $query = PermintaanBarang::with('lokasiPeminta', 'userPeminta')->latest();
 
-        // TODO: Tambahkan logika filter berdasarkan lokasi user jika role-nya DOKTER
-        // if ($user->hasRole('DOKTER')) {
-        //     $query->where('id_lokasi_peminta', $user->id_lokasi);
-        // }
+        // Jika user memiliki role DOKTER, filter permintaan berdasarkan lokasi
+        if ($user->hasRole('DOKTER')) {
+            $query->where('id_lokasi_peminta', $user->id_lokasi);
+        }
 
         $permintaan = $query->paginate(10);
 

@@ -16,7 +16,8 @@ class Checkup extends Model
      * @var array
      */
     protected $fillable = [
-        'user_id',
+        'nip_pasien',
+        'id_dokter',
         'tanggal_pemeriksaan',
         'tekanan_darah',
         'gula_darah',
@@ -33,8 +34,16 @@ class Checkup extends Model
     /**
      * Relasi ke model User.
      */
-    public function user(): BelongsTo
+       public function pasien(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'nip_pasien', 'nip');
+    }
+
+    /**php
+     * Relasi ke model User sebagai dokter.
+     */
+    public function dokter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'id_dokter');
     }
 }

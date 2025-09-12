@@ -86,7 +86,7 @@
                     <p class="card-text text-muted mb-0">NIP: {{ $user->nip }}</p>
                 </div>
             </div>
-            
+
             <div class="card shadow-sm mb-4">
                 <div class="card-header"><h5 class="mb-0">Keterangan Tambahan</h5></div>
                 <div class="card-body">
@@ -135,7 +135,7 @@
                             if (data.success) {
                                 namaPenyakitOutput.val(data.nama_penyakit);
                                 // Optional: isi kembali input dengan kode yang valid jika ada typo
-                                icd10Input.val(data.kode_penyakit); 
+                                icd10Input.val(data.kode_penyakit);
                             } else {
                                 namaPenyakitOutput.val('Kode tidak ditemukan');
                             }
@@ -174,15 +174,26 @@
 
             // --- FUNGSI TAMBAH RESEP OBAT (KODE LAMA ANDA) ---
             let resepIndex = 0;
-            const obatList = @json($obat ?? []);
+            @php
+                $obatList = $obat->load(['stok' => function ($q) {
+                    $q->where('id_lokasi', auth()->user()->id_lokasi);
+                }])->filter(function ($item) {
+                    return $item->stok->isNotEmpty() && $item->stok[0]->jumlah > 0;
+                })->values();
+            @endphp
+            const obatList = @json($obatList);
 
             function addResepRow() {
                 resepIndex++;
+                const options = obatList.length
+                ${obatList.map(o => `<option value="${o.id_obat}">${o.nama_obat} (stok: ${o.stok[0].jumlah})</option>`).join('')}
+                    : '<option value="">Tidak ada obat tersedia</option>';
+                const selectAttr = obatList.length ? 'required' : 'disabled';
                 const newResep = `
                     <div class="row g-2 mb-2 align-items-center resep-entry" id="resep-entry-${resepIndex}">
                         <div class="col-sm-8">
-                            <select name="obat[${resepIndex}][id_obat]" class="form-select select-obat" data-placeholder="Pilih Obat..." required><option></option>
-                                ${obatList.map(o => `<option value="${o.id_obat}">${o.nama_obat}</option>`).join('')}
+                            <select name="obat[${resepIndex}][id_obat]" class="form-select select-obat" data-placeholder="Pilih Obat..." ${selectAttr}><option></option>
+                                ${options}
                             </select>
                         </div>
                         <div class="col-sm-2">
@@ -197,8 +208,19 @@
                 $(`#resep-entry-${resepIndex} .select-obat`).select2({ theme: 'bootstrap-5' });
             }
 
-            $('#add-resep').on('click', addResepRow);
-            if ($('#resep-obat-container').children().length === 0) { addResepRow(); }
+                if (obatList.length === 0) {
+                $('#resep-obat-container').html('<div class="alert alert-warning">Tidak ada obat tersedia di lokasi ini</div>');
+            } else {
+                addResepRow();
+            }
+
+            if (obatList.length === 0) {
+                alert('Tidak ada stok obat di lokasi ini');
+                $('#add-resep').prop('disabled', true);
+            } else {
+                addResepRow();
+                $('#add-resep').on('click', addResepRow);
+            }
             $('#resep-obat-container').on('click', '.remove-resep', function() { $(this).closest('.resep-entry').remove(); });
         });
     </script>

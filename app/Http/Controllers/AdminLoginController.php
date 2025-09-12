@@ -28,12 +28,17 @@ class AdminLoginController extends Controller
     {
         // 1. Validasi input dari form menggunakan NIP
         $credentials = $request->validate([
-            'nip' => ['required', 'string'],
+            'login' => ['required', 'string'],
             'password' => ['required', 'string'],
         ]);
 
+        $field = filter_var($credentials['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'nip';
+
         // 2. Mencoba untuk melakukan otentikasi
-        if (Auth::attempt($credentials)) {
+        if (Auth::attempt([
+            $field => $credentials['login'],
+            'password' => $credentials['password'],
+        ])) {
             $user = Auth::user();
 
             // 3. Cek apakah user punya peran DOKTER atau PENGADAAN (Logika lama Anda dipertahankan)
@@ -50,14 +55,14 @@ class AdminLoginController extends Controller
             // 4. Jika tidak punya peran admin, logout dan tolak
             Auth::logout();
             return back()->withErrors([
-                'nip' => 'Anda tidak memiliki hak akses sebagai admin.',
-            ])->onlyInput('nip');
+                'login' => 'Anda tidak memiliki hak akses sebagai admin.',
+            ])->onlyInput('login');
         }
 
         // 5. Jika NIP atau Password salah
         return back()->withErrors([
-            'nip' => 'NIP atau Password yang Anda masukkan salah.',
-        ])->onlyInput('nip');
+            'login' => 'NIP/Email atau Password yang Anda masukkan salah.',
+        ])->onlyInput('login');
     }
 
     /**
@@ -74,4 +79,4 @@ class AdminLoginController extends Controller
 
         return redirect()->route('admin.login');
     }
-}   
+}

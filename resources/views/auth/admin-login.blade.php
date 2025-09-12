@@ -42,8 +42,8 @@
             <form action="{{ route('admin.login') }}" method="POST">
                 @csrf
                 <div class="mb-3">
-                    <label for="nip" class="form-label">NIP/NIK</label>
-                    <input type="text" class="form-control" id="nip" name="nip" value="{{ old('nip') }}" required autofocus>
+                    <label for="login" class="form-label">NIP atau Email</label>
+                    <input type="text" class="form-control" id="login" name="login" value="{{ old('login') }}" required autofocus>
                 </div>
                 <div class="mb-3">
                     <label for="password" class="form-label">Password</label>

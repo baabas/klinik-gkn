@@ -8,6 +8,7 @@ use App\Models\DaftarPenyakit;
 use App\Models\StokBarang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use App\Models\BarangMedis;
@@ -19,10 +20,13 @@ class RekamMedisController extends Controller
      */
     public function create(User $user): View
     {
-        // [DIPERBAIKI] Ambil daftar obat dan kirimkan ke view
-        $obat = BarangMedis::where('tipe', 'OBAT')
-                            ->orderBy('nama_obat', 'asc')
-                            ->get();
+    $lokasiId = Auth::user()->id_lokasi;
+        $obat = BarangMedis::whereHas('stok', fn($q) =>
+                    $q->where('id_lokasi', $lokasiId)
+                      ->where('jumlah', '>', 0))
+                ->with(['stok' => fn($q) => $q->where('id_lokasi', $lokasiId)])
+                ->orderBy('nama_obat')
+                ->get();
 
         return view('rekam-medis.create', compact('user', 'obat'));
     }
@@ -51,7 +55,7 @@ class RekamMedisController extends Controller
         try {
             $rekamMedis = RekamMedis::create([
                 'nip_pasien' => $user->nip,
-                'id_dokter' => auth()->user()->id,
+                'id_dokter'      => Auth::id(),
                 'tanggal_kunjungan' => $validated['tanggal_kunjungan'],
                 'anamnesa' => $validated['anamnesa'],
                 'terapi' => $validated['terapi'],
@@ -68,9 +72,9 @@ class RekamMedisController extends Controller
                     }
                 }
             }
-            
+
             if (!empty($validated['obat'])) {
-                $idLokasiDokter = auth()->user()->id_lokasi;
+                $idLokasiDokter = Auth::user()->id_lokasi;
 
                 foreach ($validated['obat'] as $resep) {
                     if (!empty($resep['id_obat'])) {

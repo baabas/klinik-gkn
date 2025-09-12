@@ -38,7 +38,8 @@ class CheckupController extends Controller
             'jenis_kelamin_sa' => ['nullable', 'string', 'max:20'],
         ]);
 
-        $validated['user_id'] = $user->id;
+        $validated['nip_pasien'] = $user->nip;
+        $validated['id_dokter'] = Auth::id();
 
         Checkup::create($validated);
 
