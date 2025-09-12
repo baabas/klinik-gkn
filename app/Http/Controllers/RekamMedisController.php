@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use App\Models\BarangMedis;
+use Carbon\Carbon;
 
 class RekamMedisController extends Controller
 {
@@ -53,10 +54,12 @@ class RekamMedisController extends Controller
         DB::beginTransaction();
 
         try {
+            $tanggalKunjungan = Carbon::parse($validated['tanggal_kunjungan'], config('app.timezone'));
+
             $rekamMedis = RekamMedis::create([
                 'nip_pasien' => $user->nip,
                 'id_dokter'      => Auth::id(),
-                'tanggal_kunjungan' => $validated['tanggal_kunjungan'],
+                'tanggal_kunjungan' => $tanggalKunjungan,
                 'anamnesa' => $validated['anamnesa'],
                 'terapi' => $validated['terapi'],
                 'nama_sa' => $validated['nama_sa'],

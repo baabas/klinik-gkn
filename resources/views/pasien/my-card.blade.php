@@ -93,7 +93,7 @@
                             <tbody>
                                 @forelse ($user->rekamMedis as $rekam)
                                     <tr>
-                                        <td>{{ \Carbon\Carbon::parse($rekam->tanggal_kunjungan)->translatedFormat('d M Y, H:i') }}</td>
+                                        <td>{{ \Carbon\Carbon::parse($rekam->tanggal_kunjungan)->timezone(config('app.timezone'))->translatedFormat('d M Y, H:i') }}</td>
                                         <td>
                                             @if($rekam->detailDiagnosa->isNotEmpty())
                                                 <span class="section-title">Diagnosa:</span>

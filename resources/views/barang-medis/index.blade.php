@@ -34,6 +34,8 @@
                             <th>Kode</th>
                             <th>Nama Barang</th>
                             <th>Tipe</th>
+                            <th>Stok GKN 1</th>
+                            <th>Stok GKN 2</th>
                             <th>Total Stok</th>
                             <th>Satuan</th>
                             <th>Aksi</th>
@@ -49,6 +51,12 @@
                                     <span class="badge {{ $item->tipe == 'OBAT' ? 'bg-primary' : 'bg-success' }}">
                                         {{ $item->tipe }}
                                     </span>
+                                </td>
+                                <td>
+                                    <strong>{{ (int) ($item->stok_gkn1 ?? 0) }}</strong>
+                                </td>
+                                <td>
+                                    <strong>{{ (int) ($item->stok_gkn2 ?? 0) }}</strong>
                                 </td>
                                 <td>
                                     <strong>{{ (int) $item->stok_sum_jumlah }}</strong>
@@ -69,7 +77,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center">Tidak ada data barang medis ditemukan.</td>
+                                <td colspan="9" class="text-center">Tidak ada data barang medis ditemukan.</td>
                             </tr>
                         @endforelse
                     </tbody>

@@ -18,7 +18,18 @@ class BarangMedisController extends Controller
     {
         $search = $request->input('search');
 
-        $barang = BarangMedis::withSum('stok', 'jumlah')
+        // Ambil ID lokasi untuk GKN 1 dan GKN 2. Jika tidak ditemukan, gunakan 0 agar hasil sum tetap 0.
+        $gkn1Id = LokasiKlinik::where('nama_lokasi', 'like', '%GKN 1%')->value('id');
+        $gkn2Id = LokasiKlinik::where('nama_lokasi', 'like', '%GKN 2%')->value('id');
+
+        $barang = BarangMedis::query()
+            ->withSum('stok', 'jumlah')
+            ->withSum(['stok as stok_gkn1' => function ($q) use ($gkn1Id) {
+                $q->where('id_lokasi', $gkn1Id ?? 0);
+            }], 'jumlah')
+            ->withSum(['stok as stok_gkn2' => function ($q) use ($gkn2Id) {
+                $q->where('id_lokasi', $gkn2Id ?? 0);
+            }], 'jumlah')
             ->when($search, function ($query, $search) {
                 return $query->where('nama_obat', 'like', "%{$search}%")
                              ->orWhere('kode_obat', 'like', "%{$search}%");
