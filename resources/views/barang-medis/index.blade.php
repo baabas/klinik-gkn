@@ -64,7 +64,7 @@
                                 <td>{{ $item->satuan }}</td>
                                 <td>
                                     <a href="{{ route('barang-medis.show', $item->id_obat) }}" class="btn btn-info btn-sm" title="Lihat Detail Stok"><i class="bi bi-eye"></i></a>
-
+                                    <a href="{{ route('barang-medis.history', $item->id_obat) }}" class="btn btn-secondary btn-sm" title="Riwayat Stok"><i class="bi bi-clock-history"></i></a>
                                     @if(Auth::user()->hasRole('PENGADAAN'))
                                         <a href="{{ route('barang-medis.edit', $item->id_obat) }}" class="btn btn-warning btn-sm" title="Edit Barang"><i class="bi bi-pencil-square"></i></a>
                                         <form action="{{ route('barang-medis.destroy', $item->id_obat) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus barang ini?');">

@@ -7,7 +7,8 @@ use App\Models\LokasiKlinik;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Auth; // Pastikan Auth di-import
+use Illuminate\Support\Facades\Auth;
+use App\Models\StokHistory;
 
 class BarangMedisController extends Controller
 {
@@ -139,5 +140,22 @@ class BarangMedisController extends Controller
         } catch (\Exception $e) {
             return redirect()->route('barang-medis.index')->with('error', 'Gagal menghapus barang karena masih digunakan di data lain.');
         }
+    }
+
+
+    /**
+     * Menampilkan riwayat mutasi stok untuk suatu barang.
+     */
+    public function history(BarangMedis $barangMedi)
+    {
+        $histories = StokHistory::where('id_barang', $barangMedi->id_obat)
+            ->with('lokasi')
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('barang-medis.history', [
+            'barangMedi' => $barangMedi,
+            'histories' => $histories,
+        ]);
     }
 }

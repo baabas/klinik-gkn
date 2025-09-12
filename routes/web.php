@@ -41,7 +41,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
+
     // Rute logout untuk admin (menggunakan POST untuk keamanan)
     Route::post('/admin/logout', [AdminLoginController::class, 'logout'])->name('admin.logout');
 
@@ -53,6 +53,8 @@ Route::middleware(['auth'])->group(function () {
 
     // --- RUTE BERSAMA (DOKTER & PENGADAAN) ---
     Route::middleware(['role:DOKTER,PENGADAAN'])->group(function () {
+        Route::get('barang-medis/{barang}/riwayat', [BarangMedisController::class, 'history'])
+            ->name('barang-medis.history');
         Route::resource('barang-medis', BarangMedisController::class);
         Route::resource('permintaan', PermintaanBarangController::class);
     });
@@ -77,7 +79,7 @@ Route::middleware(['auth'])->group(function () {
         // Rute Check-up
         Route::get('/pasien/{user:nip}/checkup/create', [CheckupController::class, 'create'])->name('checkup.create');
         Route::post('/pasien/{user:nip}/checkup', [CheckupController::class, 'store'])->name('checkup.store');
-        
+
         // Laporan View
         Route::get('/laporan/harian', [LaporanViewController::class, 'laporanHarian'])->name('laporan.harian');
         Route::get('/laporan/pemakaian-obat', [LaporanViewController::class, 'pemakaianObat'])->name('laporan.pemakaian_obat');
