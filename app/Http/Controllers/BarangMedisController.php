@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 use App\Models\StokHistory;
+use App\Models\StokBarang;
 
 class BarangMedisController extends Controller
 {
@@ -19,7 +20,6 @@ class BarangMedisController extends Controller
     {
         $search = $request->input('search');
 
-        // Ambil ID lokasi untuk GKN 1 dan GKN 2. Jika tidak ditemukan, gunakan 0 agar hasil sum tetap 0.
         $gkn1Id = LokasiKlinik::where('nama_lokasi', 'like', '%GKN 1%')->value('id');
         $gkn2Id = LokasiKlinik::where('nama_lokasi', 'like', '%GKN 2%')->value('id');
 
@@ -47,7 +47,6 @@ class BarangMedisController extends Controller
      */
     public function create()
     {
-        // Hanya Pengadaan yang boleh mengakses halaman ini
         if (!Auth::user()->hasRole('PENGADAAN')) {
             abort(403, 'Anda tidak memiliki hak akses.');
         }
@@ -76,7 +75,6 @@ class BarangMedisController extends Controller
         try {
             $barangBaru = BarangMedis::create($validated);
 
-            // Inisialisasi stok di semua lokasi dengan jumlah 0
             $lokasi = LokasiKlinik::all();
             foreach ($lokasi as $loc) {
                 $barangBaru->stok()->create([
@@ -99,7 +97,6 @@ class BarangMedisController extends Controller
     public function show(BarangMedis $barangMedi)
     {
         $barangMedi->load('stok.lokasi');
-        // return view('barang-medis.show', compact('barangMedi'));
         return "Halaman detail untuk: " . $barangMedi->nama_obat . ". (View belum dibuat)";
     }
 
@@ -108,7 +105,6 @@ class BarangMedisController extends Controller
      */
     public function edit(BarangMedis $barangMedi)
     {
-        // return view('barang-medis.edit', compact('barangMedi'));
         return "Halaman edit untuk: " . $barangMedi->nama_obat . ". (View belum dibuat)";
     }
 
@@ -149,7 +145,7 @@ class BarangMedisController extends Controller
     public function history(BarangMedis $barangMedi)
     {
         $histories = StokHistory::where('id_barang', $barangMedi->id_obat)
-            ->with('lokasi')
+            ->with('lokasi', 'user')
             ->orderByDesc('created_at')
             ->get();
 
@@ -157,5 +153,74 @@ class BarangMedisController extends Controller
             'barangMedi' => $barangMedi,
             'histories' => $histories,
         ]);
+    }
+
+    /**
+     * Memproses distribusi stok antar lokasi.
+     */
+    public function distribusi(Request $request, BarangMedis $barang)
+    {
+        $validated = $request->validate([
+            'lokasi_asal' => 'required|exists:lokasi_klinik,id',
+            'lokasi_tujuan' => 'required|exists:lokasi_klinik,id|different:lokasi_asal',
+            'jumlah' => 'required|integer|min:1',
+        ], [
+            'lokasi_tujuan.different' => 'Lokasi tujuan tidak boleh sama dengan lokasi asal.'
+        ]);
+
+        $jumlahDistribusi = $validated['jumlah'];
+        $idLokasiAsal = $validated['lokasi_asal'];
+        $idLokasiTujuan = $validated['lokasi_tujuan'];
+
+        try {
+            DB::transaction(function () use ($barang, $jumlahDistribusi, $idLokasiAsal, $idLokasiTujuan) {
+                // --- PROSES LOKASI ASAL ---
+                $stokAsal = StokBarang::where('id_barang', $barang->id_obat)
+                    ->where('id_lokasi', $idLokasiAsal)
+                    ->lockForUpdate()
+                    ->first();
+
+                $stokSebelumAsal = $stokAsal->jumlah ?? 0;
+
+                if ($stokSebelumAsal < $jumlahDistribusi) {
+                    throw new \Exception('Stok di lokasi asal tidak mencukupi untuk distribusi.');
+                }
+
+                $stokAsal->decrement('jumlah', $jumlahDistribusi);
+
+                StokHistory::create([
+                    'id_barang' => $barang->id_obat,
+                    'id_lokasi' => $idLokasiAsal,
+                    'perubahan' => -$jumlahDistribusi, // [FIX] Ganti nama kolom & beri nilai negatif
+                    'stok_sebelum' => $stokSebelumAsal, // [FIX] Tambahkan stok sebelum
+                    'stok_sesudah' => $stokAsal->jumlah, // [FIX] Tambahkan stok sesudah
+                    'keterangan' => 'Distribusi ke Lokasi ID ' . $idLokasiTujuan,
+                    'user_id' => auth()->id(),
+                ]);
+
+                // --- PROSES LOKASI TUJUAN ---
+                $stokTujuan = StokBarang::firstOrCreate(
+                    ['id_barang' => $barang->id_obat, 'id_lokasi' => $idLokasiTujuan],
+                    ['jumlah' => 0] // Buat dengan stok 0 jika belum ada
+                );
+
+                $stokSebelumTujuan = $stokTujuan->jumlah;
+                $stokTujuan->increment('jumlah', $jumlahDistribusi);
+
+                StokHistory::create([
+                    'id_barang' => $barang->id_obat,
+                    'id_lokasi' => $idLokasiTujuan,
+                    'perubahan' => $jumlahDistribusi, // [FIX] Ganti nama kolom
+                    'stok_sebelum' => $stokSebelumTujuan, // [FIX] Tambahkan stok sebelum
+                    'stok_sesudah' => $stokTujuan->jumlah, // [FIX] Tambahkan stok sesudah
+                    'keterangan' => 'Distribusi dari Lokasi ID ' . $idLokasiAsal,
+                    'user_id' => auth()->id(),
+                ]);
+            });
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('barang-medis.index')->with('success', 'Distribusi stok berhasil dilakukan.');
     }
 }

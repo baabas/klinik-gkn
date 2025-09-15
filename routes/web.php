@@ -55,6 +55,11 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:DOKTER,PENGADAAN'])->group(function () {
         Route::get('barang-medis/{barang}/riwayat', [BarangMedisController::class, 'history'])
             ->name('barang-medis.history');
+        
+        // [BARU] Route untuk proses distribusi stok
+        Route::put('barang-medis/{barang}/distribusi', [BarangMedisController::class, 'distribusi'])
+            ->name('barang-medis.distribusi');
+            
         Route::resource('barang-medis', BarangMedisController::class);
         Route::resource('permintaan', PermintaanBarangController::class);
     });
