@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Auth;
 
 class LaporanViewController extends Controller
 {
@@ -17,13 +18,13 @@ class LaporanViewController extends Controller
 
         // --- DATA UNTUK LAPORAN PENYAKIT ---
         $daftar_penyakit = DB::table('detail_diagnosa as dd')
-            ->join('daftar_penyakit as dp', 'dd.kode_penyakit', '=', 'dp.kode_penyakit')
+            ->join('daftar_penyakit as dp', 'dd.ICD10', '=', 'dp.ICD10')
             ->join('rekam_medis as rm', 'dd.id_rekam_medis', '=', 'rm.id_rekam_medis')
             ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
-            ->select('dp.kode_penyakit', 'dp.nama_penyakit')->distinct()->orderBy('dp.nama_penyakit')->get();
+            ->select('dp.ICD10', 'dp.nama_penyakit')->distinct()->orderBy('dp.nama_penyakit')->get();
 
         $data_kasus = DB::table('detail_diagnosa as dd')
-            ->join('daftar_penyakit as dp', 'dd.kode_penyakit', '=', 'dp.kode_penyakit')
+            ->join('daftar_penyakit as dp', 'dd.ICD10', '=', 'dp.ICD10')
             ->join('rekam_medis as rm', 'dd.id_rekam_medis', '=', 'rm.id_rekam_medis')
             ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
             ->select('dp.nama_penyakit', DB::raw('DAY(rm.tanggal_kunjungan) as hari'), DB::raw('COUNT(dd.id_detail_diagnosa) as jumlah'))
@@ -35,7 +36,7 @@ class LaporanViewController extends Controller
             ->select('kantor')->distinct()->orderBy('kantor')->pluck('kantor');
 
         $data_kunjungan = DB::table('rekam_medis as rm')
-            ->join('users', 'rm.id_pasien', '=', 'users.id')
+            ->join('users', 'rm.NIP_pasien', '=', 'users.nip')
             ->join('karyawan as k', 'users.nip', '=', 'k.nip')
             ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
             ->select('k.kantor', DB::raw('DAY(rm.tanggal_kunjungan) as hari'), DB::raw('COUNT(rm.id_rekam_medis) as jumlah'))
@@ -44,12 +45,10 @@ class LaporanViewController extends Controller
         return view('laporan.harian', compact('daftar_penyakit', 'data_kasus', 'daftar_kantor', 'data_kunjungan', 'filter'));
     }
 
-
     public function pemakaianObat(Request $request): View
     {
         $filter = $this->getFilterBulanTahun($request);
 
-        // Mengubah 'obat as o' menjadi 'barang_medis as o'
         $daftar_obat = DB::table('resep_obat as ro')
             ->join('barang_medis as o', 'ro.id_obat', '=', 'o.id_obat')
             ->join('rekam_medis as rm', 'ro.id_rekam_medis', '=', 'rm.id_rekam_medis')
@@ -79,12 +78,9 @@ class LaporanViewController extends Controller
             ->groupBy('o.nama_obat', 'minggu_ke')
             ->get()
             ->groupBy('nama_obat');
-        // =======================================================
 
         return view('laporan.pemakaian_obat', compact('daftar_obat', 'data_pemakaian_harian', 'data_pemakaian_mingguan', 'filter'));
     }
-
-
 
     private function getFilterBulanTahun(Request $request): array
     {
