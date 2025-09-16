@@ -95,6 +95,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
         Route::get('/laporan/obat', [LaporanController::class, 'cetakLaporanObat'])->name('laporan.obat');
         Route::get('/laporan/penyakit-kunjungan', [LaporanController::class, 'cetakLaporanPenyakitKunjungan'])->name('laporan.penyakit-kunjungan');
+        
+        // [BARU] Route untuk dokter mengonfirmasi penerimaan barang
+        Route::put('/permintaan/{permintaan}/terima', [PermintaanBarangController::class, 'konfirmasiPenerimaan'])
+            ->name('permintaan.terima');
     });
 
     // --- RUTE KHUSUS PENGADAAN ---

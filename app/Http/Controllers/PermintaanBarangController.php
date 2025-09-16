@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Models\StokBarang;      // [BARU] Tambahkan model ini
+use App\Models\StokHistory;     // [BARU] Tambahkan model ini
 
 class PermintaanBarangController extends Controller
 {
@@ -193,5 +195,58 @@ class PermintaanBarangController extends Controller
     {
         // Untuk menghapus data permintaan
         // (Akan dibuat nanti)
+    }
+
+    /**
+     * [BARU] Untuk Dokter mengonfirmasi penerimaan barang.
+     */
+    public function konfirmasiPenerimaan(PermintaanBarang $permintaan)
+    {
+        // Validasi: hanya permintaan yang disetujui ('APPROVED') yang bisa diproses
+        if ($permintaan->status !== 'APPROVED') {
+            return redirect()->back()->with('error', 'Hanya permintaan yang berstatus DISETUJUI yang dapat dikonfirmasi.');
+        }
+
+        try {
+            DB::transaction(function () use ($permintaan) {
+                $lokasiTujuan = $permintaan->id_lokasi_peminta;
+
+                // Loop melalui setiap item dalam detail permintaan
+                foreach ($permintaan->detail as $detail) {
+                    // Hanya proses item yang memiliki id_barang dan jumlah disetujui > 0
+                    if ($detail->id_barang && $detail->jumlah_disetujui > 0) {
+                        $barangId = $detail->id_barang;
+                        $jumlahDiterima = $detail->jumlah_disetujui;
+
+                        // 1. Tambah stok di lokasi tujuan (lokasi dokter)
+                        $stokTujuan = StokBarang::firstOrCreate(
+                            ['id_barang' => $barangId, 'id_lokasi' => $lokasiTujuan],
+                            ['jumlah' => 0]
+                        );
+                        
+                        $stokSebelum = $stokTujuan->jumlah;
+                        $stokTujuan->increment('jumlah', $jumlahDiterima);
+
+                        // 2. Catat riwayat penambahan stok
+                        StokHistory::create([
+                            'id_barang' => $barangId,
+                            'id_lokasi' => $lokasiTujuan,
+                            'perubahan' => $jumlahDiterima,
+                            'stok_sebelum' => $stokSebelum,
+                            'stok_sesudah' => $stokTujuan->jumlah,
+                            'keterangan' => 'Penerimaan barang dari permintaan ' . $permintaan->kode_permintaan,
+                            'user_id' => Auth::id(),
+                        ]);
+                    }
+                }
+
+                // 3. Update status permintaan menjadi 'COMPLETED' (DITERIMA/SELESAI)
+                $permintaan->update(['status' => 'COMPLETED']);
+            });
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat memproses penerimaan: ' . $e->getMessage());
+        }
+
+        return redirect()->route('permintaan.show', $permintaan->id)->with('success', 'Permintaan barang telah berhasil diselesaikan.');
     }
 }
