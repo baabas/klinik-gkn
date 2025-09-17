@@ -41,9 +41,13 @@
                             <th>Stok GKN 1</th>
                             <th>Stok GKN 2</th>
                             <th>Total Stok</th>
+<<<<<<< HEAD
                             <th>Detail Kemasan</th>
                             <th>Satuan Terkecil</th>
                             <th>Kemasan</th>
+=======
+                            <th>Satuan</th>
+>>>>>>> 0ec244151d1a634672aeac9cccbfe3de9e356e27
                             <th style="width: 220px;">Aksi</th>
                         </tr>
                     </thead>
@@ -61,6 +65,7 @@
                                 <td><strong>{{ (int) ($item->stok_gkn1 ?? 0) }}</strong></td>
                                 <td><strong>{{ (int) ($item->stok_gkn2 ?? 0) }}</strong></td>
                                 <td><strong>{{ (int) $item->stok_sum_jumlah }}</strong></td>
+<<<<<<< HEAD
                                 <td>{{ $item->satuan_terkecil ?? $item->satuan }}</td>
                                 <td>
                                     @if ($item->isi_per_kemasan && $item->satuan_kemasan)
@@ -77,12 +82,18 @@
                                         {{ $item->deskripsi_kemasan }}
                                     </span>
                                 </td>
+=======
+>>>>>>> 0ec244151d1a634672aeac9cccbfe3de9e356e27
                                 <td>{{ $item->satuan }}</td>
                                 <td>
                                     {{-- Tombol yang bisa diakses semua role terkait (Dokter & Pengadaan) --}}
                                     <a href="{{ route('barang-medis.show', $item->id_obat) }}" class="btn btn-info btn-sm" title="Lihat Detail Stok"><i class="bi bi-eye"></i></a>
                                     <a href="{{ route('barang-medis.history', $item->id_obat) }}" class="btn btn-secondary btn-sm" title="Riwayat Stok"><i class="bi bi-clock-history"></i></a>
+<<<<<<< HEAD
 
+=======
+                                    
+>>>>>>> 0ec244151d1a634672aeac9cccbfe3de9e356e27
                                     {{-- Tombol Distribusi sekarang bisa diakses oleh Dokter dan Pengadaan --}}
                                     @if(Auth::user()->hasRole('DOKTER') || Auth::user()->hasRole('PENGADAAN'))
                                         <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#distribusiModal-{{ $item->id_obat }}" title="Distribusi Stok">
@@ -208,4 +219,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+<<<<<<< HEAD
 @endpush
+=======
+@endpush
+>>>>>>> 0ec244151d1a634672aeac9cccbfe3de9e356e27
