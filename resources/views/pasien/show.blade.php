@@ -111,7 +111,7 @@
                         <tbody>
                             @forelse ($user->rekamMedis as $rekam)
                                 <tr>
-                                    <td>{{ \Carbon\Carbon::parse($rekam->tanggal_kunjungan)->timezone(config('app.timezone'))->translatedFormat('d M Y, H:i') }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($rekam->created_at)->timezone(config('app.timezone'))->translatedFormat('d M Y, H:i') }}</td>
                                     <td>
                                         @if($rekam->detailDiagnosa->isNotEmpty())
                                             <span class="section-title">Diagnosa:</span>
@@ -164,7 +164,7 @@
                         <tbody>
                             @forelse ($user->checkups as $checkup)
                                 <tr>
-                                    <td>{{ \Carbon\Carbon::parse($checkup->tanggal_pemeriksaan)->translatedFormat('d M Y') }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($checkup->created_at)->timezone(config('app.timezone'))->translatedFormat('d M Y, H:i') }}</td>
                                     <td>
                                         <ul class="list-unstyled mb-0 small">
                                             <li>Tekanan Darah: <strong>{{ $checkup->tekanan_darah ? $checkup->tekanan_darah . ' mmHg' : '-' }}</strong></li>

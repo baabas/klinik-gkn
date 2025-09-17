@@ -52,11 +52,7 @@
                         <i class="bi bi-inbox-fill"></i> Proses Permintaan
                     </a>
                 </li>
-                 <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center gap-2 {{ request()->routeIs('distribusi.*') ? 'active' : '' }}" href="{{ route('distribusi.index') }}">
-                        <i class="bi bi-truck"></i> Distribusi Barang
-                    </a>
-                </li>
+                {{-- ITEM MENU 'DISTRIBUSI BARANG' YANG MENYEBABKAN ERROR TELAH DIHAPUS DARI SINI --}}
             @endif
 
 
@@ -66,8 +62,8 @@
             @if(Auth::user()->hasRole('PASIEN'))
                  <li class="nav-item">
                     <a class="nav-link d-flex align-items-center gap-2 {{ request()->routeIs('pasien.my_card') ? 'active' : '' }}" href="{{ route('pasien.my_card') }}">
-                       <i class="bi bi-person-vcard-fill"></i>
-                       Kartu Pasien Saya
+                        <i class="bi bi-person-vcard-fill"></i>
+                        Kartu Pasien Saya
                     </a>
                 </li>
             @endif

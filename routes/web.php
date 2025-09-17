@@ -55,6 +55,11 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:DOKTER,PENGADAAN'])->group(function () {
         Route::get('barang-medis/{barang}/riwayat', [BarangMedisController::class, 'history'])
             ->name('barang-medis.history');
+        
+        // [BARU] Route untuk proses distribusi stok
+        Route::put('barang-medis/{barang}/distribusi', [BarangMedisController::class, 'distribusi'])
+            ->name('barang-medis.distribusi');
+            
         Route::resource('barang-medis', BarangMedisController::class);
         Route::resource('permintaan', PermintaanBarangController::class);
     });
@@ -90,6 +95,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
         Route::get('/laporan/obat', [LaporanController::class, 'cetakLaporanObat'])->name('laporan.obat');
         Route::get('/laporan/penyakit-kunjungan', [LaporanController::class, 'cetakLaporanPenyakitKunjungan'])->name('laporan.penyakit-kunjungan');
+        
+        // [BARU] Route untuk dokter mengonfirmasi penerimaan barang
+        Route::put('/permintaan/{permintaan}/terima', [PermintaanBarangController::class, 'konfirmasiPenerimaan'])
+            ->name('permintaan.terima');
     });
 
     // --- RUTE KHUSUS PENGADAAN ---

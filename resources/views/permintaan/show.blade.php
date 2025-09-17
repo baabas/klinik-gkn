@@ -1,5 +1,7 @@
 @extends('layouts.sidebar-layout')
 
+@section('title', 'Detail Permintaan ' . $permintaan->kode_permintaan)
+
 @section('content')
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">Detail Permintaan Barang</h1>
@@ -42,7 +44,7 @@
                                     <span class="badge bg-info">DISETUJUI</span>
                                     @break
                                 @case('COMPLETED')
-                                    <span class="badge bg-success">SELESAI</span>
+                                    <span class="badge bg-success">DITERIMA</span>
                                     @break
                                 @case('REJECTED')
                                     <span class="badge bg-danger">DITOLAK</span>
@@ -56,6 +58,22 @@
                     </dl>
                 </div>
             </div>
+
+            {{-- [BARU] Tombol Aksi Konfirmasi Penerimaan untuk Dokter --}}
+            @if(Auth::user()->hasRole('DOKTER') && $permintaan->status == 'APPROVED')
+                <hr>
+                <div class="mt-3 text-center">
+                    <p class="mb-2">Barang sudah diterima di lokasi Anda? Klik tombol di bawah untuk menyelesaikan permintaan ini.</p>
+                    <form action="{{ route('permintaan.terima', $permintaan->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menyelesaikan permintaan ini? Stok akan diperbarui secara otomatis.');">
+                        @csrf
+                        @method('PUT')
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle-fill me-2"></i> Konfirmasi Barang Diterima
+                        </button>
+                    </form>
+                </div>
+            @endif
+
         </div>
     </div>
 
@@ -85,6 +103,12 @@
                                     {{-- Cek apakah ini barang baru atau barang terdaftar --}}
                                     @if ($item->id_barang)
                                         {{ $item->barangMedis->nama_obat }}
+                                        <div class="small text-muted">
+                                            <div>Satuan terkecil: {{ $item->barangMedis->satuan_terkecil ?? $item->barangMedis->satuan }}</div>
+                                            @if($item->barangMedis->isi_per_kemasan && $item->barangMedis->satuan_kemasan)
+                                                <div>1 {{ $item->barangMedis->satuan_kemasan }} = {{ $item->barangMedis->isi_per_kemasan }} {{ $item->barangMedis->satuan_terkecil ?? $item->barangMedis->satuan }}</div>
+                                            @endif
+                                        </div>
                                     @else
                                         {{ $item->nama_barang_baru }}
                                         <span class="badge bg-success">Request Baru</span>
@@ -99,15 +123,21 @@
                                 </td>
                                  <td>
                                     @if ($item->id_barang)
-                                        {{ $item->barangMedis->satuan }}
+                                        {{ $item->barangMedis->satuan_terkecil ?? $item->barangMedis->satuan }}
                                     @else
                                         {{ $item->satuan_barang_baru }}
                                     @endif
                                 </td>
                                 <td class="text-center">{{ $item->jumlah_diminta }}</td>
                                 <td class="text-center">
-                                    {{-- Nanti akan diisi oleh Pengadaan --}}
-                                    {{ $item->jumlah_disetujui ?? '-' }}
+                                    @if(!is_null($item->jumlah_disetujui))
+                                        {{ $item->jumlah_disetujui }} {{ $item->id_barang ? ($item->barangMedis->satuan_terkecil ?? $item->barangMedis->satuan) : ($item->satuan_barang_baru ?? '') }}
+                                        @if($item->tipe_jumlah_disetujui === 'KEMASAN' && $item->jumlah_kemasan_disetujui)
+                                            <div class="small text-muted">({{ $item->jumlah_kemasan_disetujui }} {{ $item->barangMedis->satuan_kemasan ?? 'kemasan' }})</div>
+                                        @endif
+                                    @else
+                                        -
+                                    @endif
                                 </td>
                             </tr>
                         @empty
@@ -119,10 +149,5 @@
                 </table>
             </div>
         </div>
-        {{-- Nanti di sini kita tambahkan tombol Aksi untuk Pengadaan --}}
-        {{-- <div class="card-footer text-end">
-            <button class="btn btn-success">Setujui</button>
-            <button class="btn btn-danger">Tolak</button>
-        </div> --}}
     </div>
 @endsection

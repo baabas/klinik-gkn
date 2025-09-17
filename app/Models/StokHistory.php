@@ -16,6 +16,9 @@ class StokHistory extends Model
         'id_lokasi',
         'perubahan',
         'keterangan',
+        'stok_sebelum',
+        'stok_sesudah',
+        'user_id',
     ];
 
     /**

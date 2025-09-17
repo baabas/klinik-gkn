@@ -34,6 +34,9 @@ class BarangMedis extends Model
         'tipe', // Kolom baru kita
         'satuan',
         'kemasan',
+        'isi_per_kemasan',
+        'unit_kemasan',
+        'satuan_terkecil',
     ];
 
     // --- RELASI ---
@@ -44,5 +47,17 @@ class BarangMedis extends Model
     public function stok()
     {
         return $this->hasMany(StokBarang::class, 'id_barang', 'id_obat');
+    }
+
+     /**
+     * Format teks kemasan: "1 unit = N satuan kecil".
+     */
+    public function getDeskripsiKemasanAttribute(): string
+    {
+        $unitKemasan = $this->unit_kemasan ?: $this->kemasan ?: $this->satuan;
+        $satuanTerkecil = $this->satuan_terkecil ?: $this->satuan;
+        $isiPerKemasan = (int) ($this->isi_per_kemasan ?? 1);
+
+        return sprintf('1 %s = %d %s', $unitKemasan, max(1, $isiPerKemasan), $satuanTerkecil);
     }
 }

@@ -1,126 +1,204 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <title>Laporan Penyakit dan Kunjungan</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Laporan Penyakit dan Kunjungan - {{ $filter['string'] }}</title>
     <style>
-        body { font-family: sans-serif; font-size: 8px; }
-        .header { text-align: center; margin-bottom: 15px; }
-        h4, h5 { margin: 0; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px;}
-        th, td { border: 1px solid black; padding: 4px; text-align: center; }
-        th { background-color: #f2f2f2; }
-        .text-left { text-align: left; }
-        @page { margin: 20px 25px; }
+        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10px; }
+        .table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .table th, .table td { border: 1px solid #000; padding: 4px; text-align: center; }
+        .text-start { text-align: left; }
+        .fw-bold { font-weight: bold; }
+        .bg-light { background-color: #f8f9fa; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h3, .header h4 { margin: 0; }
+        /* Page break untuk memastikan tabel kedua tidak terpotong */
+        .page-break { page-break-after: always; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h4>LAPORAN JENIS PENYAKIT DAN KUNJUNGAN</h4>
-        <h5>BULAN {{ strtoupper($filter['nama_bulan']) }}</h5>
+        <h3>LAPORAN PENYAKIT & KUNJUNGAN PASIEN</h3>
+        <h4>KLINIK GKN-1&2</h4>
+        <h4>BULAN: {{ strtoupper($filter['nama_bulan']) }}</h4>
     </div>
 
-    {{-- HALAMAN 1: TANGGAL 1 - 16 --}}
-    <strong>A. LAPORAN PENYAKIT TANGGAL 1-16</strong>
-    <table>
-        <thead>
+    {{-- ============================================= --}}
+    {{-- BAGIAN LAPORAN PENYAKIT --}}
+    {{-- ============================================= --}}
+    <p class="fw-bold">LAPORAN PENYAKIT</p>
+    
+    {{-- [BARU] Tabel Penyakit untuk Tanggal 1-16 --}}
+    <table class="table">
+        <thead class="bg-light">
             <tr>
-                <th>NO</th>
-                <th class="text-left">NAMA PENYAKIT</th>
-                <th>ICD 10</th>
-                @for ($i = 1; $i <= 16; $i++) <th>{{ $i }}</th> @endfor
+                <th rowspan="2">No.</th>
+                <th rowspan="2" style="width: 80px;">Kode ICD10</th>
+                <th rowspan="2" class="text-start" style="width: 200px;">Nama Penyakit</th>
+                <th colspan="16">Tanggal</th>
             </tr>
-        </thead>
-        <tbody>
-            @foreach ($daftar_penyakit as $index => $penyakit)
             <tr>
-                <td>{{ $index + 1 }}</td>
-                <td class="text-left">{{ $penyakit->nama_penyakit }}</td>
-                <td>{{ $penyakit->kode_penyakit }}</td>
                 @for ($hari = 1; $hari <= 16; $hari++)
-                    @php $jumlah = $data_kasus->get($penyakit->nama_penyakit, collect())->where('hari', $hari)->sum('jumlah'); @endphp
-                    <td>{{ $jumlah > 0 ? $jumlah : '' }}</td>
+                    <th>{{ $hari }}</th>
                 @endfor
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
-
-    <strong>B. LAPORAN KUNJUNGAN TANGGAL 1-16</strong>
-    <table>
-         <thead>
-            <tr>
-                <th class="text-left">KUNJUNGAN</th>
-                @for ($i = 1; $i <= 16; $i++) <th>{{ $i }}</th> @endfor
             </tr>
         </thead>
         <tbody>
-            @foreach ($daftar_kantor as $kantor)
+            @forelse ($daftar_penyakit as $penyakit)
             <tr>
-                <td class="text-left">{{ $kantor }}</td>
+                <td>{{ $loop->iteration }}</td>
+                <td>{{ $penyakit->ICD10 }}</td>
+                <td class="text-start">{{ $penyakit->nama_penyakit }}</td>
+                @php
+                    $kasus_penyakit = $data_kasus->get($penyakit->nama_penyakit);
+                @endphp
                 @for ($hari = 1; $hari <= 16; $hari++)
-                    @php $jumlah = $data_kunjungan->get($kantor, collect())->where('hari', $hari)->sum('jumlah'); @endphp
+                    @php
+                        $jumlah = $kasus_penyakit ? $kasus_penyakit->where('hari', $hari)->sum('jumlah') : 0;
+                    @endphp
                     <td>{{ $jumlah > 0 ? $jumlah : '' }}</td>
                 @endfor
             </tr>
-            @endforeach
+            @empty
+            <tr>
+                <td colspan="19">Tidak ada data.</td>
+            </tr>
+            @endforelse
         </tbody>
     </table>
 
-    <div style="page-break-after: always;"></div>
-
-    {{-- HALAMAN 2: TANGGAL 17 - 31 --}}
-    <strong>C. LAPORAN PENYAKIT TANGGAL 17-{{$filter['jumlah_hari']}}</strong>
-    <table>
-        <thead>
+    {{-- [BARU] Tabel Penyakit untuk Tanggal 17-31 --}}
+    @if ($filter['jumlah_hari'] > 16)
+    <table class="table">
+        <thead class="bg-light">
             <tr>
-                <th>NO</th>
-                <th class="text-left">NAMA PENYAKIT</th>
-                <th>ICD 10</th>
-                @for ($i = 17; $i <= $filter['jumlah_hari']; $i++) <th>{{ $i }}</th> @endfor
-                <th>JUMLAH</th>
+                <th rowspan="2">No.</th>
+                <th rowspan="2" style="width: 80px;">Kode ICD10</th>
+                <th rowspan="2" class="text-start" style="width: 200px;">Nama Penyakit</th>
+                <th colspan="{{ $filter['jumlah_hari'] - 16 }}">Tanggal</th>
+                <th rowspan="2">Jumlah Total</th>
+            </tr>
+            <tr>
+                @for ($hari = 17; $hari <= $filter['jumlah_hari']; $hari++)
+                    <th>{{ $hari }}</th>
+                @endfor
             </tr>
         </thead>
         <tbody>
-            @foreach ($daftar_penyakit as $index => $penyakit)
+            @forelse ($daftar_penyakit as $penyakit)
             <tr>
-                <td>{{ $index + 1 }}</td>
-                <td class="text-left">{{ $penyakit->nama_penyakit }}</td>
-                <td>{{ $penyakit->kode_penyakit }}</td>
-                @php $total_bulanan = 0; @endphp
+                <td>{{ $loop->iteration }}</td>
+                <td>{{ $penyakit->ICD10 }}</td>
+                <td class="text-start">{{ $penyakit->nama_penyakit }}</td>
+                @php
+                    $total_bulanan = 0;
+                    $kasus_penyakit = $data_kasus->get($penyakit->nama_penyakit);
+                @endphp
                 @for ($hari = 17; $hari <= $filter['jumlah_hari']; $hari++)
-                    @php $jumlah = $data_kasus->get($penyakit->nama_penyakit, collect())->where('hari', $hari)->sum('jumlah'); @endphp
+                    @php
+                        $jumlah = $kasus_penyakit ? $kasus_penyakit->where('hari', $hari)->sum('jumlah') : 0;
+                    @endphp
                     <td>{{ $jumlah > 0 ? $jumlah : '' }}</td>
                 @endfor
-                @php $total_bulanan = $data_kasus->get($penyakit->nama_penyakit, collect())->sum('jumlah'); @endphp
-                <td>{{ $total_bulanan > 0 ? $total_bulanan : '' }}</td>
+                {{-- Hitung total bulanan dari semua tanggal --}}
+                @php
+                    $total_bulanan = $kasus_penyakit ? $kasus_penyakit->sum('jumlah') : 0;
+                @endphp
+                <td class="fw-bold">{{ $total_bulanan > 0 ? $total_bulanan : '' }}</td>
             </tr>
-            @endforeach
+            @empty
+            <tr>
+                <td colspan="{{ ($filter['jumlah_hari'] - 16) + 4 }}">Tidak ada data.</td>
+            </tr>
+            @endforelse
         </tbody>
     </table>
+    @endif
 
-    <strong>D. LAPORAN KUNJUNGAN TANGGAL 17-{{$filter['jumlah_hari']}}</strong>
-     <table>
-         <thead>
+    <div class="page-break"></div>
+
+    {{-- ============================================= --}}
+    {{-- BAGIAN LAPORAN KUNJUNGAN --}}
+    {{-- ============================================= --}}
+    <p class="fw-bold">LAPORAN KUNJUNGAN PER KANTOR</p>
+
+    {{-- [BARU] Tabel Kunjungan untuk Tanggal 1-16 --}}
+    <table class="table">
+        <thead class="bg-light">
             <tr>
-                <th class="text-left">KUNJUNGAN</th>
-                @for ($i = 17; $i <= $filter['jumlah_hari']; $i++) <th>{{ $i }}</th> @endfor
-                <th>JUMLAH</th>
+                <th rowspan="2" class="text-start" style="width: 200px;">Kantor</th>
+                <th colspan="16">Tanggal</th>
+            </tr>
+            <tr>
+                @for ($i = 1; $i <= 16; $i++)
+                    <th>{{ $i }}</th>
+                @endfor
             </tr>
         </thead>
         <tbody>
-            @foreach ($daftar_kantor as $kantor)
-            <tr>
-                <td class="text-left">{{ $kantor }}</td>
-                @for ($hari = 17; $hari <= $filter['jumlah_hari']; $hari++)
-                    @php $jumlah = $data_kunjungan->get($kantor, collect())->where('hari', $hari)->sum('jumlah'); @endphp
-                    <td>{{ $jumlah > 0 ? $jumlah : '' }}</td>
-                @endfor
-                @php $total_bulanan = $data_kunjungan->get($kantor, collect())->sum('jumlah'); @endphp
-                <td>{{ $total_bulanan > 0 ? $total_bulanan : '' }}</td>
-            </tr>
-            @endforeach
+            @forelse ($daftar_kantor as $kantor)
+                @php
+                    $kunjungan_kantor = $data_kunjungan->get($kantor);
+                @endphp
+                <tr>
+                    <td class="text-start">{{ $kantor }}</td>
+                    @for ($hari = 1; $hari <= 16; $hari++)
+                        @php
+                            $jumlah = $kunjungan_kantor ? $kunjungan_kantor->where('hari', $hari)->sum('jumlah') : 0;
+                        @endphp
+                        <td>{{ $jumlah > 0 ? $jumlah : '' }}</td>
+                    @endfor
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="17">Tidak ada data.</td>
+                </tr>
+            @endforelse
         </tbody>
     </table>
 
+    {{-- [BARU] Tabel Kunjungan untuk Tanggal 17-31 --}}
+     @if ($filter['jumlah_hari'] > 16)
+    <table class="table">
+        <thead class="bg-light">
+            <tr>
+                <th rowspan="2" class="text-start" style="width: 200px;">Kantor</th>
+                <th colspan="{{ $filter['jumlah_hari'] - 16 }}">Tanggal</th>
+                <th rowspan="2">Jumlah Total</th>
+            </tr>
+            <tr>
+                @for ($i = 17; $i <= $filter['jumlah_hari']; $i++)
+                    <th>{{ $i }}</th>
+                @endfor
+            </tr>
+        </thead>
+        <tbody>
+            @forelse ($daftar_kantor as $kantor)
+                @php
+                    $kunjungan_kantor = $data_kunjungan->get($kantor);
+                    $total_bulanan = 0;
+                @endphp
+                <tr>
+                    <td class="text-start">{{ $kantor }}</td>
+                    @for ($hari = 17; $hari <= $filter['jumlah_hari']; $hari++)
+                        @php
+                            $jumlah = $kunjungan_kantor ? $kunjungan_kantor->where('hari', $hari)->sum('jumlah') : 0;
+                        @endphp
+                        <td>{{ $jumlah > 0 ? $jumlah : '' }}</td>
+                    @endfor
+                    @php
+                         $total_bulanan = $kunjungan_kantor ? $kunjungan_kantor->sum('jumlah') : 0;
+                    @endphp
+                    <td class="fw-bold">{{ $total_bulanan > 0 ? $total_bulanan : '' }}</td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="{{ ($filter['jumlah_hari'] - 16) + 3 }}">Tidak ada data.</td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+     @endif
 </body>
 </html>

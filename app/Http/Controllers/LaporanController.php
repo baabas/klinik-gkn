@@ -8,28 +8,18 @@ use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 
-
-
-
 class LaporanController extends Controller
 {
-    /**
-     * Menampilkan halaman utama untuk memilih jenis laporan.
-     */
     public function index(): View
     {
         return view('laporan.index');
     }
 
-    /**
-     * Membuat dan men-download laporan pemakaian obat.
-     */
     public function cetakLaporanObat(Request $request)
     {
         $filter = $this->getFilterBulanTahun($request);
-         $lokasiId = Auth::user()->id_lokasi;
+        $lokasiId = Auth::user()->id_lokasi;
 
-        // Data Daftar Obat
         $daftar_obat = DB::table('resep_obat as ro')
             ->join('barang_medis as o', 'ro.id_obat', '=', 'o.id_obat')
             ->join('rekam_medis as rm', 'ro.id_rekam_medis', '=', 'rm.id_rekam_medis')
@@ -40,7 +30,6 @@ class LaporanController extends Controller
             ->select('o.nama_obat')
             ->distinct()->orderBy('o.nama_obat')->get();
 
-        // Data Stok Obat
         $stok_obat = DB::table('barang_medis as bm')
             ->leftJoin('stok_barang as sb', function ($join) use ($lokasiId) {
                 $join->on('bm.id_obat', '=', 'sb.id_barang')
@@ -50,7 +39,6 @@ class LaporanController extends Controller
             ->groupBy('bm.nama_obat', 'sb.id_lokasi')
             ->get()->keyBy('nama_obat');
 
-        // Data Pemakaian Mingguan
         $data_pemakaian_mingguan = DB::table('resep_obat as ro')
             ->join('barang_medis as o', 'ro.id_obat', '=', 'o.id_obat')
             ->join('rekam_medis as rm', 'ro.id_rekam_medis', '=', 'rm.id_rekam_medis')
@@ -61,7 +49,6 @@ class LaporanController extends Controller
             ->select('o.nama_obat', DB::raw("CASE WHEN DAY(rm.tanggal_kunjungan) BETWEEN 1 AND 7 THEN 1 WHEN DAY(rm.tanggal_kunjungan) BETWEEN 8 AND 14 THEN 2 WHEN DAY(rm.tanggal_kunjungan) BETWEEN 15 AND 21 THEN 3 WHEN DAY(rm.tanggal_kunjungan) BETWEEN 22 AND 28 THEN 4 ELSE 5 END as minggu_ke"), DB::raw('SUM(ro.jumlah) as jumlah'))
             ->groupBy('o.nama_obat', 'minggu_ke', 'sb.id_lokasi')->get()->groupBy('nama_obat');
 
-        // ================== PENAMBAHAN QUERY HARIAN ==================
         $data_pemakaian_harian = DB::table('resep_obat as ro')
             ->join('barang_medis as o', 'ro.id_obat', '=', 'o.id_obat')
             ->join('rekam_medis as rm', 'ro.id_rekam_medis', '=', 'rm.id_rekam_medis')
@@ -73,48 +60,42 @@ class LaporanController extends Controller
             ->groupBy('o.nama_obat', 'hari')
             ->get()
             ->groupBy('nama_obat');
-        // =============================================================
 
         $pdf = Pdf::loadView('laporan.pdf_obat', [
             'daftar_obat' => $daftar_obat,
             'data_pemakaian_mingguan' => $data_pemakaian_mingguan,
-            'data_pemakaian_harian' => $data_pemakaian_harian, // <-- Kirim data harian ke view
+            'data_pemakaian_harian' => $data_pemakaian_harian,
             'stok_obat' => $stok_obat,
-            'filter' => $filter, // <-- Kirim data filter ke view
-            'lokasiId' => $lokasiId // <-- Kirim data filter ke view
+            'filter' => $filter,
+            'lokasiId' => $lokasiId
         ])->setPaper('a4', 'landscape');
 
         return $pdf->download('laporan-pemakaian-obat-'.$filter['string'].'.pdf');
     }
 
-    /**
-     * Membuat dan men-download laporan penyakit dan kunjungan.
-     */
     public function cetakLaporanPenyakitKunjungan(Request $request)
     {
         $filter = $this->getFilterBulanTahun($request);
 
-        // Data Penyakit
         $daftar_penyakit = DB::table('detail_diagnosa as dd')
-            ->join('daftar_penyakit as dp', 'dd.kode_penyakit', '=', 'dp.kode_penyakit')
+            ->join('daftar_penyakit as dp', 'dd.ICD10', '=', 'dp.ICD10')
             ->join('rekam_medis as rm', 'dd.id_rekam_medis', '=', 'rm.id_rekam_medis')
             ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
-            ->select('dp.kode_penyakit', 'dp.nama_penyakit')->distinct()->orderBy('dp.nama_penyakit')->get();
+            ->select('dp.ICD10', 'dp.nama_penyakit')->distinct()->orderBy('dp.nama_penyakit')->get();
 
         $data_kasus = DB::table('detail_diagnosa as dd')
-            ->join('daftar_penyakit as dp', 'dd.kode_penyakit', '=', 'dp.kode_penyakit')
+            ->join('daftar_penyakit as dp', 'dd.ICD10', '=', 'dp.ICD10')
             ->join('rekam_medis as rm', 'dd.id_rekam_medis', '=', 'rm.id_rekam_medis')
             ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
             ->select('dp.nama_penyakit', DB::raw('DAY(rm.tanggal_kunjungan) as hari'), DB::raw('COUNT(dd.id_detail_diagnosa) as jumlah'))
             ->groupBy('dp.nama_penyakit', 'hari')->get()->groupBy('nama_penyakit');
 
-        // Data Kunjungan
         $daftar_kantor = DB::table('karyawan')
             ->whereNotNull('kantor')->where('kantor', '!=', '')
             ->select('kantor')->distinct()->orderBy('kantor')->pluck('kantor');
 
         $data_kunjungan = DB::table('rekam_medis as rm')
-            ->join('users', 'rm.id_pasien', '=', 'users.id')
+            ->join('users', 'rm.NIP_pasien', '=', 'users.nip')
             ->join('karyawan as k', 'users.nip', '=', 'k.nip')
             ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
             ->select('k.kantor', DB::raw('DAY(rm.tanggal_kunjungan) as hari'), DB::raw('COUNT(rm.id_rekam_medis) as jumlah'))

@@ -36,7 +36,7 @@
                             <tr>
                                 <th>Nama Barang</th>
                                 <th class="text-center">Jumlah Diminta</th>
-                                <th class="text-center" style="width: 20%;">Jumlah Disetujui</th>
+                                <th class="text-center" style="width: 22%;">Jumlah Disetujui</th>
                                 <th class="text-center">Keterangan</th>
                             </tr>
                         </thead>
@@ -47,6 +47,12 @@
                                         <input type="hidden" name="detail[{{ $index }}][id]" value="{{ $item->id }}">
                                         @if ($item->barangMedis)
                                             <strong>{{ $item->barangMedis->nama_obat }}</strong>
+                                            <div class="small text-muted">
+                                                <div>Satuan terkecil: {{ $item->barangMedis->satuan_terkecil ?? $item->barangMedis->satuan }}</div>
+                                                @if($item->barangMedis->isi_per_kemasan && $item->barangMedis->satuan_kemasan)
+                                                    <div>1 {{ $item->barangMedis->satuan_kemasan }} = {{ $item->barangMedis->isi_per_kemasan }} {{ $item->barangMedis->satuan_terkecil ?? $item->barangMedis->satuan }}</div>
+                                                @endif
+                                            </div>
                                         @else
                                             <strong>{{ $item->nama_barang_baru }}</strong>
                                         @endif
@@ -56,7 +62,25 @@
                                         @if($item->nama_barang_baru)
                                             <small class="text-muted fst-italic">Tambahkan ke master terlebih dahulu</small>
                                         @else
-                                            <input type="number" name="detail[{{ $index }}][jumlah_disetujui]" class="form-control form-control-sm text-center" value="{{ old('detail.'.$index.'.jumlah_disetujui', $item->jumlah_diminta) }}" min="0">
+                                            @php
+                                                $defaultTipe = $item->tipe_jumlah_disetujui ?? 'SATUAN';
+                                                $defaultJumlah = $defaultTipe === 'KEMASAN'
+                                                    ? ($item->jumlah_kemasan_disetujui ?? $item->jumlah_disetujui)
+                                                    : ($item->jumlah_disetujui ?? $item->jumlah_diminta);
+                                            @endphp
+                                            <div class="d-flex flex-column gap-1">
+                                                <input type="number" name="detail[{{ $index }}][jumlah_disetujui]" class="form-control form-control-sm text-center" value="{{ old('detail.'.$index.'.jumlah_disetujui', $defaultJumlah) }}" min="0">
+                                                <select name="detail[{{ $index }}][tipe_jumlah_disetujui]" class="form-select form-select-sm">
+                                                    @php
+                                                        $selectedTipe = old('detail.'.$index.'.tipe_jumlah_disetujui', $defaultTipe);
+                                                    @endphp
+                                                    <option value="SATUAN" {{ $selectedTipe === 'SATUAN' ? 'selected' : '' }}>Satuan terkecil</option>
+                                                    <option value="KEMASAN" {{ $selectedTipe === 'KEMASAN' ? 'selected' : '' }}>Kemasan</option>
+                                                </select>
+                                                @if(($item->barangMedis->isi_per_kemasan ?? null) && ($item->barangMedis->satuan_kemasan ?? null))
+                                                    <small class="text-muted">Gunakan opsi <strong>Kemasan</strong> jika ingin menyetujui dalam {{ strtolower($item->barangMedis->satuan_kemasan) }}.</small>
+                                                @endif
+                                            </div>
                                         @endif
                                     </td>
                                     <td class="text-center">

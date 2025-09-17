@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\BarangMedis;
 use App\Models\PermintaanBarang;
 use Illuminate\Http\Request;
+use App\Models\DetailPermintaanBarang;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Models\StokBarang;
+use App\Models\StokHistory;
 
 class PermintaanBarangController extends Controller
 {
@@ -158,6 +161,7 @@ class PermintaanBarangController extends Controller
 
             $request->validate([
                 'detail.*.jumlah_disetujui' => 'nullable|integer|min:0',
+                'detail.*.tipe_jumlah_disetujui' => 'nullable|in:SATUAN,KEMASAN',
                 'action' => 'required|in:APPROVED,REJECTED'
             ]);
 
@@ -166,9 +170,34 @@ class PermintaanBarangController extends Controller
                 // Update jumlah disetujui untuk setiap item detail
                 if($request->has('detail')) {
                     foreach($request->detail as $itemData) {
-                        DB::table('detail_permintaan_barang')
-                            ->where('id', $itemData['id'])
-                            ->update(['jumlah_disetujui' => $itemData['jumlah_disetujui'] ?? null]);
+                        $detailModel = DetailPermintaanBarang::with('barangMedis')->find($itemData['id'] ?? null);
+
+                        if (!$detailModel) {
+                            continue;
+                        }
+
+                        $jumlahInput = $itemData['jumlah_disetujui'] ?? null;
+                        $jumlahInput = ($jumlahInput === '' || $jumlahInput === null) ? null : (int) $jumlahInput;
+
+                        $tipeInput = $itemData['tipe_jumlah_disetujui'] ?? 'SATUAN';
+                        if (!in_array($tipeInput, ['SATUAN', 'KEMASAN'], true)) {
+                            $tipeInput = 'SATUAN';
+                        }
+
+                        $jumlahSatuan = $jumlahInput;
+                        $jumlahKemasan = null;
+
+                        if ($jumlahInput !== null && $tipeInput === 'KEMASAN' && $detailModel->barangMedis) {
+                            $isiPerKemasan = max(1, (int) ($detailModel->barangMedis->isi_per_kemasan ?? 1));
+                            $jumlahKemasan = $jumlahInput;
+                            $jumlahSatuan = $jumlahKemasan * $isiPerKemasan;
+                        }
+
+                        $detailModel->update([
+                            'jumlah_disetujui' => $jumlahSatuan,
+                            'tipe_jumlah_disetujui' => $tipeInput,
+                            'jumlah_kemasan_disetujui' => $jumlahKemasan,
+                        ]);
                     }
                 }
 
@@ -193,5 +222,74 @@ class PermintaanBarangController extends Controller
     {
         // Untuk menghapus data permintaan
         // (Akan dibuat nanti)
+    }
+
+    /**
+     * [BARU] Untuk Dokter mengonfirmasi penerimaan barang.
+     */
+    public function konfirmasiPenerimaan(PermintaanBarang $permintaan)
+    {
+        // Validasi: hanya permintaan yang disetujui ('APPROVED') yang bisa diproses
+        if ($permintaan->status !== 'APPROVED') {
+            return redirect()->back()->with('error', 'Hanya permintaan yang berstatus DISETUJUI yang dapat dikonfirmasi.');
+        }
+
+        $permintaan->loadMissing('detail.barangMedis');
+
+        try {
+            DB::transaction(function () use ($permintaan) {
+                $lokasiTujuan = $permintaan->id_lokasi_peminta;
+
+                // Loop melalui setiap item dalam detail permintaan
+                foreach ($permintaan->detail as $detail) {
+                    // Hanya proses item yang memiliki id_barang dan jumlah disetujui > 0
+                    if ($detail->id_barang && $detail->jumlah_disetujui > 0) {
+                        $barangId = $detail->id_barang;
+                        $jumlahDiterima = (int) $detail->jumlah_disetujui;
+                        $keteranganTambahan = '';
+
+                        if ($detail->tipe_jumlah_disetujui === 'KEMASAN') {
+                            $jumlahKemasan = $detail->jumlah_kemasan_disetujui ?? $detail->jumlah_disetujui;
+                            $barangMedis = $detail->barangMedis;
+                            $isiPerKemasan = $barangMedis && $barangMedis->isi_per_kemasan ? (int) $barangMedis->isi_per_kemasan : 1;
+                            $isiPerKemasan = max(1, $isiPerKemasan);
+                            $jumlahDiterima = (int) $jumlahKemasan * $isiPerKemasan;
+
+                            if ($jumlahKemasan) {
+                                $satuanKemasan = $barangMedis->satuan_kemasan ?? 'kemasan';
+                                $satuanTerkecil = $barangMedis->satuan_terkecil ?? $barangMedis->satuan;
+                                $keteranganTambahan = sprintf(' (%d %s x %d %s)', $jumlahKemasan, $satuanKemasan, $isiPerKemasan, $satuanTerkecil);
+                            }
+                        }
+                        // 1. Tambah stok di lokasi tujuan (lokasi dokter)
+                        $stokTujuan = StokBarang::firstOrCreate(
+                            ['id_barang' => $barangId, 'id_lokasi' => $lokasiTujuan],
+                            ['jumlah' => 0]
+                        );
+
+                        $stokSebelum = $stokTujuan->jumlah;
+                        $stokTujuan->increment('jumlah', $jumlahDiterima);
+
+                        // 2. Catat riwayat penambahan stok
+                        StokHistory::create([
+                            'id_barang' => $barangId,
+                            'id_lokasi' => $lokasiTujuan,
+                            'perubahan' => $jumlahDiterima,
+                            'stok_sebelum' => $stokSebelum,
+                            'stok_sesudah' => $stokTujuan->jumlah,
+                            'keterangan' => 'Penerimaan barang dari permintaan ' . $permintaan->kode_permintaan . $keteranganTambahan,
+                            'user_id' => Auth::id(),
+                        ]);
+                    }
+                }
+
+                // 3. Update status permintaan menjadi 'COMPLETED' (DITERIMA/SELESAI)
+                $permintaan->update(['status' => 'COMPLETED']);
+            });
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat memproses penerimaan: ' . $e->getMessage());
+        }
+
+        return redirect()->route('permintaan.show', $permintaan->id)->with('success', 'Permintaan barang telah berhasil diselesaikan.');
     }
 }

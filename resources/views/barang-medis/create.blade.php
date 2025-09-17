@@ -36,12 +36,40 @@
                         </select>
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label for="satuan" class="form-label">Satuan</label>
-                        <input type="text" name="satuan" class="form-control" id="satuan" placeholder="Contoh: Tablet, Box, Pcs" value="{{ old('satuan') }}" required>
+                        <label for="satuan_kemasan" class="form-label">Satuan Kemasan</label>
+                        <input type="text" name="satuan_kemasan" class="form-control" id="satuan_kemasan" placeholder="Contoh: Box, Botol" value="{{ old('satuan_kemasan') }}" required>
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label for="kemasan" class="form-label">Kemasan (Opsional)</label>
+                        <label for="isi_per_kemasan" class="form-label">Isi per Kemasan</label>
+                        <div class="input-group">
+                            <input type="number" name="isi_per_kemasan" class="form-control" id="isi_per_kemasan" placeholder="Jumlah satuan terkecil" value="{{ old('isi_per_kemasan') }}" min="1" required>
+                            <span class="input-group-text">{{ old('satuan_terkecil', '...') }}</span>
+                        </div>
+                        <small class="text-muted">Masukkan jumlah satuan terkecil dalam satu kemasan.</small>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="satuan_terkecil" class="form-label">Satuan Terkecil</label>
+                        <input type="text" name="satuan_terkecil" class="form-control" id="satuan_terkecil" placeholder="Contoh: Tablet, Pcs" value="{{ old('satuan_terkecil') }}" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="kemasan" class="form-label">Deskripsi Kemasan (Opsional)</label>
                         <input type="text" name="kemasan" class="form-control" id="kemasan" placeholder="Contoh: Strip isi 10" value="{{ old('kemasan') }}">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="unit_kemasan" class="form-label">Unit Kemasan</label>
+                        <input type="text" name="unit_kemasan" class="form-control" id="unit_kemasan" placeholder="Contoh: Strip, Box, Botol" value="{{ old('unit_kemasan') }}" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="isi_per_kemasan" class="form-label">Isi per Kemasan</label>
+                        <input type="number" name="isi_per_kemasan" class="form-control" id="isi_per_kemasan" placeholder="Contoh: 10" value="{{ old('isi_per_kemasan') }}" min="1" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="satuan_terkecil" class="form-label">Satuan Terkecil</label>
+                        <input type="text" name="satuan_terkecil" class="form-control" id="satuan_terkecil" placeholder="Contoh: Tablet, Kaplet, Pcs" value="{{ old('satuan_terkecil') }}" required>
                     </div>
                 </div>
                 <div class="mt-3">
@@ -52,3 +80,22 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const satuanInput = document.getElementById('satuan_terkecil');
+        const badge = document.querySelector('#isi_per_kemasan')?.closest('.input-group')?.querySelector('.input-group-text');
+
+        if (satuanInput && badge) {
+            const updateBadge = () => {
+                const value = satuanInput.value.trim();
+                badge.textContent = value !== '' ? value : '...';
+            };
+
+            satuanInput.addEventListener('input', updateBadge);
+            updateBadge();
+        }
+    });
+</script>
+@endpush
