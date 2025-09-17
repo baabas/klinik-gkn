@@ -203,11 +203,7 @@ class BarangMedisController extends Controller
                     'stok_sebelum' => $stokSebelumAsal, // [FIX] Tambahkan stok sebelum
                     'stok_sesudah' => $stokAsal->jumlah, // [FIX] Tambahkan stok sesudah
                     'keterangan' => 'Distribusi ke Lokasi ID ' . $idLokasiTujuan,
-<<<<<<< HEAD
                     'user_id' => auth::id(),
-=======
-                    'user_id' => auth()->id(),
->>>>>>> 0ec244151d1a634672aeac9cccbfe3de9e356e27
                 ]);
 
                 // --- PROSES LOKASI TUJUAN ---
@@ -226,11 +222,7 @@ class BarangMedisController extends Controller
                     'stok_sebelum' => $stokSebelumTujuan, // [FIX] Tambahkan stok sebelum
                     'stok_sesudah' => $stokTujuan->jumlah, // [FIX] Tambahkan stok sesudah
                     'keterangan' => 'Distribusi dari Lokasi ID ' . $idLokasiAsal,
-<<<<<<< HEAD
                     'user_id' => auth::id(),
-=======
-                    'user_id' => auth()->id(),
->>>>>>> 0ec244151d1a634672aeac9cccbfe3de9e356e27
                 ]);
             });
         } catch (\Exception $e) {
@@ -239,8 +231,4 @@ class BarangMedisController extends Controller
 
         return redirect()->route('barang-medis.index')->with('success', 'Distribusi stok berhasil dilakukan.');
     }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 0ec244151d1a634672aeac9cccbfe3de9e356e27

@@ -12,9 +12,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('barang_medis', function (Blueprint $table) {
-            $table->unsignedInteger('isi_per_kemasan')->nullable()->after('satuan');
-            $table->string('satuan_kemasan', 50)->nullable()->after('isi_per_kemasan');
-            $table->string('satuan_terkecil', 50)->nullable()->after('satuan_kemasan');
+            if (!Schema::hasColumn('barang_medis', 'packaging_type')) {
+                $table->string('packaging_type', 100)->nullable()->after('kemasan');
+            }
+
+            if (!Schema::hasColumn('barang_medis', 'packaging_unit')) {
+                $table->string('packaging_unit', 50)->nullable()->after('packaging_type');
+            }
+
+            if (!Schema::hasColumn('barang_medis', 'packaging_quantity')) {
+                $table->unsignedInteger('packaging_quantity')->nullable()->after('packaging_unit');
+            }
         });
     }
 
@@ -24,7 +32,17 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('barang_medis', function (Blueprint $table) {
-            $table->dropColumn(['isi_per_kemasan', 'satuan_kemasan', 'satuan_terkecil']);
+            if (Schema::hasColumn('barang_medis', 'packaging_quantity')) {
+                $table->dropColumn('packaging_quantity');
+            }
+
+            if (Schema::hasColumn('barang_medis', 'packaging_unit')) {
+                $table->dropColumn('packaging_unit');
+            }
+
+            if (Schema::hasColumn('barang_medis', 'packaging_type')) {
+                $table->dropColumn('packaging_type');
+            }
         });
     }
 };
