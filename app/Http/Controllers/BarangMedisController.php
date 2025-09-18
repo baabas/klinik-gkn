@@ -31,9 +31,16 @@ class BarangMedisController extends Controller
             ->withSum(['stok as stok_gkn2' => function ($q) use ($gkn2Id) {
                 $q->where('id_lokasi', $gkn2Id ?? 0);
             }], 'jumlah')
+            ->withSum('stokMasuk as total_kemasan_masuk', 'jumlah_kemasan')
+            ->withSum('stokMasuk as total_unit_masuk', 'perubahan')
+            ->withMax('stokMasuk as tanggal_masuk_terakhir', 'tanggal_transaksi')
+            ->withMin('stokMasuk as expired_terdekat', 'expired_at')
+            ->with(['stokMasukTerakhir'])
             ->when($search, function ($query, $search) {
-                return $query->where('nama_obat', 'like', "%{$search}%")
-                             ->orWhere('kode_obat', 'like', "%{$search}%");
+                return $query->where(function ($q) use ($search) {
+                    $q->where('nama_obat', 'like', "%{$search}%")
+                      ->orWhere('kode_obat', 'like', "%{$search}%");
+                });
             })
             ->orderBy('nama_obat', 'asc')
             ->paginate(15)
@@ -144,8 +151,9 @@ class BarangMedisController extends Controller
      */
     public function history(BarangMedis $barangMedi)
     {
-        $histories = StokHistory::where('id_barang', $barangMedi->id_obat)
+        $histories = $barangMedi->stokHistories()
             ->with('lokasi', 'user')
+            ->orderByDesc('tanggal_transaksi')
             ->orderByDesc('created_at')
             ->get();
 
@@ -195,7 +203,8 @@ class BarangMedisController extends Controller
                     'stok_sebelum' => $stokSebelumAsal, // [FIX] Tambahkan stok sebelum
                     'stok_sesudah' => $stokAsal->jumlah, // [FIX] Tambahkan stok sesudah
                     'keterangan' => 'Distribusi ke Lokasi ID ' . $idLokasiTujuan,
-                    'user_id' => auth()->id(),
+                    'tanggal_transaksi' => now()->toDateString(),
+                    'user_id' => auth::id(),
                 ]);
 
                 // --- PROSES LOKASI TUJUAN ---
@@ -214,7 +223,8 @@ class BarangMedisController extends Controller
                     'stok_sebelum' => $stokSebelumTujuan, // [FIX] Tambahkan stok sebelum
                     'stok_sesudah' => $stokTujuan->jumlah, // [FIX] Tambahkan stok sesudah
                     'keterangan' => 'Distribusi dari Lokasi ID ' . $idLokasiAsal,
-                    'user_id' => auth()->id(),
+                    'tanggal_transaksi' => now()->toDateString(),
+                    'user_id' => auth::id(),
                 ]);
             });
         } catch (\Exception $e) {

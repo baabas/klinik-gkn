@@ -5,19 +5,25 @@
 
     <div class="card shadow-sm">
         <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                 <div class="btn-group">
                     <a href="{{ route('permintaan.index') }}" class="btn btn-outline-primary">
                         <i class="bi bi-file-earmark-text"></i> Daftar Permintaan
                     </a>
+                    <a href="{{ route('barang-masuk.index') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-clipboard-data"></i> Riwayat Barang Masuk
+                    </a>
                     @if(Auth::user()->hasRole('PENGADAAN'))
+                    <a href="{{ route('barang-masuk.create') }}" class="btn btn-success">
+                            <i class="bi bi-box-arrow-in-down"></i> Input Barang Masuk
+                        </a>
                         <a href="{{ route('barang-medis.create') }}" class="btn btn-primary">
                             <i class="bi bi-plus-circle"></i> Tambah Barang Baru
                         </a>
                     @endif
                 </div>
 
-                <form action="{{ route('barang-medis.index') }}" method="GET" class="d-flex" style="width: 300px;">
+                <form action="{{ route('barang-medis.index') }}" method="GET" class="d-flex" style="max-width: 320px;">
                     <input type="search" class="form-control me-2" name="search" placeholder="Cari Nama atau Kode..." value="{{ request('search') }}">
                     <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
                 </form>
@@ -31,40 +37,72 @@
             @endif
 
             <div class="table-responsive">
-                <table class="table table-bordered table-striped table-hover">
+                <table class="table table-bordered table-striped table-hover align-middle">
                     <thead class="table-light">
                         <tr>
                             <th>No</th>
                             <th>Kode</th>
                             <th>Nama Barang</th>
                             <th>Tipe</th>
+                            <th>Tgl Masuk Terakhir</th>
+                            <th>Kedaluwarsa Terdekat</th>
+                            <th>Total Kemasan Masuk</th>
+                            <th>Detail Kemasan Terakhir</th>
                             <th>Stok GKN 1</th>
                             <th>Stok GKN 2</th>
                             <th>Total Stok</th>
                             <th>Satuan</th>
-                            <th style="width: 220px;">Aksi</th>
+                            <th style="width: 240px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($barang as $item)
+                        @php
+                                $lastEntry = $item->stokMasukTerakhir;
+                                $lastDate = $item->tanggal_masuk_terakhir ?? optional($lastEntry?->tanggal_transaksi)->toDateString();
+                                $nearestExpired = $item->expired_terdekat ?? optional($lastEntry?->expired_at)->toDateString();
+                                $totalKemasan = $item->total_kemasan_masuk ?? 0;
+                                $satuanKemasan = $lastEntry?->satuan_kemasan ?: ($item->kemasan ?: 'Kemasan');
+                                $stokGkn1 = (int) ($item->stok_gkn1 ?? 0);
+                                $stokGkn2 = (int) ($item->stok_gkn2 ?? 0);
+                                $totalStok = (int) ($item->stok_sum_jumlah ?? 0);
+                            @endphp
                             <tr class="align-middle">
                                 <td>{{ $loop->iteration + $barang->firstItem() - 1 }}</td>
                                 <td>{{ $item->kode_obat }}</td>
-                                <td>{{ $item->nama_obat }}</td>
                                 <td>
-                                    <span class="badge {{ $item->tipe == 'OBAT' ? 'bg-primary' : 'bg-success' }}">
-                                        {{ $item->tipe }}
-                                    </span>
+                                    <div class="fw-semibold">{{ $item->nama_obat }}</div>
+                                    <div class="text-muted small">{{ $totalStok ? number_format($totalStok) : 0 }} {{ strtolower($item->satuan ?? '') }}</div>
                                 </td>
-                                <td><strong>{{ (int) ($item->stok_gkn1 ?? 0) }}</strong></td>
-                                <td><strong>{{ (int) ($item->stok_gkn2 ?? 0) }}</strong></td>
-                                <td><strong>{{ (int) $item->stok_sum_jumlah }}</strong></td>
+                                <td>
+                                    <span class="badge {{ $item->tipe == 'OBAT' ? 'bg-primary' : 'bg-success' }}">{{ $item->tipe }}</span>
+                                </td>
+                                <td>{{ $lastDate ? \Illuminate\Support\Carbon::parse($lastDate)->format('d/m/Y') : '-' }}</td>
+                                <td>{{ $nearestExpired ? \Illuminate\Support\Carbon::parse($nearestExpired)->format('d/m/Y') : '-' }}</td>
+                                <td>
+                                    {{ $totalKemasan ? number_format($totalKemasan) : '0' }}
+                                    <span class="text-muted small d-block">{{ $satuanKemasan }}</span>
+                                </td>
+                                <td>
+                                    @if($lastEntry)
+                                        <div>{{ number_format($lastEntry->jumlah_kemasan) }} {{ $lastEntry->satuan_kemasan ?? 'kemasan' }}</div>
+                                        <div class="text-muted small">Isi {{ number_format($lastEntry->isi_per_kemasan) }} {{ strtolower($item->satuan ?? '') }}</div>
+                                        @if($lastEntry->expired_at)
+                                            <div class="text-muted small">Exp: {{ $lastEntry->expired_at->format('d/m/Y') }}</div>
+                                        @endif
+                                    @else
+                                        <span class="text-muted">Belum ada data masuk</span>
+                                    @endif
+                                </td>
+                                <td><strong>{{ number_format($stokGkn1) }}</strong></td>
+                                <td><strong>{{ number_format($stokGkn2) }}</strong></td>
+                                <td><strong>{{ number_format($totalStok) }}</strong></td>
                                 <td>{{ $item->satuan }}</td>
                                 <td>
                                     {{-- Tombol yang bisa diakses semua role terkait (Dokter & Pengadaan) --}}
                                     <a href="{{ route('barang-medis.show', $item->id_obat) }}" class="btn btn-info btn-sm" title="Lihat Detail Stok"><i class="bi bi-eye"></i></a>
                                     <a href="{{ route('barang-medis.history', $item->id_obat) }}" class="btn btn-secondary btn-sm" title="Riwayat Stok"><i class="bi bi-clock-history"></i></a>
-                                    
+
                                     {{-- Tombol Distribusi sekarang bisa diakses oleh Dokter dan Pengadaan --}}
                                     @if(Auth::user()->hasRole('DOKTER') || Auth::user()->hasRole('PENGADAAN'))
                                         <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#distribusiModal-{{ $item->id_obat }}" title="Distribusi Stok">
@@ -85,7 +123,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-center">Tidak ada data barang medis ditemukan.</td>
+                                <td colspan="13" class="text-center">Tidak ada data barang medis ditemukan.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -178,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         function updateStokTersedia() {
             const selectedOption = lokasiAsalSelect.options[lokasiAsalSelect.selectedIndex];
-            const stok = selectedOption.getAttribute('data-stok');
+            const stok = selectedOption ? selectedOption.getAttribute('data-stok') : 0;
             stokTersediaSpan.textContent = stok;
             jumlahInput.max = stok;
             validateForm();

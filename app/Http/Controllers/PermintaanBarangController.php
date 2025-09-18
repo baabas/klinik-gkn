@@ -223,7 +223,7 @@ class PermintaanBarangController extends Controller
                             ['id_barang' => $barangId, 'id_lokasi' => $lokasiTujuan],
                             ['jumlah' => 0]
                         );
-                        
+
                         $stokSebelum = $stokTujuan->jumlah;
                         $stokTujuan->increment('jumlah', $jumlahDiterima);
 
@@ -235,6 +235,7 @@ class PermintaanBarangController extends Controller
                             'stok_sebelum' => $stokSebelum,
                             'stok_sesudah' => $stokTujuan->jumlah,
                             'keterangan' => 'Penerimaan barang dari permintaan ' . $permintaan->kode_permintaan,
+                            'tanggal_transaksi' => now()->toDateString(),
                             'user_id' => Auth::id(),
                         ]);
                     }
