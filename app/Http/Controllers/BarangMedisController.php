@@ -31,9 +31,16 @@ class BarangMedisController extends Controller
             ->withSum(['stok as stok_gkn2' => function ($q) use ($gkn2Id) {
                 $q->where('id_lokasi', $gkn2Id ?? 0);
             }], 'jumlah')
+            ->withSum('stokMasuk as total_kemasan_masuk', 'jumlah_kemasan')
+            ->withSum('stokMasuk as total_unit_masuk', 'perubahan')
+            ->withMax('stokMasuk as tanggal_masuk_terakhir', 'tanggal_transaksi')
+            ->withMin('stokMasuk as expired_terdekat', 'expired_at')
+            ->with(['stokMasukTerakhir'])
             ->when($search, function ($query, $search) {
-                return $query->where('nama_obat', 'like', "%{$search}%")
-                             ->orWhere('kode_obat', 'like', "%{$search}%");
+                return $query->where(function ($q) use ($search) {
+                    $q->where('nama_obat', 'like', "%{$search}%")
+                      ->orWhere('kode_obat', 'like', "%{$search}%");
+                });
             })
             ->orderBy('nama_obat', 'asc')
             ->paginate(15)
@@ -67,13 +74,9 @@ class BarangMedisController extends Controller
             'kode_obat' => 'required|string|max:50|unique:barang_medis,kode_obat',
             'nama_obat' => 'required|string|max:255',
             'tipe' => ['required', Rule::in(['OBAT', 'ALKES'])],
+            'satuan' => 'required|string|max:100',
             'kemasan' => 'nullable|string|max:100',
-            'isi_per_kemasan' => 'required|integer|min:1',
-            'satuan_kemasan' => 'required|string|max:50',
-            'satuan_terkecil' => 'required|string|max:50',,
         ]);
-
-        $validated['satuan'] = $validated['satuan_terkecil'];
 
         DB::beginTransaction();
         try {
@@ -121,13 +124,9 @@ class BarangMedisController extends Controller
             'kode_obat' => ['required', 'string', 'max:50', Rule::unique('barang_medis')->ignore($barangMedi->id_obat, 'id_obat')],
             'nama_obat' => 'required|string|max:255',
             'tipe' => ['required', Rule::in(['OBAT', 'ALKES'])],
+            'satuan' => 'required|string|max:100',
             'kemasan' => 'nullable|string|max:100',
-            'isi_per_kemasan' => 'required|integer|min:1',
-            'satuan_kemasan' => 'required|string|max:50',
-            'satuan_terkecil' => 'required|string|max:50',,
         ]);
-
-        $validated['satuan'] = $validated['satuan_terkecil'];
 
         $barangMedi->update($validated);
         return redirect()->route('barang-medis.index')->with('success', 'Data barang berhasil diperbarui.');
@@ -152,8 +151,9 @@ class BarangMedisController extends Controller
      */
     public function history(BarangMedis $barangMedi)
     {
-        $histories = StokHistory::where('id_barang', $barangMedi->id_obat)
+        $histories = $barangMedi->stokHistories()
             ->with('lokasi', 'user')
+            ->orderByDesc('tanggal_transaksi')
             ->orderByDesc('created_at')
             ->get();
 
@@ -203,6 +203,7 @@ class BarangMedisController extends Controller
                     'stok_sebelum' => $stokSebelumAsal, // [FIX] Tambahkan stok sebelum
                     'stok_sesudah' => $stokAsal->jumlah, // [FIX] Tambahkan stok sesudah
                     'keterangan' => 'Distribusi ke Lokasi ID ' . $idLokasiTujuan,
+                    'tanggal_transaksi' => now()->toDateString(),
                     'user_id' => auth::id(),
                 ]);
 
@@ -222,6 +223,7 @@ class BarangMedisController extends Controller
                     'stok_sebelum' => $stokSebelumTujuan, // [FIX] Tambahkan stok sebelum
                     'stok_sesudah' => $stokTujuan->jumlah, // [FIX] Tambahkan stok sesudah
                     'keterangan' => 'Distribusi dari Lokasi ID ' . $idLokasiAsal,
+                    'tanggal_transaksi' => now()->toDateString(),
                     'user_id' => auth::id(),
                 ]);
             });

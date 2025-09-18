@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class BarangMedis extends Model
 {
@@ -34,9 +36,6 @@ class BarangMedis extends Model
         'tipe', // Kolom baru kita
         'satuan',
         'kemasan',
-        'isi_per_kemasan',
-        'unit_kemasan',
-        'satuan_terkecil',
     ];
 
     // --- RELASI ---
@@ -44,20 +43,35 @@ class BarangMedis extends Model
     /**
      * Relasi ke stok barang (satu barang bisa ada di banyak stok lokasi).
      */
-    public function stok()
+    public function stok(): HasMany
     {
         return $this->hasMany(StokBarang::class, 'id_barang', 'id_obat');
     }
 
      /**
-     * Format teks kemasan: "1 unit = N satuan kecil".
+     * Seluruh riwayat stok untuk barang ini.
      */
-    public function getDeskripsiKemasanAttribute(): string
+    public function stokHistories(): HasMany
     {
-        $unitKemasan = $this->unit_kemasan ?: $this->kemasan ?: $this->satuan;
-        $satuanTerkecil = $this->satuan_terkecil ?: $this->satuan;
-        $isiPerKemasan = (int) ($this->isi_per_kemasan ?? 1);
+        return $this->hasMany(StokHistory::class, 'id_barang', 'id_obat');
+    }
 
-        return sprintf('1 %s = %d %s', $unitKemasan, max(1, $isiPerKemasan), $satuanTerkecil);
+    /**
+     * Riwayat stok masuk (nilai perubahan positif).
+     */
+    public function stokMasuk(): HasMany
+    {
+        return $this->stokHistories()->where('perubahan', '>', 0);
+    }
+
+    /**
+     * Riwayat stok masuk terakhir.
+     */
+    public function stokMasukTerakhir(): HasOne
+    {
+        return $this->hasOne(StokHistory::class, 'id_barang', 'id_obat')
+            ->where('perubahan', '>', 0)
+            ->orderByDesc('tanggal_transaksi')
+            ->orderByDesc('created_at');
     }
 }

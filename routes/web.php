@@ -9,6 +9,7 @@ use App\Http\Controllers\RekamMedisController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\LaporanViewController;
 use App\Http\Controllers\BarangMedisController;
+use App\Http\Controllers\BarangMasukController;
 use App\Http\Controllers\PermintaanBarangController;
 use App\Http\Controllers\CheckupController;
 
@@ -55,11 +56,13 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:DOKTER,PENGADAAN'])->group(function () {
         Route::get('barang-medis/{barang}/riwayat', [BarangMedisController::class, 'history'])
             ->name('barang-medis.history');
-        
+
         // [BARU] Route untuk proses distribusi stok
         Route::put('barang-medis/{barang}/distribusi', [BarangMedisController::class, 'distribusi'])
             ->name('barang-medis.distribusi');
-            
+
+            Route::get('barang-masuk', [BarangMasukController::class, 'index'])->name('barang-masuk.index');
+
         Route::resource('barang-medis', BarangMedisController::class);
         Route::resource('permintaan', PermintaanBarangController::class);
     });
@@ -95,7 +98,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
         Route::get('/laporan/obat', [LaporanController::class, 'cetakLaporanObat'])->name('laporan.obat');
         Route::get('/laporan/penyakit-kunjungan', [LaporanController::class, 'cetakLaporanPenyakitKunjungan'])->name('laporan.penyakit-kunjungan');
-        
+
         // [BARU] Route untuk dokter mengonfirmasi penerimaan barang
         Route::put('/permintaan/{permintaan}/terima', [PermintaanBarangController::class, 'konfirmasiPenerimaan'])
             ->name('permintaan.terima');
@@ -103,7 +106,8 @@ Route::middleware(['auth'])->group(function () {
 
     // --- RUTE KHUSUS PENGADAAN ---
     Route::middleware(['role:PENGADAAN'])->group(function () {
-        // Rute untuk distribusi barang sudah tidak digunakan lagi
+        Route::get('barang-masuk/create', [BarangMasukController::class, 'create'])->name('barang-masuk.create');
+        Route::post('barang-masuk', [BarangMasukController::class, 'store'])->name('barang-masuk.store');
     });
 
 });
