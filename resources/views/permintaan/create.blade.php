@@ -1,7 +1,7 @@
 @extends('layouts.sidebar-layout')
 
 @section('content')
-    <h1 class="h2 mb-4">Buat Permintaan Barang Baru</h1>
+    <h1 class="h2 mb-4">Buat Permintaan Obat Baru</h1>
 
     <div class="card shadow-sm">
         <div class="card-body">
