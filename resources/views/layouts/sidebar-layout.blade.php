@@ -20,7 +20,7 @@
 
 </head>
 <body class="bg-light">
-    @include('layouts.navigation-top')
+    @include('layouts.navigation-top', ['showNavigation' => false, 'showSidebarToggle' => true])
     <div class="container-fluid">
         <div class="row">
             @include('layouts.navigation-sidebar')
