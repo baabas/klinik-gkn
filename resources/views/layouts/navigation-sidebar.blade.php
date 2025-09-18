@@ -44,7 +44,7 @@
                 </li>
                  <li class="nav-item">
                     <a class="nav-link d-flex align-items-center gap-2 {{ request()->routeIs('barang-medis.*') ? 'active' : '' }}" href="{{ route('barang-medis.index') }}">
-                        <i class="bi bi-archive-fill"></i> Master Barang Medis
+                        <i class="bi bi-archive-fill"></i> Obat &amp; Alat Medis
                     </a>
                 </li>
                 <li class="nav-item">
