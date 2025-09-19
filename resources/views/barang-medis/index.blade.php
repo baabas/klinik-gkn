@@ -101,7 +101,7 @@
                                 <td>
                                     {{-- Tombol yang bisa diakses semua role terkait (Dokter & Pengadaan) --}}
                                     <a href="{{ route('barang-medis.show', $item->id_obat) }}" class="btn btn-info btn-sm" title="Lihat Detail Stok"><i class="bi bi-eye"></i></a>
-                                    <a href="{{ route('barang-medis.history', $item->id_obat) }}" class="btn btn-secondary btn-sm" title="Riwayat Stok"><i class="bi bi-clock-history"></i></a>
+                                    <a href="{{ route('barang-medis.history', $item) }}" class="btn btn-secondary btn-sm" title="Riwayat Stok"><i class="bi bi-clock-history"></i></a>
 
                                     {{-- Tombol Distribusi sekarang bisa diakses oleh Dokter dan Pengadaan --}}
                                     @if(Auth::user()->hasRole('DOKTER') || Auth::user()->hasRole('PENGADAAN'))

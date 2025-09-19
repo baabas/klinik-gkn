@@ -38,7 +38,7 @@
                                     @endif
                                 </td>
                                 <td>{{ optional($history->expired_at)->format('d-m-Y') ?? '-' }}</td>
-                                <td>{{ $history->user->name ?? '-' }}</td>
+                                <td>{{ optional($history->user)->display_name ?? '-' }}</td>
                                 <td>{{ $history->keterangan }}</td>
                             </tr>
                         @empty

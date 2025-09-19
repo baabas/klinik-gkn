@@ -101,4 +101,16 @@ class User extends Authenticatable
     {
         return $this->hasMany(Checkup::class, 'nip_pasien', 'nip');
     }
+
+    /**
+     * Nama yang ditampilkan untuk petugas.
+     */
+    public function getDisplayNameAttribute(): string
+    {
+        return $this->nama_karyawan
+            ?? optional($this->karyawan)->nama_karyawan
+            ?? $this->email
+            ?? $this->nip
+            ?? '-';
+    }
 }

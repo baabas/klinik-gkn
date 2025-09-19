@@ -48,7 +48,7 @@
                                 <dd class="col-sm-7">{{ optional($barang->updated_at)->format('d/m/Y H:i') ?? '-' }}</dd>
                                 <dt class="col-sm-5">Riwayat Lengkap</dt>
                                 <dd class="col-sm-7">
-                                    <a href="{{ route('barang-medis.history', $barang->id_obat) }}">Lihat Riwayat &rarr;</a>
+                                    <a href="{{ route('barang-medis.history', $barang) }}">Lihat Riwayat &rarr;</a>
                                 </dd>
                             </dl>
                         </div>
@@ -138,7 +138,7 @@
         <div class="card-body">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                 <h5 class="card-title mb-0">Riwayat Transaksi Terbaru</h5>
-                <a href="{{ route('barang-medis.history', $barang->id_obat) }}" class="btn btn-outline-primary btn-sm">
+                <a href="{{ route('barang-medis.history', $barang) }}" class="btn btn-outline-primary btn-sm">
                     Lihat Semua Riwayat
                 </a>
             </div>
@@ -161,7 +161,7 @@
                                 <td>{{ $history->lokasi->nama_lokasi ?? '-' }}</td>
                                 <td class="text-end">{{ number_format($history->perubahan) }}</td>
                                 <td class="text-end">{{ number_format($history->stok_sesudah ?? 0) }}</td>
-                                <td>{{ $history->user->name ?? '-' }}</td>
+                                <td>{{ optional($history->user)->display_name ?? '-' }}</td>
                                 <td>{{ $history->keterangan ?? '-' }}</td>
                             </tr>
                         @empty

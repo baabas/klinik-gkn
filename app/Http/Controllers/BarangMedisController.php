@@ -113,7 +113,7 @@ class BarangMedisController extends Controller
         });
 
         $recentHistories = $barangMedi->stokHistories()
-            ->with(['lokasi', 'user'])
+            ->with(['lokasi', 'user.karyawan'])
             ->orderByDesc('tanggal_transaksi')
             ->orderByDesc('created_at')
             ->limit(10)
@@ -183,16 +183,16 @@ class BarangMedisController extends Controller
     /**
      * Menampilkan riwayat mutasi stok untuk suatu barang.
      */
-    public function history(BarangMedis $barangMedi)
+    public function history(BarangMedis $barang)
     {
-        $histories = $barangMedi->stokHistories()
-            ->with('lokasi', 'user')
+        $histories = $barang->stokHistories()
+            ->with('lokasi', 'user.karyawan')
             ->orderByDesc('tanggal_transaksi')
             ->orderByDesc('created_at')
             ->get();
 
         return view('barang-medis.history', [
-            'barangMedi' => $barangMedi,
+            'barangMedi' => $barang,
             'histories' => $histories,
         ]);
     }
