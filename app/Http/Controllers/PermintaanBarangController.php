@@ -16,7 +16,7 @@ class PermintaanBarangController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
         // Memuat relasi 'lokasiPeminta' dan 'userPeminta' untuk efisiensi query
@@ -27,7 +27,23 @@ class PermintaanBarangController extends Controller
             $query->where('id_lokasi_peminta', $user->id_lokasi);
         }
 
-        $permintaan = $query->paginate(10);
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('kode_permintaan', 'like', "%{$search}%")
+                    ->orWhereHas('userPeminta', function ($sub) use ($search) {
+                        $sub->where('nama_karyawan', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('lokasiPeminta', function ($sub) use ($search) {
+                        $sub->where('nama_lokasi', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+
+        $permintaan = $query->paginate(10)->withQueryString();
 
         return view('permintaan.index', compact('permintaan'));
     }
@@ -37,6 +53,9 @@ class PermintaanBarangController extends Controller
      */
     public function create()
     {
+        if (!Auth::user()->hasRole('DOKTER')) {
+            abort(403, 'Hanya dokter yang dapat membuat permintaan obat.');
+        }
         // Mengambil semua data barang untuk ditampilkan di dropdown form
         $barangMedis = BarangMedis::orderBy('nama_obat')->get();
 
@@ -48,6 +67,9 @@ class PermintaanBarangController extends Controller
      */
     public function store(Request $request)
     {
+        if (!Auth::user()->hasRole('DOKTER')) {
+            abort(403, 'Hanya dokter yang dapat membuat permintaan obat.');
+        }
         // 1. Validasi input dari form
         $request->validate([
             'tanggal_permintaan' => 'required|date',

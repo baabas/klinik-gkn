@@ -5,7 +5,7 @@
 
     <div class="card shadow-sm">
         <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
 
                 {{-- Tombol Buat Baru hanya untuk DOKTER --}}
                 @if(Auth::user()->hasRole('DOKTER'))
@@ -14,13 +14,32 @@
                     </a>
                 @else
                     {{-- Beri div kosong agar form pencarian tetap di kanan --}}
-                    <div></div>
+                    <div class="flex-grow-1"></div>
                 @endif
 
                 {{-- Form Pencarian --}}
-                <form action="{{ route('permintaan.index') }}" method="GET" class="d-flex" style="width: 300px;">
-                    <input type="search" class="form-control me-2" name="search" placeholder="Cari Kode, Peminta..." value="{{ request('search') }}">
-                    <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+                <form action="{{ route('permintaan.index') }}" method="GET" class="d-flex flex-wrap gap-2" style="max-width: 420px;">
+                    <input type="search" class="form-control" name="search" placeholder="Cari kode, peminta, lokasi..." value="{{ request('search') }}">
+                    @php
+                        $statusOptions = [
+                            'PENDING' => 'Pending',
+                            'APPROVED' => 'Disetujui',
+                            'COMPLETED' => 'Selesai',
+                            'REJECTED' => 'Ditolak',
+                        ];
+                    @endphp
+                    <select name="status" class="form-select" style="max-width: 180px;">
+                        <option value="">Semua Status</option>
+                        @foreach($statusOptions as $key => $label)
+                            <option value="{{ $key }}" {{ request('status') === $key ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+                        @if(request()->hasAny(['search', 'status']) && (request('search') || request('status')))
+                            <a href="{{ route('permintaan.index') }}" class="btn btn-light" title="Reset Filter"><i class="bi bi-arrow-counterclockwise"></i></a>
+                        @endif
+                    </div>
                 </form>
             </div>
 
