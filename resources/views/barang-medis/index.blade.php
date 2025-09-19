@@ -73,9 +73,6 @@
                                 <td>
                                     <div class="fw-semibold">{{ $item->nama_obat }}</div>
                                     <div class="text-muted small">{{ $totalStok ? number_format($totalStok) : 0 }} {{ strtolower($item->satuan ?? '') }}</div>
-                                    @if($item->creator)
-                                        <div class="text-muted small">Dibuat oleh: {{ $item->creator->nama_karyawan }}</div>
-                                    @endif
                                 </td>
                                 <td>
                                     <span class="badge {{ $item->tipe == 'OBAT' ? 'bg-primary' : 'bg-success' }}">{{ $item->tipe }}</span>

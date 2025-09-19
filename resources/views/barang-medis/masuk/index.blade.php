@@ -74,6 +74,7 @@
                                 <td>
                                     <strong>{{ $entry->barang->nama_obat ?? '-' }}</strong>
                                     <div class="text-muted small">Kode: {{ $entry->barang->kode_obat ?? '-' }}</div>
+                                    <div class="text-muted small">Dibuat oleh {{ $entry->barang->creator->nama_karyawan ?? '-' }}</div>
                                 </td>
                                 <td>{{ $entry->lokasi->nama_lokasi ?? '-' }}</td>
                                 <td>
