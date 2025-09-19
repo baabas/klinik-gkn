@@ -106,8 +106,25 @@ class BarangMedisController extends Controller
      */
     public function show(BarangMedis $barangMedi)
     {
-        $barangMedi->load('stok.lokasi');
-        return "Halaman detail untuk: " . $barangMedi->nama_obat . ". (View belum dibuat)";
+        $barangMedi->load(['stok.lokasi', 'stokMasukTerakhir', 'creator']);
+
+        $stokPerLokasi = $barangMedi->stok->sortBy(function ($stok) {
+            return $stok->lokasi->nama_lokasi ?? $stok->id_lokasi;
+        });
+
+        $recentHistories = $barangMedi->stokHistories()
+            ->with(['lokasi', 'user'])
+            ->orderByDesc('tanggal_transaksi')
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get();
+
+        return view('barang-medis.show', [
+            'barang' => $barangMedi,
+            'stokPerLokasi' => $stokPerLokasi,
+            'totalStok' => $barangMedi->stok->sum('jumlah'),
+            'recentHistories' => $recentHistories,
+        ]);
     }
 
     /**
@@ -115,7 +132,13 @@ class BarangMedisController extends Controller
      */
     public function edit(BarangMedis $barangMedi)
     {
-        return "Halaman edit untuk: " . $barangMedi->nama_obat . ". (View belum dibuat)";
+        if (!Auth::user()->hasRole('PENGADAAN')) {
+            abort(403, 'Anda tidak memiliki hak akses.');
+        }
+
+        return view('barang-medis.edit', [
+            'barang' => $barangMedi,
+        ]);
     }
 
     /**
@@ -123,6 +146,10 @@ class BarangMedisController extends Controller
      */
     public function update(Request $request, BarangMedis $barangMedi)
     {
+        if (!Auth::user()->hasRole('PENGADAAN')) {
+            abort(403, 'Anda tidak memiliki hak akses.');
+        }
+
         $validated = $request->validate([
             'kode_obat' => ['required', 'string', 'max:50', Rule::unique('barang_medis')->ignore($barangMedi->id_obat, 'id_obat')],
             'nama_obat' => 'required|string|max:255',
@@ -140,6 +167,10 @@ class BarangMedisController extends Controller
      */
     public function destroy(BarangMedis $barangMedi)
     {
+        if (!Auth::user()->hasRole('PENGADAAN')) {
+            abort(403, 'Anda tidak memiliki hak akses.');
+        }
+
         try {
             $barangMedi->delete();
             return redirect()->route('barang-medis.index')->with('success', 'Barang berhasil dihapus.');
@@ -207,7 +238,7 @@ class BarangMedisController extends Controller
                     'stok_sesudah' => $stokAsal->jumlah, // [FIX] Tambahkan stok sesudah
                     'keterangan' => 'Distribusi ke Lokasi ID ' . $idLokasiTujuan,
                     'tanggal_transaksi' => now()->toDateString(),
-                    'user_id' => auth::id(),
+                    'user_id' => Auth::id(),
                 ]);
 
                 // --- PROSES LOKASI TUJUAN ---
@@ -227,7 +258,7 @@ class BarangMedisController extends Controller
                     'stok_sesudah' => $stokTujuan->jumlah, // [FIX] Tambahkan stok sesudah
                     'keterangan' => 'Distribusi dari Lokasi ID ' . $idLokasiAsal,
                     'tanggal_transaksi' => now()->toDateString(),
-                    'user_id' => auth::id(),
+                    'user_id' => Auth::id(),
                 ]);
             });
         } catch (\Exception $e) {
