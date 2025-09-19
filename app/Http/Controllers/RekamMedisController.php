@@ -37,7 +37,6 @@ class RekamMedisController extends Controller
      */
     public function store(Request $request, User $user): RedirectResponse
     {
-        // ... (kode store Anda tidak perlu diubah)
         $validated = $request->validate([
             'tanggal_kunjungan' => ['required', 'date'],
             'anamnesa' => ['nullable', 'string'],
@@ -51,65 +50,63 @@ class RekamMedisController extends Controller
             'jenis_kelamin_sa' => ['nullable', 'string', 'max:20'],
         ]);
 
-        DB::beginTransaction();
-
         try {
-            $tanggalKunjungan = Carbon::parse($validated['tanggal_kunjungan'], config('app.timezone'));
+            return DB::transaction(function () use ($validated, $user) {
+                $tanggalKunjungan = Carbon::parse($validated['tanggal_kunjungan'], config('app.timezone'));
 
-            $rekamMedis = RekamMedis::create([
-                'nip_pasien' => $user->nip,
-                'id_dokter'      => Auth::id(),
-                'tanggal_kunjungan' => $tanggalKunjungan,
-                'anamnesa' => $validated['anamnesa'],
-                'terapi' => $validated['terapi'],
-                'nama_sa' => $validated['nama_sa'],
-                'jenis_kelamin_sa' => $validated['jenis_kelamin_sa'],
-            ]);
+                $rekamMedis = RekamMedis::create([
+                    'nip_pasien' => $user->nip,
+                    'id_dokter'      => Auth::id(),
+                    'tanggal_kunjungan' => $tanggalKunjungan,
+                    'anamnesa' => $validated['anamnesa'],
+                    'terapi' => $validated['terapi'],
+                    'nama_sa' => $validated['nama_sa'],
+                    'jenis_kelamin_sa' => $validated['jenis_kelamin_sa'],
+                ]);
 
-            if (!empty($validated['diagnosa'])) {
-                foreach ($validated['diagnosa'] as $diag) {
-                    if (!empty($diag['kode_penyakit'])) {
-                        $rekamMedis->detailDiagnosa()->create([
-                            'ICD10' => $diag['kode_penyakit'],
-                        ]);
-                    }
-                }
-            }
-
-            if (!empty($validated['obat'])) {
-                $idLokasiDokter = Auth::user()->id_lokasi;
-
-                foreach ($validated['obat'] as $resep) {
-                    if (!empty($resep['id_obat'])) {
-                        $id_obat = $resep['id_obat'];
-                        $jumlah = $resep['jumlah'];
-
-                        $stok = StokBarang::where('id_barang', $id_obat)
-                                          ->where('id_lokasi', $idLokasiDokter)
-                                          ->first();
-                            if (!$stok || $stok->jumlah < $jumlah) {
-                            DB::rollBack();
-                            $namaObat = BarangMedis::find($id_obat)->nama_obat ?? 'Obat';
-                            return redirect()->back()->withInput()->with('error', "Stok untuk {$namaObat} tidak mencukupi. Stok tersedia: " . ($stok->jumlah ?? 0));
+                if (!empty($validated['diagnosa'])) {
+                    foreach ($validated['diagnosa'] as $diag) {
+                        if (!empty($diag['kode_penyakit'])) {
+                            $rekamMedis->detailDiagnosa()->create([
+                                'ICD10' => $diag['kode_penyakit'],
+                            ]);
                         }
-
-                        $rekamMedis->resepObat()->create([
-                            'id_obat' => $id_obat,
-                            'jumlah' => $jumlah,
-                            'aturan_pakai' => $resep['aturan_pakai'] ?? 'Aturan pakai belum diisi',
-                        ]);
-
-                        $stok->decrement('jumlah', $jumlah);
                     }
                 }
-            }
 
-            DB::commit();
+                if (!empty($validated['obat'])) {
+                    $idLokasiDokter = Auth::user()->id_lokasi;
 
-            return redirect()->route('pasien.show', $user->nip)->with('success', 'Rekam medis berhasil ditambahkan.');
+                    foreach ($validated['obat'] as $resep) {
+                        if (!empty($resep['id_obat'])) {
+                            $id_obat = $resep['id_obat'];
+                            $jumlah = $resep['jumlah'];
+
+                            $stok = StokBarang::where('id_barang', $id_obat)
+                                              ->where('id_lokasi', $idLokasiDokter)
+                                              ->lockForUpdate()
+                                              ->first();
+
+                            if (!$stok || $stok->jumlah < $jumlah) {
+                                $namaObat = BarangMedis::find($id_obat)->nama_obat ?? 'Obat';
+                                throw new \Exception("Stok untuk {$namaObat} tidak mencukupi. Stok tersedia: " . ($stok->jumlah ?? 0));
+                            }
+
+                            $rekamMedis->resepObat()->create([
+                                'id_obat' => $id_obat,
+                                'jumlah' => $jumlah,
+                                'aturan_pakai' => $resep['aturan_pakai'] ?? 'Aturan pakai belum diisi',
+                            ]);
+
+                            $stok->decrement('jumlah', $jumlah);
+                        }
+                    }
+                }
+
+                return redirect()->route('pasien.show', $user->nip)->with('success', 'Rekam medis berhasil ditambahkan.');
+            });
 
         } catch (\Exception $e) {
-            DB::rollBack();
             return redirect()->back()->withInput()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }

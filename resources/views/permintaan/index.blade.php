@@ -9,7 +9,7 @@
 
                 {{-- Tombol Buat Baru hanya untuk DOKTER --}}
                 @if(Auth::user()->hasRole('DOKTER'))
-                    <a href="{{ route('permintaan.create') }}" class="btn btn-primary">
+                    <a href="{{ route('permintaan-barang.create') }}" class="btn btn-primary">
                         <i class="bi bi-plus-circle"></i> Buat Permintaan Baru
                     </a>
                 @else

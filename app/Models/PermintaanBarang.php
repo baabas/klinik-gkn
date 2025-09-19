@@ -12,7 +12,7 @@ class PermintaanBarang extends Model
     protected $table = 'permintaan_barang';
 
     protected $fillable = [
-        'kode_permintaan',
+        'nomor_permintaan',
         'id_lokasi_peminta',
         'id_user_peminta',
         'tanggal_permintaan',

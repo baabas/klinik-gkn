@@ -101,4 +101,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(Checkup::class, 'nip_pasien', 'nip');
     }
+
+    /**
+     * Relasi ke model LokasiKlinik.
+     */
+    public function lokasi()
+    {
+        return $this->belongsTo(LokasiKlinik::class, 'id_lokasi');
+    }
 }

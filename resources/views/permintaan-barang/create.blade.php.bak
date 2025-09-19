@@ -1,0 +1,405 @@
+@extends('layouts.app')
+
+@section('content')
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h4>Form Permintaan Barang</h4>
+        </div>
+        <div class="card-body">
+            <form action="{{ route('permintaan-barang.store') }}" method="POST" id="formPermintaan">
+                @csrf
+                
+                <!-- Header Permintaan -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Tanggal Permintaan</label>
+                            <input type="date" name="tanggal_permintaan" class="form-control" 
+                                   value="{{ date('Y-m-d') }}" required readonly>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Lokasi Klinik</label>
+                            <input type="text" class="form-control" 
+                                   value="{{ Auth::user()->lokasi->nama_lokasi }}" readonly>
+                            <input type="hidden" name="id_lokasi" value="{{ Auth::user()->id_lokasi }}">
+                        </div>
+                    </div>
+                </div>ayouts.app')
+
+@section('content')
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h4>Form Permintaan Barang</h4>
+        </div>
+        <div class="card-body">
+            <form action="{{ route('permintaan-barang.store') }}" method="POST" id="formPermintaan">
+                @csrf
+                
+                <!-- Header Permintaan -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Tanggal Permintaan</label>
+                            <input type="date" name="tanggal_permintaan" class="form-control" 
+                                   value="{{ date('Y-m-d') }}" required readonly>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Lokasi Klinik</label>
+                            <input type="text" class="form-control" 
+                                   value="{{ Auth::user()->lokasi->nama_lokasi }}" readonly>
+                            <input type="hidden" name="id_lokasi" value="{{ Auth::user()->id_lokasi }}">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Header Permintaan -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Tanggal Permintaan</label>
+                            <input type="date" name="tanggal_permintaan" class="form-control" 
+                                   value="{{ date('Y-m-d') }}" required readonly>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Lokasi Klinik</label>
+                            <input type="text" class="form-control" 
+                                   value="{{ Auth::user()->lokasi->nama_lokasi }}" readonly>
+                            <input type="hidden" name="id_lokasi" value="{{ Auth::user()->id_lokasi }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Daftar Item Permintaan -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Barang Terdaftar</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="items-container">
+                    <div class="item-row mb-4">
+                        <div class="row">
+                            <!-- Pilih Barang -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Pilih Obat/Alkes</label>
+                                    <select name="items[0][id_barang]" class="form-control select-barang" required>
+                                        <option value="">Pilih Barang</option>
+                                        @foreach($barangList as $barang)
+                                            <option value="{{ $barang->id_obat }}" 
+                                                data-satuan="{{ $barang->satuan }}"
+                                                data-kemasan="{{ $barang->kemasan }}"
+                                                data-satuan-terkecil="{{ $barang->satuan_terkecil }}"
+                                                data-konversi="{{ $barang->jumlah_satuan_perkemasan * $barang->jumlah_unit_persatuan }}"
+                                                data-stok="{{ $barang->stok->where('id_lokasi', Auth::user()->id_lokasi)->first()->jumlah ?? 0 }}">
+                                                {{ $barang->nama_obat }} ({{ $barang->kode_obat }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Jumlah Kemasan -->
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Jumlah Kemasan</label>
+                                    <div class="input-group">
+                                        <input type="number" name="items[0][jumlah_kemasan]" 
+                                               class="form-control jumlah-kemasan" required min="1">
+                                        <div class="input-group-append">
+                                            <span class="input-group-text kemasan-label">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Informasi Konversi -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Total Unit</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control total-unit" readonly>
+                                        <div class="input-group-append">
+                                            <span class="input-group-text satuan-terkecil-label">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tombol Hapus -->
+                            <div class="col-md-1">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <button type="button" class="btn btn-danger btn-remove-item">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                                            </div>
+                            
+                            <!-- Info Stok -->
+                            <div class="col-12 mt-2">
+                                <small class="text-muted">
+                                    Stok tersedia: <span class="stok-tersedia">0</span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                <!-- Tombol Tambah Item -->
+                <div class="form-group">
+                    <button type="button" class="btn btn-info" id="btnAddItem">
+                        <i class="fas fa-plus"></i> Tambah Item
+                    </button>
+                </div>
+                </div>
+                </div>
+
+                <!-- Request Barang Baru -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Request Barang Baru</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="newItemContainer">
+                            <!-- Template untuk barang baru akan ditambahkan di sini -->
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="btn btn-success" id="btnAddNewItem">
+                                <i class="fas fa-plus"></i> Tambah Barang Baru
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Keterangan -->
+                <div class="form-group">
+                    <label>Keterangan</label>
+                    <textarea name="keterangan" class="form-control" rows="3" 
+                              placeholder="Tambahkan keterangan jika diperlukan"></textarea>
+                </div>
+
+                <!-- Tombol Submit -->
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">Kirim Permintaan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let itemCount = 0;
+
+    // Fungsi untuk menghitung konversi
+    function hitungKonversi(row) {
+        const select = row.querySelector('.select-barang');
+        const jumlahInput = row.querySelector('.jumlah-kemasan');
+        const totalUnitInput = row.querySelector('.total-unit');
+        
+        if (select.value && jumlahInput.value) {
+            const option = select.options[select.selectedIndex];
+            const konversi = parseInt(option.dataset.konversi);
+            const jumlah = parseInt(jumlahInput.value);
+            totalUnitInput.value = konversi * jumlah;
+        } else {
+            totalUnitInput.value = '';
+        }
+    }
+
+    // Fungsi untuk update informasi barang
+    function updateItemInfo(row) {
+        const select = row.querySelector('.select-barang');
+        const option = select.options[select.selectedIndex];
+        
+        if (select.value) {
+            const kemasan = option.dataset.kemasan;
+            const satuanTerkecil = option.dataset.satuanTerkecil;
+            const stok = parseInt(option.dataset.stok);
+            
+            row.querySelector('.kemasan-label').textContent = kemasan;
+            row.querySelector('.satuan-terkecil-label').textContent = satuanTerkecil;
+            row.querySelector('.stok-tersedia').textContent = stok;
+            hitungKonversi(row);
+        } else {
+            row.querySelector('.kemasan-label').textContent = '-';
+            row.querySelector('.satuan-terkecil-label').textContent = '-';
+            row.querySelector('.stok-tersedia').textContent = '0';
+            row.querySelector('.total-unit').value = '';
+        }
+    }
+
+    // Event handler untuk perubahan barang
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('select-barang')) {
+            const row = e.target.closest('.item-row');
+            updateItemInfo(row);
+        }
+    });
+
+    // Event handler untuk perubahan jumlah
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('jumlah-kemasan')) {
+            const row = e.target.closest('.item-row');
+            hitungKonversi(row);
+        }
+    });
+
+    // Tambah item baru
+    document.getElementById('btnAddItem').addEventListener('click', function() {
+        itemCount++;
+        const template = document.querySelector('.item-row').cloneNode(true);
+        
+        // Update nama field
+        template.querySelectorAll('[name]').forEach(input => {
+            input.name = input.name.replace('[0]', `[${itemCount}]`);
+            if (input.tagName === 'SELECT' || input.type === 'number') {
+                input.value = '';
+            }
+        });
+
+        template.querySelectorAll('input[readonly]').forEach(input => {
+            input.value = '';
+        });
+
+        template.querySelectorAll('.kemasan-label, .satuan-terkecil-label').forEach(span => {
+            span.textContent = '-';
+        });
+
+        document.querySelector('.items-container').appendChild(template);
+    });
+
+    // Hapus item
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('btn-remove-item')) {
+            const items = document.querySelectorAll('.item-row');
+            if (items.length > 1) {
+                e.target.closest('.item-row').remove();
+            }
+        }
+    });
+
+    // Template untuk barang baru
+    const newItemTemplate = `
+        <div class="new-item-row border rounded p-3 mb-3">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label>Nama Barang</label>
+                        <input type="text" name="new_items[{index}][nama_barang]" class="form-control" required>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label>Tipe</label>
+                        <select name="new_items[{index}][tipe]" class="form-control" required>
+                            <option value="OBAT">OBAT</option>
+                            <option value="ALKES">ALKES</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label>Jumlah (dalam satuan terkecil)</label>
+                        <div class="input-group">
+                            <input type="number" name="new_items[{index}][jumlah]" class="form-control" required min="1">
+                            <div class="input-group-append">
+                                <span class="input-group-text">unit</span>
+                            </div>
+                        </div>
+                        <small class="form-text text-muted">Masukkan jumlah dalam satuan terkecil (mis: tablet, piece, unit)</small>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label>Satuan Terkecil</label>
+                        <input type="text" name="new_items[{index}][satuan]" class="form-control" required placeholder="tablet/piece/unit">
+                    </div>
+                </div>
+                <div class="col-md-1">
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button type="button" class="btn btn-danger btn-block btn-remove-new-item">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-12">
+                    <div class="form-group">
+                        <label>Spesifikasi/Keterangan</label>
+                        <textarea name="new_items[{index}][spesifikasi]" class="form-control" rows="2" required></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Counter untuk barang baru
+    let newItemCount = 0;
+
+    // Tambah barang baru
+    document.getElementById('btnAddNewItem').addEventListener('click', function() {
+        const template = newItemTemplate.replace(/{index}/g, newItemCount++);
+        document.getElementById('newItemContainer').insertAdjacentHTML('beforeend', template);
+    });
+
+    // Event handler untuk hapus barang baru
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-remove-new-item')) {
+            e.target.closest('.new-item-row').remove();
+        }
+    });
+
+    // Form validation
+    document.getElementById('formPermintaan').addEventListener('submit', function(e) {
+        const items = document.querySelectorAll('.item-row');
+        const newItems = document.querySelectorAll('.new-item-row');
+        let hasValidItem = false;
+
+        // Cek barang terdaftar
+        items.forEach(row => {
+            const barang = row.querySelector('.select-barang').value;
+            const jumlah = row.querySelector('.jumlah-kemasan').value;
+            if (barang && jumlah && jumlah > 0) {
+                hasValidItem = true;
+            }
+        });
+
+        // Cek barang baru
+        newItems.forEach(row => {
+            const inputs = row.querySelectorAll('input[required], select[required], textarea[required]');
+            let isRowValid = true;
+            inputs.forEach(input => {
+                if (!input.value) {
+                    isRowValid = false;
+                }
+            });
+            if (isRowValid) {
+                hasValidItem = true;
+            }
+        });
+
+        if (!hasValidItem) {
+            e.preventDefault();
+            alert('Mohon tambahkan minimal satu item permintaan yang valid');
+        }
+    });
+});
+</script>
+@endpush
+@endsection
