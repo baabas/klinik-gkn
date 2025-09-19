@@ -42,7 +42,7 @@
                         <tr>
                             <th>No</th>
                             <th>Kode</th>
-                            <th>Nama Barang</th>
+                            <th>Nama Obat/Alat Medis</th>
                             <th>Tipe</th>
                             <th>Tgl Masuk Terakhir</th>
                             <th>Kedaluwarsa Terdekat</th>

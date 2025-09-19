@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Detail Permintaan Barang</h1>
+        <h1 class="h2">Detail Permintaan Obat</h1>
         <a href="{{ route('permintaan.index') }}" class="btn btn-secondary btn-sm">
             <i class="bi bi-arrow-left"></i> Kembali ke Daftar
         </a>
@@ -68,7 +68,7 @@
                         @csrf
                         @method('PUT')
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-circle-fill me-2"></i> Konfirmasi Barang Diterima
+                            <i class="bi bi-check-circle-fill me-2"></i> Konfirmasi Obat Diterima
                         </button>
                     </form>
                 </div>
@@ -80,7 +80,7 @@
     {{-- CARD 2: DAFTAR BARANG YANG DIMINTA --}}
     <div class="card shadow-sm">
         <div class="card-header bg-light">
-            <h5 class="mb-0">Rincian Barang Diminta</h5>
+            <h5 class="mb-0">Rincian Obat Diminta</h5>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -88,7 +88,7 @@
                     <thead class="table-light">
                         <tr>
                             <th>No</th>
-                            <th>Nama Barang</th>
+                            <th>Nama Obat</th>
                             <th>Tipe</th>
                             <th>Satuan</th>
                             <th class="text-center">Jumlah Diminta</th>
@@ -129,7 +129,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center text-muted">Tidak ada item barang dalam permintaan ini.</td>
+                                <td colspan="6" class="text-center text-muted">Tidak ada item obat dalam permintaan ini.</td>
                             </tr>
                         @endforelse
                     </tbody>

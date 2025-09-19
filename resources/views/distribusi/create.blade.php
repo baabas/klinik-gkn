@@ -36,7 +36,7 @@
         {{-- Kartu Rincian Barang untuk Dikirim --}}
         <div class="card shadow-sm">
             <div class="card-header bg-light">
-                <h5 class="mb-0">Barang untuk Dikirim (Akumulasi dari Permintaan APPROVED)</h5>
+                <h5 class="mb-0">Obat untuk Dikirim (Akumulasi dari Permintaan APPROVED)</h5>
             </div>
             <div class="card-body">
                 @if (session('error'))
@@ -78,7 +78,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="text-center p-4">Tidak ada barang yang perlu dikirim.</td>
+                                    <td colspan="4" class="text-center p-4">Tidak ada Obat yang perlu dikirim.</td>
                                 </tr>
                             @endforelse
                         </tbody>

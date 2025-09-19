@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h2">Proses Permintaan Barang</h1>
+        <h1 class="h2">Proses Permintaan Obat</h1>
         <a href="{{ route('permintaan.index') }}" class="btn btn-secondary">
             <i class="bi bi-arrow-left"></i> Kembali ke Daftar
         </a>
@@ -28,13 +28,13 @@
 
         {{-- Kartu Rincian Barang dengan Input Persetujuan --}}
         <div class="card shadow-sm">
-            <div class="card-header bg-light"><h5 class="mb-0">Rincian Barang untuk Diproses</h5></div>
+            <div class="card-header bg-light"><h5 class="mb-0">Rincian Obat untuk Diproses</h5></div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table">
                         <thead class="table-light">
                             <tr>
-                                <th>Nama Barang</th>
+                                <th>Nama Obat</th>
                                 <th class="text-center">Jumlah Diminta</th>
                                 <th class="text-center" style="width: 20%;">Jumlah Disetujui</th>
                                 <th class="text-center">Keterangan</th>
@@ -61,7 +61,7 @@
                                     </td>
                                     <td class="text-center">
                                         @if ($item->barangMedis)
-                                            <span class="badge bg-primary">Barang Terdaftar</span>
+                                            <span class="badge bg-primary">Obat Terdaftar</span>
                                         @else
                                             <span class="badge bg-success">Request Baru</span>
                                         @endif

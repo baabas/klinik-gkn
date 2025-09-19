@@ -36,33 +36,33 @@
                 <hr>
 
                 {{-- Bagian Detail Barang --}}
-                <h5 class="mb-3">Detail Barang</h5>
+                <h5 class="mb-3">Detail Obat</h5>
 
                 {{-- 1. Barang yang Sudah Terdaftar --}}
                 <div class="card mb-4">
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                        Barang Terdaftar
+                        Obat Terdaftar
                         <button type="button" class="btn btn-sm btn-outline-primary" id="add-barang-btn">
                             <i class="bi bi-plus-circle"></i> Tambah
                         </button>
                     </div>
                     <div class="card-body" id="barang-terdaftar-wrapper">
                         {{-- Baris akan ditambahkan oleh JavaScript --}}
-                        <p class="text-muted mb-0" id="barang-terdaftar-placeholder">Belum ada barang terdaftar yang ditambahkan.</p>
+                        <p class="text-muted mb-0" id="barang-terdaftar-placeholder">Belum ada Obat terdaftar yang ditambahkan.</p>
                     </div>
                 </div>
 
                 {{-- 2. Request Barang Baru --}}
                 <div class="card">
                      <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                        Request Barang Baru
+                        Request Obat Baru
                         <button type="button" class="btn btn-sm btn-outline-success" id="add-barang-baru-btn">
                             <i class="bi bi-plus-circle"></i> Tambah
                         </button>
                     </div>
                     <div class="card-body" id="barang-baru-wrapper">
                         {{-- Baris akan ditambahkan oleh JavaScript --}}
-                        <p class="text-muted mb-0" id="barang-baru-placeholder">Belum ada request barang baru.</p>
+                        <p class="text-muted mb-0" id="barang-baru-placeholder">Belum ada request Obat baru.</p>
                     </div>
                 </div>
 
