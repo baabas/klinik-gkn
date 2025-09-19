@@ -5,28 +5,32 @@
 
     <div class="card shadow-sm">
         <div class="card-body">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                <div class="btn-group">
-                    <a href="{{ route('permintaan.index') }}" class="btn btn-outline-primary">
-                        <i class="bi bi-file-earmark-text"></i> Daftar Permintaan
-                    </a>
-                    <a href="{{ route('barang-masuk.index') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-clipboard-data"></i> Riwayat Barang Masuk
-                    </a>
-                    @if(Auth::user()->hasRole('PENGADAAN'))
-                    <a href="{{ route('barang-masuk.create') }}" class="btn btn-success">
-                            <i class="bi bi-box-arrow-in-down"></i> Input Barang Masuk
+            <div class="row gy-3 align-items-center mb-3">
+                <div class="col-12 col-lg">
+                    <div class="d-flex flex-column flex-sm-row flex-wrap gap-2">
+                        <a href="{{ route('permintaan.index') }}" class="btn btn-outline-primary w-100 w-sm-auto">
+                            <i class="bi bi-file-earmark-text"></i> Daftar Permintaan
                         </a>
-                        <a href="{{ route('barang-medis.create') }}" class="btn btn-primary">
-                            <i class="bi bi-plus-circle"></i> Tambah Barang Baru
+                        <a href="{{ route('barang-masuk.index') }}" class="btn btn-outline-secondary w-100 w-sm-auto">
+                            <i class="bi bi-clipboard-data"></i> Riwayat Barang Masuk
                         </a>
-                    @endif
+                        @if(Auth::user()->hasRole('PENGADAAN'))
+                            <a href="{{ route('barang-masuk.create') }}" class="btn btn-success w-100 w-sm-auto">
+                                <i class="bi bi-box-arrow-in-down"></i> Input Barang Masuk
+                            </a>
+                            <a href="{{ route('barang-medis.create') }}" class="btn btn-primary w-100 w-sm-auto">
+                                <i class="bi bi-plus-circle"></i> Tambah Barang Baru
+                            </a>
+                        @endif
+                    </div>
                 </div>
 
-                <form action="{{ route('barang-medis.index') }}" method="GET" class="d-flex" style="max-width: 320px;">
-                    <input type="search" class="form-control me-2" name="search" placeholder="Cari Nama atau Kode..." value="{{ request('search') }}">
-                    <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
-                </form>
+                <div class="col-12 col-lg-auto">
+                    <form action="{{ route('barang-medis.index') }}" method="GET" class="d-flex flex-column flex-sm-row gap-2 align-items-stretch">
+                        <input type="search" class="form-control" name="search" placeholder="Cari Nama atau Kode..." value="{{ request('search') }}">
+                        <button class="btn btn-outline-secondary w-100 w-sm-auto" type="submit"><i class="bi bi-search"></i></button>
+                    </form>
+                </div>
             </div>
 
             @if(session('success'))

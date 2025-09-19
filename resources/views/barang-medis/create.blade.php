@@ -44,9 +44,9 @@
                         <input type="text" name="kemasan" class="form-control" id="kemasan" placeholder="Contoh: Strip isi 10" value="{{ old('kemasan') }}">
                     </div>
                 </div>
-                <div class="mt-3">
-                    <button type="submit" class="btn btn-primary">Simpan Barang</button>
-                    <a href="{{ route('barang-medis.index') }}" class="btn btn-secondary">Batal</a>
+                <div class="d-flex flex-column flex-sm-row justify-content-end gap-2 mt-4">
+                    <a href="{{ route('barang-medis.index') }}" class="btn btn-secondary w-100 w-sm-auto">Batal</a>
+                    <button type="submit" class="btn btn-primary w-100 w-sm-auto">Simpan Barang</button>
                 </div>
             </form>
         </div>

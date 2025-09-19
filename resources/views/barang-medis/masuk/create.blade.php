@@ -83,9 +83,9 @@
                               placeholder="Contoh: Batch 09/2024">{{ old('keterangan') }}</textarea>
                 </div>
 
-                <div class="col-12 d-flex justify-content-end gap-2 mt-3">
-                    <a href="{{ route('barang-masuk.index') }}" class="btn btn-secondary">Batal</a>
-                    <button type="submit" class="btn btn-primary">
+                <div class="col-12 d-flex flex-column flex-sm-row justify-content-end gap-2 mt-3">
+                    <a href="{{ route('barang-masuk.index') }}" class="btn btn-secondary w-100 w-sm-auto">Batal</a>
+                    <button type="submit" class="btn btn-primary w-100 w-sm-auto">
                         <i class="bi bi-save"></i> Simpan Data
                     </button>
                 </div>

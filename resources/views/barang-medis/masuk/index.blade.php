@@ -1,17 +1,21 @@
 @extends('layouts.sidebar-layout')
 
 @section('content')
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Riwayat Obat & Alat Medis Masuk</h1>
-        <div class="btn-group">
-            <a href="{{ route('barang-medis.index') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Kembali ke Daftar Barang
-            </a>
-            @if(Auth::user()->hasRole('PENGADAAN'))
-                <a href="{{ route('barang-masuk.create') }}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Input Barang Masuk
+    <div class="row gy-2 align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <div class="col-12 col-lg">
+            <h1 class="h2 mb-0">Riwayat Obat & Alat Medis Masuk</h1>
+        </div>
+        <div class="col-12 col-lg-auto">
+            <div class="d-flex flex-column flex-sm-row flex-wrap gap-2 justify-content-lg-end">
+                <a href="{{ route('barang-medis.index') }}" class="btn btn-outline-secondary w-100 w-sm-auto">
+                    <i class="bi bi-arrow-left"></i> Kembali ke Daftar Barang
                 </a>
-            @endif
+                @if(Auth::user()->hasRole('PENGADAAN'))
+                    <a href="{{ route('barang-masuk.create') }}" class="btn btn-primary w-100 w-sm-auto">
+                        <i class="bi bi-plus-circle"></i> Input Barang Masuk
+                    </a>
+                @endif
+            </div>
         </div>
     </div>
 
