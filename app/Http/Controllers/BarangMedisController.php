@@ -35,7 +35,7 @@ class BarangMedisController extends Controller
             ->withSum('stokMasuk as total_unit_masuk', 'perubahan')
             ->withMax('stokMasuk as tanggal_masuk_terakhir', 'tanggal_transaksi')
             ->withMin('stokMasuk as expired_terdekat', 'expired_at')
-            ->with(['stokMasukTerakhir'])
+            ->with(['stokMasukTerakhir', 'creator'])
             ->when($search, function ($query, $search) {
                 return $query->where(function ($q) use ($search) {
                     $q->where('nama_obat', 'like', "%{$search}%")
@@ -80,7 +80,10 @@ class BarangMedisController extends Controller
 
         DB::beginTransaction();
         try {
-            $barangBaru = BarangMedis::create($validated);
+            $barangBaru = BarangMedis::create([
+                ...$validated,
+                'created_by' => Auth::id(),
+            ]);
 
             $lokasi = LokasiKlinik::all();
             foreach ($lokasi as $loc) {

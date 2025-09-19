@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -36,6 +37,7 @@ class BarangMedis extends Model
         'tipe', // Kolom baru kita
         'satuan',
         'kemasan',
+        'created_by',
     ];
 
     // --- RELASI ---
@@ -73,5 +75,13 @@ class BarangMedis extends Model
             ->where('perubahan', '>', 0)
             ->orderByDesc('tanggal_transaksi')
             ->orderByDesc('created_at');
+    }
+
+    /**
+     * User yang membuat data master barang medis.
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }
