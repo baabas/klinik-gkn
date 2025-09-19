@@ -74,7 +74,14 @@
                                 <td>
                                     <strong>{{ $entry->barang->nama_obat ?? '-' }}</strong>
                                     <div class="text-muted small">Kode: {{ $entry->barang->kode_obat ?? '-' }}</div>
-                                    <div class="text-muted small">Dibuat oleh {{ $entry->barang->creator->nama_karyawan ?? '-' }}</div>
+                                    <div class="text-muted small">
+                                        Dibuat oleh
+                                        {{
+                                            optional($entry->user)->nama_karyawan
+                                                ?? optional(optional($entry->user)->karyawan)->nama_karyawan
+                                                ?? '-'
+                                        }}
+                                    </div>
                                 </td>
                                 <td>{{ $entry->lokasi->nama_lokasi ?? '-' }}</td>
                                 <td>

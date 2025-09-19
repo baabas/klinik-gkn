@@ -18,7 +18,7 @@ class BarangMasukController extends Controller
     public function index(Request $request)
     {
         $entries = StokHistory::query()
-            ->with(['barang.creator', 'lokasi'])
+            ->with(['barang.creator', 'lokasi', 'user.karyawan'])
             ->where('perubahan', '>', 0)
             ->when($request->filled('barang'), function ($query) use ($request) {
                 $query->where('id_barang', $request->input('barang'));
