@@ -63,7 +63,9 @@ class BarangMedis extends Model
      */
     public function stokMasuk(): HasMany
     {
-        return $this->stokHistories()->where('perubahan', '>', 0);
+        return $this->stokHistories()
+            ->where('perubahan', '>', 0)
+            ->whereNotNull('jumlah_kemasan');
     }
 
     /**
@@ -73,6 +75,7 @@ class BarangMedis extends Model
     {
         return $this->hasOne(StokHistory::class, 'id_barang', 'id_obat')
             ->where('perubahan', '>', 0)
+            ->whereNotNull('jumlah_kemasan')
             ->orderByDesc('tanggal_transaksi')
             ->orderByDesc('created_at');
     }
