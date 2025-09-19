@@ -88,9 +88,11 @@
                     <thead class="table-light">
                         <tr>
                             <th>No</th>
+                            <th>Kode Obat</th>
                             <th>Nama Obat</th>
-                            <th>Tipe</th>
                             <th>Satuan</th>
+                            <th>Kemasan</th>
+                            <th>Keterangan</th>
                             <th class="text-center">Jumlah Diminta</th>
                             <th class="text-center">Jumlah Disetujui</th>
                         </tr>
@@ -99,6 +101,13 @@
                         @forelse ($permintaan->detail as $item)
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
+                                <td>
+                                    @if ($item->id_barang)
+                                        {{ $item->barangMedis->kode_obat }}
+                                    @else
+                                        -
+                                    @endif
+                                </td>
                                 <td>
                                     {{-- Cek apakah ini barang baru atau barang terdaftar --}}
                                     @if ($item->id_barang)
@@ -110,16 +119,23 @@
                                 </td>
                                 <td>
                                     @if ($item->id_barang)
-                                        {{ $item->barangMedis->tipe }}
-                                    @else
-                                        {{ $item->tipe_barang_baru }}
-                                    @endif
-                                </td>
-                                 <td>
-                                    @if ($item->id_barang)
-                                        {{ $item->barangMedis->satuan }}
+                                        {{ $item->satuan_diminta ?? $item->barangMedis->satuan }}
                                     @else
                                         {{ $item->satuan_barang_baru }}
+                                    @endif
+                                </td>
+                                <td>
+                                    @if ($item->id_barang)
+                                        {{ $item->kemasan_diminta ?? $item->barangMedis->kemasan ?? '-' }}
+                                    @else
+                                        {{ $item->kemasan_barang_baru ?? '-' }}
+                                    @endif
+                                </td>
+                                <td>
+                                    @if ($item->id_barang)
+                                        {{ $item->catatan ?: '-' }}
+                                    @else
+                                        {{ $item->catatan_barang_baru ?: '-' }}
                                     @endif
                                 </td>
                                 <td class="text-center">{{ $item->jumlah_diminta }}</td>
@@ -129,7 +145,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center text-muted">Tidak ada item obat dalam permintaan ini.</td>
+                                <td colspan="8" class="text-center text-muted">Tidak ada item obat dalam permintaan ini.</td>
                             </tr>
                         @endforelse
                     </tbody>

@@ -56,12 +56,16 @@ class PermintaanBarangController extends Controller
             'barang' => 'nullable|array',
             'barang.*.id' => 'required_with:barang|exists:barang_medis,id_obat',
             'barang.*.jumlah' => 'required_with:barang|integer|min:1',
+            'barang.*.satuan' => 'required_with:barang|string|max:100',
+            'barang.*.kemasan' => 'nullable|string|max:150',
+            'barang.*.catatan' => 'nullable|string|max:255',
             // Validasi untuk request barang baru yang belum ada di database
             'barang_baru' => 'nullable|array',
             'barang_baru.*.nama' => 'required_with:barang_baru|string|max:255',
             'barang_baru.*.jumlah' => 'required_with:barang_baru|integer|min:1',
-            'barang_baru.*.tipe' => 'required_with:barang_baru|in:OBAT,ALKES',
             'barang_baru.*.satuan' => 'required_with:barang_baru|string|max:100',
+            'barang_baru.*.kemasan' => 'nullable|string|max:150',
+            'barang_baru.*.catatan' => 'nullable|string|max:255',
         ]);
 
         // Pastikan setidaknya ada satu item yang diminta
@@ -86,9 +90,16 @@ class PermintaanBarangController extends Controller
             if ($request->has('barang')) {
                 foreach ($request->barang as $item) {
                     if(!empty($item['id']) && !empty($item['jumlah'])) {
+                        $satuanDiminta = isset($item['satuan']) ? trim($item['satuan']) : null;
+                        $kemasanDiminta = isset($item['kemasan']) && $item['kemasan'] !== '' ? trim($item['kemasan']) : null;
+                        $catatanBarang = isset($item['catatan']) && $item['catatan'] !== '' ? trim($item['catatan']) : null;
+
                         $permintaan->detail()->create([
                             'id_barang' => $item['id'],
                             'jumlah_diminta' => $item['jumlah'],
+                            'satuan_diminta' => $satuanDiminta,
+                            'kemasan_diminta' => $kemasanDiminta,
+                            'catatan' => $catatanBarang,
                         ]);
                     }
                 }
@@ -98,12 +109,17 @@ class PermintaanBarangController extends Controller
             if ($request->has('barang_baru')) {
                 foreach ($request->barang_baru as $item) {
                      if(!empty($item['nama']) && !empty($item['jumlah'])) {
+                        $satuanBaru = isset($item['satuan']) ? trim($item['satuan']) : null;
+                        $kemasanBaru = isset($item['kemasan']) && $item['kemasan'] !== '' ? trim($item['kemasan']) : null;
+                        $catatanBaru = isset($item['catatan']) && $item['catatan'] !== '' ? trim($item['catatan']) : null;
                         $permintaan->detail()->create([
                             'id_barang' => null, // ID barang dikosongkan karena barang baru
                             'jumlah_diminta' => $item['jumlah'],
                             'nama_barang_baru' => $item['nama'],
-                            'tipe_barang_baru' => $item['tipe'],
-                            'satuan_barang_baru' => $item['satuan'],
+                            'tipe_barang_baru' => $item['tipe'] ?? null,
+                            'satuan_barang_baru' => $satuanBaru,
+                            'kemasan_barang_baru' => $kemasanBaru,
+                            'catatan_barang_baru' => $catatanBaru,
                         ]);
                     }
                 }

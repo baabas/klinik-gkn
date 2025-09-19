@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let barangIndex = 0;
     let barangBaruIndex = 0;
 
-    const selectOptions = `<option value="" disabled selected>-- Pilih Barang --</option>@foreach($barangMedis as $item)<option value="{{ $item->id_obat }}">{{ $item->nama_obat }} ({{ $item->satuan }})</option>@endforeach`;
+    const selectOptions = `<option value="" disabled selected>-- Pilih Barang --</option>@foreach($barangMedis as $item)<option value="{{ $item->id_obat }}" data-kode="{{ $item->kode_obat }}" data-satuan="{{ $item->satuan }}" data-kemasan="{{ $item->kemasan ?? '' }}">{{ $item->kode_obat }} - {{ $item->nama_obat }}</option>@endforeach`;
 
     const barangWrapper = document.getElementById('barang-terdaftar-wrapper');
     const barangPlaceholder = document.getElementById('barang-terdaftar-placeholder');
@@ -93,11 +93,26 @@ document.addEventListener('DOMContentLoaded', function () {
         if (barangPlaceholder) barangPlaceholder.style.display = 'none';
 
         const newRow = document.createElement('div');
-        newRow.classList.add('row', 'g-2', 'align-items-center', 'mb-2', 'barang-row');
+        newRow.classList.add('row', 'g-2', 'align-items-center', 'mb-3', 'barang-row');
         newRow.innerHTML = `
-            <div class="col-md-6"><select class="form-select" name="barang[${barangIndex}][id]" required>${selectOptions}</select></div>
-            <div class="col-md-4"><input type="number" class="form-control" name="barang[${barangIndex}][jumlah]" placeholder="Jumlah" min="1" required></div>
-            <div class="col-md-2 text-end"><button type="button" class="btn btn-danger btn-sm remove-row-btn"><i class="bi bi-trash"></i></button></div>
+            <div class="col-md-3">
+                <select class="form-select barang-select" name="barang[${barangIndex}][id]" required>
+                    ${selectOptions}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input type="number" class="form-control" name="barang[${barangIndex}][jumlah]" placeholder="Jumlah" min="1" required>
+            </div>
+            <div class="col-md-2">
+                <input type="text" class="form-control satuan-input" name="barang[${barangIndex}][satuan]" placeholder="Satuan" required>
+            </div>
+            <div class="col-md-2">
+                <input type="text" class="form-control kemasan-input" name="barang[${barangIndex}][kemasan]" placeholder="Kemasan (opsional)">
+            </div>
+            <div class="col-md-2">
+                <input type="text" class="form-control catatan-input" name="barang[${barangIndex}][catatan]" placeholder="Keterangan (opsional)">
+            </div>
+            <div class="col-md-1 text-end"><button type="button" class="btn btn-danger btn-sm remove-row-btn"><i class="bi bi-trash"></i></button></div>
         `;
         barangWrapper.appendChild(newRow);
         barangIndex++;
@@ -107,13 +122,14 @@ document.addEventListener('DOMContentLoaded', function () {
         if (barangBaruPlaceholder) barangBaruPlaceholder.style.display = 'none';
 
         const newRow = document.createElement('div');
-        newRow.classList.add('row', 'g-2', 'align-items-center', 'mb-2', 'barang-row');
+        newRow.classList.add('row', 'g-2', 'align-items-center', 'mb-3', 'barang-row');
         newRow.innerHTML = `
-            <div class="col-md-4"><input type="text" class="form-control" name="barang_baru[${barangBaruIndex}][nama]" placeholder="Nama Barang Baru" required></div>
+            <div class="col-md-3"><input type="text" class="form-control" name="barang_baru[${barangBaruIndex}][nama]" placeholder="Nama Barang Baru" required></div>
             <div class="col-md-2"><input type="number" class="form-control" name="barang_baru[${barangBaruIndex}][jumlah]" placeholder="Jumlah" min="1" required></div>
-            <div class="col-md-2"><select class="form-select" name="barang_baru[${barangBaruIndex}][tipe]" required><option value="OBAT">OBAT</option><option value="ALKES">ALKES</option></select></div>
-            <div class="col-md-2"><input type="text" class="form-control" name="barang_baru[${barangBaruIndex}][satuan]" placeholder="Satuan (cth: Tablet)" required></div>
-            <div class="col-md-2 text-end"><button type="button" class="btn btn-danger btn-sm remove-row-btn"><i class="bi bi-trash"></i></button></div>
+            <div class="col-md-2"><input type="text" class="form-control" name="barang_baru[${barangBaruIndex}][satuan]" placeholder="Satuan" required></div>
+            <div class="col-md-2"><input type="text" class="form-control" name="barang_baru[${barangBaruIndex}][kemasan]" placeholder="Kemasan (opsional)"></div>
+            <div class="col-md-2"><input type="text" class="form-control" name="barang_baru[${barangBaruIndex}][catatan]" placeholder="Keterangan (opsional)"></div>
+            <div class="col-md-1 text-end"><button type="button" class="btn btn-danger btn-sm remove-row-btn"><i class="bi bi-trash"></i></button></div>
         `;
         barangBaruWrapper.appendChild(newRow);
         barangBaruIndex++;
@@ -129,6 +145,39 @@ document.addEventListener('DOMContentLoaded', function () {
             if (barangBaruWrapper.querySelectorAll('.barang-row').length === 0 && barangBaruPlaceholder) {
                 barangBaruPlaceholder.style.display = 'block';
             }
+        }
+    });
+
+    function isiDataBarang(selectElement) {
+        if (!selectElement) {
+            return;
+        }
+
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        if (!selectedOption) {
+            return;
+        }
+
+        const row = selectElement.closest('.barang-row');
+        if (!row) {
+            return;
+        }
+
+        const satuanInput = row.querySelector('.satuan-input');
+        const kemasanInput = row.querySelector('.kemasan-input');
+
+        if (satuanInput && selectedOption.dataset.satuan !== undefined) {
+            satuanInput.value = selectedOption.dataset.satuan || '';
+        }
+
+        if (kemasanInput && selectedOption.dataset.kemasan !== undefined) {
+            kemasanInput.value = selectedOption.dataset.kemasan || '';
+        }
+    }
+
+    document.addEventListener('change', function(e) {
+        if (e.target && e.target.classList.contains('barang-select')) {
+            isiDataBarang(e.target);
         }
     });
 });
