@@ -7,18 +7,18 @@
         <div class="card-body">
             <div class="row gy-3 align-items-center mb-3">
                 <div class="col-12 col-lg">
-                    <div class="d-flex flex-column flex-sm-row flex-wrap gap-2">
-                        <a href="{{ route('permintaan.index') }}" class="btn btn-outline-primary w-100 w-sm-auto">
+                    <div class="d-flex flex-column flex-sm-row gap-2">
+                    <a href="{{ route('permintaan.index') }}" class="btn btn-outline-primary flex-grow-1 flex-sm-grow-0">
                             <i class="bi bi-file-earmark-text"></i> Daftar Permintaan
                         </a>
-                        <a href="{{ route('barang-masuk.index') }}" class="btn btn-outline-secondary w-100 w-sm-auto">
+                        <a href="{{ route('barang-masuk.index') }}" class="btn btn-outline-secondary flex-grow-1 flex-sm-grow-0">
                             <i class="bi bi-clipboard-data"></i> Riwayat Barang Masuk
                         </a>
                         @if(Auth::user()->hasRole('PENGADAAN'))
-                            <a href="{{ route('barang-masuk.create') }}" class="btn btn-success w-100 w-sm-auto">
+                                <a href="{{ route('barang-masuk.create') }}" class="btn btn-success flex-grow-1 flex-sm-grow-0">
                                 <i class="bi bi-box-arrow-in-down"></i> Input Barang Masuk
                             </a>
-                            <a href="{{ route('barang-medis.create') }}" class="btn btn-primary w-100 w-sm-auto">
+                            <a href="{{ route('barang-medis.create') }}" class="btn btn-primary flex-grow-1 flex-sm-grow-0">
                                 <i class="bi bi-plus-circle"></i> Tambah Barang Baru
                             </a>
                         @endif
