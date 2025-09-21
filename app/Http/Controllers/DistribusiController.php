@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\LokasiKlinik;
 use App\Models\PermintaanBarang;
-use App\Models\DetailPermintaanBarang;
+use App\Models\PermintaanBarangDetail;
 use App\Models\StokBarang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,10 +14,10 @@ class DistribusiController extends Controller
     public function index()
     {
         $klinikSiapKirim = LokasiKlinik::whereHas('permintaanBarang', function ($query) {
-            $query->where('status', 'APPROVED');
+            $query->where('status', PermintaanBarang::STATUS_DISETUJUI);
         })
         ->withCount(['permintaanBarang' => function ($query) {
-            $query->where('status', 'APPROVED');
+            $query->where('status', PermintaanBarang::STATUS_DISETUJUI);
         }])
         ->where('nama_lokasi', '!=', 'Gudang Pusat') // Abaikan gudang pusat
         ->get();
@@ -35,18 +35,19 @@ class DistribusiController extends Controller
 
         // Ambil semua item dari permintaan yg statusnya APPROVED untuk klinik ini,
         // lalu kelompokkan berdasarkan barang yang sama dan jumlahkan totalnya.
-        $barangUntukDikirim = DetailPermintaanBarang::select('id_barang', DB::raw('SUM(jumlah_disetujui) as total_disetujui'))
-            ->whereNotNull('id_barang')
+        $barangUntukDikirim = PermintaanBarangDetail::select('barang_id', DB::raw('SUM(total_unit) as total_unit'))
+            ->whereNotNull('barang_id')
             ->whereHas('permintaan', function ($query) use ($id_lokasi_tujuan) {
-                $query->where('status', 'APPROVED')->where('id_lokasi_peminta', $id_lokasi_tujuan);
+                $query->where('status', PermintaanBarang::STATUS_DISETUJUI)
+                    ->where('lokasi_id', $id_lokasi_tujuan);
             })
-            ->groupBy('id_barang')
+            ->groupBy('barang_id')
             ->with('barangMedis') // Ambil info detail barang
             ->get();
 
         // Cek stok setiap barang di gudang pusat
         foreach ($barangUntukDikirim as $item) {
-            $stok = StokBarang::where('id_lokasi', $gudangPusat->id)->where('id_barang', $item->id_barang)->first();
+            $stok = StokBarang::where('id_lokasi', $gudangPusat->id)->where('id_barang', $item->barang_id)->first();
             $item->stok_gudang = $stok ? $stok->jumlah : 0;
         }
 
@@ -88,9 +89,9 @@ class DistribusiController extends Controller
             }
 
             // 2. Update Status Semua Permintaan Terkait menjadi "COMPLETED"
-            PermintaanBarang::where('id_lokasi_peminta', $request->id_lokasi_tujuan)
-                ->where('status', 'APPROVED')
-                ->update(['status' => 'COMPLETED']);
+            PermintaanBarang::where('lokasi_id', $request->id_lokasi_tujuan)
+                ->where('status', PermintaanBarang::STATUS_DISETUJUI)
+                ->update(['status' => PermintaanBarang::STATUS_DIPENUHI]);
 
             DB::commit();
             return redirect()->route('distribusi.index')->with('success', 'Distribusi barang berhasil diproses dan stok telah diperbarui.');

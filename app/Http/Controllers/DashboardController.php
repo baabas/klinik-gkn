@@ -52,13 +52,16 @@ class DashboardController extends Controller
      */
     private function dashboardPengadaan(): \Illuminate\View\View
     {
-        $permintaanPending = PermintaanBarang::where('status', 'PENDING')->count();
+        $permintaanPending = PermintaanBarang::where('status', PermintaanBarang::STATUS_DIAJUKAN)->count();
         $stokMenipis = BarangMedis::withSum('stokLokasi as stok_sum_jumlah', 'jumlah')
             ->with('defaultKemasan')
             ->get()->where('stok_sum_jumlah', '<', 50)->count();
         $totalMasterBarang = BarangMedis::count();
-        $permintaanTerbaru = PermintaanBarang::with('lokasiPeminta')
-            ->where('status', 'PENDING')->latest()->limit(5)->get();
+        $permintaanTerbaru = PermintaanBarang::with(['lokasi'])
+            ->where('status', PermintaanBarang::STATUS_DIAJUKAN)
+            ->latest('tanggal')
+            ->limit(5)
+            ->get();
        $stokTerendah = BarangMedis::withSum('stokLokasi as stok_sum_jumlah', 'jumlah')
             ->with('defaultKemasan')
             ->orderBy('stok_sum_jumlah', 'asc')->limit(5)->get();

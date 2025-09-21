@@ -64,6 +64,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('barang-masuk', [BarangMasukController::class, 'index'])->name('barang-masuk.index');
 
         Route::resource('barang-medis', BarangMedisController::class);
+        Route::get('permintaan/barang/search', [PermintaanBarangController::class, 'searchBarang'])->name('permintaan.barang.search');
+        Route::get('permintaan/barang/{barang}/kemasan', [PermintaanBarangController::class, 'kemasan'])->name('permintaan.barang.kemasan');
+        Route::post('permintaan/{permintaan}/submit', [PermintaanBarangController::class, 'submit'])->name('permintaan.submit');
+        Route::post('permintaan/{permintaan}/approve', [PermintaanBarangController::class, 'approve'])->name('permintaan.approve');
+        Route::post('permintaan/{permintaan}/reject', [PermintaanBarangController::class, 'reject'])->name('permintaan.reject');
+        Route::post('permintaan/{permintaan}/fulfill', [PermintaanBarangController::class, 'fulfill'])->name('permintaan.fulfill');
         Route::resource('permintaan', PermintaanBarangController::class);
     });
 
@@ -99,9 +105,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/laporan/obat', [LaporanController::class, 'cetakLaporanObat'])->name('laporan.obat');
         Route::get('/laporan/penyakit-kunjungan', [LaporanController::class, 'cetakLaporanPenyakitKunjungan'])->name('laporan.penyakit-kunjungan');
 
-        // [BARU] Route untuk dokter mengonfirmasi penerimaan barang
-        Route::put('/permintaan/{permintaan}/terima', [PermintaanBarangController::class, 'konfirmasiPenerimaan'])
-            ->name('permintaan.terima');
     });
 
     // --- RUTE KHUSUS PENGADAAN ---

@@ -2,8 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 class PermintaanBarang extends Model
 {
@@ -12,80 +16,134 @@ class PermintaanBarang extends Model
     protected $table = 'permintaan_barang';
 
     protected $fillable = [
-        'kode_permintaan',
-        'id_lokasi_peminta',
-        'id_user_peminta',
-        'tanggal_permintaan',
+        'kode',
+        'peminta_id',
+        'lokasi_id',
+        'tanggal',
         'catatan',
         'status',
     ];
 
-    public const STATUS_PENDING = 'PENDING';
-    public const STATUS_APPROVED = 'APPROVED';
-    public const STATUS_COMPLETED = 'COMPLETED';
-    public const STATUS_REJECTED = 'REJECTED';
-
-    protected const STATUS_LABELS = [
-        self::STATUS_PENDING => 'Menunggu',
-        self::STATUS_APPROVED => 'Disetujui',
-        self::STATUS_COMPLETED => 'Selesai',
-        self::STATUS_REJECTED => 'Ditolak',
+    protected $casts = [
+        'tanggal' => 'date',
     ];
 
-    protected const STATUS_BADGE_CLASSES = [
-        self::STATUS_PENDING => 'bg-warning text-dark',
-        self::STATUS_APPROVED => 'bg-info',
-        self::STATUS_COMPLETED => 'bg-success',
-        self::STATUS_REJECTED => 'bg-danger',
+    public const STATUS_DRAFT = 'DRAFT';
+    public const STATUS_DIAJUKAN = 'DIAJUKAN';
+    public const STATUS_DISETUJUI = 'DISETUJUI';
+    public const STATUS_DITOLAK = 'DITOLAK';
+    public const STATUS_DIPENUHI = 'DIPENUHI';
+
+    public const STATUS_LABELS = [
+        self::STATUS_DRAFT => 'Draft',
+        self::STATUS_DIAJUKAN => 'Diajukan',
+        self::STATUS_DISETUJUI => 'Disetujui',
+        self::STATUS_DITOLAK => 'Ditolak',
+        self::STATUS_DIPENUHI => 'Dipenuhi',
     ];
 
-    /**
-     * Get the available status labels.
-     */
-    public static function statusLabels(): array
+    public const STATUS_BADGES = [
+        self::STATUS_DRAFT => 'badge bg-secondary',
+        self::STATUS_DIAJUKAN => 'badge bg-info text-dark',
+        self::STATUS_DISETUJUI => 'badge bg-success',
+        self::STATUS_DITOLAK => 'badge bg-danger',
+        self::STATUS_DIPENUHI => 'badge bg-primary',
+    ];
+
+    public static function statusOptions(): array
     {
         return self::STATUS_LABELS;
     }
 
-    /**
-     * Get the localized label for the current status.
-     */
     public function getStatusLabelAttribute(): string
     {
-        return self::STATUS_LABELS[$this->status] ?? ucfirst(strtolower($this->status));
+        return self::STATUS_LABELS[$this->status] ?? $this->status;
     }
 
-    /**
-     * Get the bootstrap badge classes for the current status.
-     */
-    public function getStatusBadgeAttribute(): string
+    public function getStatusBadgeClassAttribute(): string
     {
-        return self::STATUS_BADGE_CLASSES[$this->status] ?? 'bg-secondary';
+        return self::STATUS_BADGES[$this->status] ?? 'badge bg-secondary';
     }
 
-    // --- RELASI ---
-
-    /**
-     * Relasi ke detail permintaan (satu permintaan punya banyak item barang).
-     */
-    public function detail()
+    public function scopeStatus(\Illuminate\Database\Eloquent\Builder $query, ?string $status): \Illuminate\Database\Eloquent\Builder
     {
-        return $this->hasMany(DetailPermintaanBarang::class, 'id_permintaan', 'id');
+        if (! $status) {
+            return $query;
+        }
+
+        return $query->where('status', $status);
     }
 
-    /**
-     * Relasi ke lokasi klinik yang meminta.
-     */
-    public function lokasiPeminta()
+    public function scopeSearch(Builder $query, $search): Builder
     {
-        return $this->belongsTo(LokasiKlinik::class, 'id_lokasi_peminta', 'id');
+        if ($search === null) {
+            return $query;
+        }
+
+        $search = trim((string) $search);
+
+        if ($search === '') {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($search) {
+            $q->where('kode', 'like', "%{$search}%")
+                ->orWhereHas('peminta', function ($sub) use ($search) {
+                    $sub->where('nama_karyawan', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('nip', 'like', "%{$search}%");
+                })
+                ->orWhereHas('lokasi', function ($sub) use ($search) {
+                    $sub->where('nama_lokasi', 'like', "%{$search}%");
+                });
+        });
     }
 
-    /**
-     * Relasi ke user yang membuat permintaan.
-     */
-    public function userPeminta()
+    public function details(): HasMany
     {
-        return $this->belongsTo(User::class, 'id_user_peminta', 'id');
+        return $this->hasMany(PermintaanBarangDetail::class, 'permintaan_id');
+    }
+
+    public function peminta(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'peminta_id');
+    }
+
+    public function lokasi(): BelongsTo
+    {
+        return $this->belongsTo(LokasiKlinik::class, 'lokasi_id');
+    }
+
+    public function isDraft(): bool
+    {
+        return $this->status === self::STATUS_DRAFT;
+    }
+
+    public function isDiajukan(): bool
+    {
+        return $this->status === self::STATUS_DIAJUKAN;
+    }
+
+    public function isDisetujui(): bool
+    {
+        return $this->status === self::STATUS_DISETUJUI;
+    }
+
+    public static function generateKode(): string
+    {
+        $today = Carbon::now()->format('Ymd');
+        $prefix = "REQ-{$today}-";
+
+        $lastKode = static::where('kode', 'like', $prefix.'%')
+            ->orderByDesc('kode')
+            ->value('kode');
+
+        $next = 1;
+        if ($lastKode) {
+            $number = (int) substr($lastKode, -4);
+            $next = $number + 1;
+        }
+
+        return sprintf('%s%04d', $prefix, $next);
     }
 }

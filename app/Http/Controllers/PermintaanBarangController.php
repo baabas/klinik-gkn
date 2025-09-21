@@ -2,290 +2,430 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BarangKemasan;
 use App\Models\BarangMedis;
 use App\Models\PermintaanBarang;
+use App\Models\StokHistory;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use App\Models\StokBarang;      // [BARU] Tambahkan model ini
-use App\Models\StokHistory;     // [BARU] Tambahkan model ini
+use Illuminate\Support\Facades\Validator;
+use Illuminate\View\View;
 
 class PermintaanBarangController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $user = Auth::user();
-        // Memuat relasi 'lokasiPeminta' dan 'userPeminta' untuk efisiensi query
-        $query = PermintaanBarang::with('lokasiPeminta', 'userPeminta')->latest();
+        $search = $request->input('search');
+        $status = $request->input('status');
 
-        // Jika user memiliki role DOKTER, filter permintaan berdasarkan lokasi
-        if ($user->hasRole('DOKTER')) {
-            $query->where('id_lokasi_peminta', $user->id_lokasi);
+        $query = PermintaanBarang::with(['peminta', 'lokasi'])
+            ->latest('tanggal')
+            ->search($search)
+            ->status($status);
+
+        if ($user->hasRole('DOKTER') && $user->id_lokasi) {
+            $query->where('lokasi_id', $user->id_lokasi);
         }
 
-        if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('kode_permintaan', 'like', "%{$search}%")
-                    ->orWhereHas('userPeminta', function ($sub) use ($search) {
-                        $sub->where('nama_karyawan', 'like', "%{$search}%");
-                    })
-                    ->orWhereHas('lokasiPeminta', function ($sub) use ($search) {
-                        $sub->where('nama_lokasi', 'like', "%{$search}%");
-                    });
-            });
-        }
+        /** @var LengthAwarePaginator $permintaan */
+        $permintaan = $query->paginate(15)->withQueryString();
 
-        if ($status = $request->input('status')) {
-            $query->where('status', $status);
-        }
-
-        $permintaan = $query->paginate(10)->withQueryString();
-
-        return view('permintaan.index', compact('permintaan'));
+        return view('permintaan.index', [
+            'permintaan' => $permintaan,
+            'statusOptions' => PermintaanBarang::statusOptions(),
+            'filters' => [
+                'search' => $search,
+                'status' => $status,
+            ],
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function create(): View
     {
-        if (!Auth::user()->hasRole('DOKTER')) {
-            abort(403, 'Hanya dokter yang dapat membuat permintaan obat.');
-        }
-        // Mengambil semua data barang untuk ditampilkan di dropdown form
-        $barangMedis = BarangMedis::orderBy('nama_obat')->get();
+        $this->authorizeDoctor();
 
-        return view('permintaan.create', compact('barangMedis'));
+        return view('permintaan.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
-        if (!Auth::user()->hasRole('DOKTER')) {
-            abort(403, 'Hanya dokter yang dapat membuat permintaan obat.');
+        $this->authorizeDoctor();
+
+        $user = Auth::user();
+
+        if (! $user->id_lokasi) {
+            return back()->withInput()->with('error', 'Lokasi dokter belum diatur. Hubungi administrator.');
         }
-        // 1. Validasi input dari form
-        $request->validate([
-            'tanggal_permintaan' => 'required|date',
-            'catatan' => 'nullable|string',
-            // Validasi untuk barang yang sudah ada di database
-            'barang' => 'nullable|array',
-            'barang.*.id' => 'required_with:barang|exists:barang_medis,id_obat',
-            'barang.*.jumlah' => 'required_with:barang|integer|min:1',
-            'barang.*.satuan' => 'required_with:barang|string|max:100',
-            'barang.*.kemasan' => 'nullable|string|max:150',
-            'barang.*.catatan' => 'nullable|string|max:255',
-            // Validasi untuk request barang baru yang belum ada di database
-            'barang_baru' => 'nullable|array',
-            'barang_baru.*.nama' => 'required_with:barang_baru|string|max:255',
-            'barang_baru.*.jumlah' => 'required_with:barang_baru|integer|min:1',
-            'barang_baru.*.satuan' => 'required_with:barang_baru|string|max:100',
-            'barang_baru.*.kemasan' => 'nullable|string|max:150',
-            'barang_baru.*.catatan' => 'nullable|string|max:255',
+
+        $validated = $this->validatePermintaan($request);
+
+        $permintaan = DB::transaction(function () use ($validated, $user) {
+            
+            $permintaan = PermintaanBarang::create([
+                'kode' => PermintaanBarang::generateKode(),
+                'tanggal' => $validated['tanggal'],
+                'catatan' => $validated['catatan'] ?? null,
+                'status' => PermintaanBarang::STATUS_DRAFT,
+                'peminta_id' => $user->id,
+                'lokasi_id' => $user->id_lokasi,
+            ]);
+
+            $this->syncDetails($permintaan, $validated['items'], $validated['new_items']);
+
+            return $permintaan;
+        });
+
+        return redirect()
+            ->route('permintaan.show', $permintaan)
+            ->with('success', 'Permintaan barang berhasil dibuat sebagai draft.');
+    }
+
+    public function show(PermintaanBarang $permintaan): View
+    {
+        $permintaan->load(['peminta', 'lokasi', 'details.barang', 'details.kemasan']);
+
+        return view('permintaan.show', [
+            'permintaan' => $permintaan,
+        ]);
+    }
+
+    public function edit(PermintaanBarang $permintaan): View
+    {
+        $this->authorizeDoctor();
+
+        if (! $permintaan->isDraft() || $permintaan->peminta_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $permintaan->load(['details.barang', 'details.kemasan']);
+
+        return view('permintaan.edit', [
+            'permintaan' => $permintaan,
+        ]);
+    }
+
+    public function update(Request $request, PermintaanBarang $permintaan): RedirectResponse
+    {
+        $this->authorizeDoctor();
+
+        if (! $permintaan->isDraft() || $permintaan->peminta_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $validated = $this->validatePermintaan($request);
+
+        DB::transaction(function () use ($permintaan, $validated) {
+            $permintaan->update([
+                'tanggal' => $validated['tanggal'],
+                'catatan' => $validated['catatan'] ?? null,
+            ]);
+
+            $permintaan->details()->delete();
+
+            $this->syncDetails($permintaan, $validated['items'], $validated['new_items']);
+        });
+
+        return redirect()
+            ->route('permintaan.show', $permintaan)
+            ->with('success', 'Draft permintaan berhasil diperbarui.');
+    }
+
+    public function destroy(PermintaanBarang $permintaan): RedirectResponse
+    {
+        $this->authorizeDoctor();
+
+        if (! $permintaan->isDraft() || $permintaan->peminta_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $permintaan->delete();
+
+        return redirect()
+            ->route('permintaan.index')
+            ->with('success', 'Permintaan berhasil dihapus.');
+    }
+
+    public function submit(PermintaanBarang $permintaan): RedirectResponse
+    {
+        $this->authorizeDoctor();
+
+        if (! $permintaan->isDraft() || $permintaan->peminta_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $permintaan->update(['status' => PermintaanBarang::STATUS_DIAJUKAN]);
+
+        return redirect()
+            ->route('permintaan.show', $permintaan)
+            ->with('success', 'Permintaan berhasil diajukan.');
+    }
+
+    public function approve(PermintaanBarang $permintaan): RedirectResponse
+    {
+        $this->authorizePengadaan();
+
+        if (! $permintaan->isDiajukan()) {
+            return back()->with('error', 'Hanya permintaan yang diajukan yang dapat disetujui.');
+        }
+
+        $permintaan->update(['status' => PermintaanBarang::STATUS_DISETUJUI]);
+
+        return redirect()
+            ->route('permintaan.show', $permintaan)
+            ->with('success', 'Permintaan barang disetujui.');
+    }
+
+    public function reject(Request $request, PermintaanBarang $permintaan): RedirectResponse
+    {
+        $this->authorizePengadaan();
+
+        if (! $permintaan->isDiajukan()) {
+            return back()->with('error', 'Hanya permintaan yang diajukan yang dapat ditolak.');
+        }
+
+        $permintaan->update([
+            'status' => PermintaanBarang::STATUS_DITOLAK,
+            'catatan' => $request->filled('catatan') ? $request->string('catatan')->toString() : $permintaan->catatan,
         ]);
 
-        // Pastikan setidaknya ada satu item yang diminta
-        if (empty($request->barang) && empty($request->barang_baru)) {
-            return redirect()->back()->with('error', 'Permintaan tidak boleh kosong. Silakan tambahkan minimal satu barang.')->withInput();
-        }
-
-        // 2. Gunakan DB Transaction untuk memastikan integritas data
-        DB::beginTransaction();
-        try {
-            // 3. Buat data "header" permintaan
-            $permintaan = PermintaanBarang::create([
-                'kode_permintaan' => 'REQ-' . date('Ymd') . '-' . strtoupper(Str::random(4)),
-                'tanggal_permintaan' => $request->tanggal_permintaan,
-                'catatan' => $request->catatan,
-                'status' => 'PENDING',
-                'id_user_peminta' => Auth::id(),
-                'id_lokasi_peminta' => Auth::user()->id_lokasi,
-            ]);
-
-            // 4. Simpan detail untuk barang yang sudah terdaftar
-            if ($request->has('barang')) {
-                foreach ($request->barang as $item) {
-                    if(!empty($item['id']) && !empty($item['jumlah'])) {
-                        $satuanDiminta = isset($item['satuan']) ? trim($item['satuan']) : null;
-                        $kemasanDiminta = isset($item['kemasan']) && $item['kemasan'] !== '' ? trim($item['kemasan']) : null;
-                        $catatanBarang = isset($item['catatan']) && $item['catatan'] !== '' ? trim($item['catatan']) : null;
-
-                        $permintaan->detail()->create([
-                            'id_barang' => $item['id'],
-                            'jumlah_diminta' => $item['jumlah'],
-                            'satuan_diminta' => $satuanDiminta,
-                            'kemasan_diminta' => $kemasanDiminta,
-                            'catatan' => $catatanBarang,
-                        ]);
-                    }
-                }
-            }
-
-            // 5. Simpan detail untuk request barang baru
-            if ($request->has('barang_baru')) {
-                foreach ($request->barang_baru as $item) {
-                     if(!empty($item['nama']) && !empty($item['jumlah'])) {
-                        $satuanBaru = isset($item['satuan']) ? trim($item['satuan']) : null;
-                        $kemasanBaru = isset($item['kemasan']) && $item['kemasan'] !== '' ? trim($item['kemasan']) : null;
-                        $catatanBaru = isset($item['catatan']) && $item['catatan'] !== '' ? trim($item['catatan']) : null;
-                        $permintaan->detail()->create([
-                            'id_barang' => null, // ID barang dikosongkan karena barang baru
-                            'jumlah_diminta' => $item['jumlah'],
-                            'nama_barang_baru' => $item['nama'],
-                            'tipe_barang_baru' => $item['tipe'] ?? null,
-                            'satuan_barang_baru' => $satuanBaru,
-                            'kemasan_barang_baru' => $kemasanBaru,
-                            'catatan_barang_baru' => $catatanBaru,
-                        ]);
-                    }
-                }
-            }
-
-            DB::commit(); // Jika semua proses berhasil, simpan data secara permanen
-
-            return redirect()->route('permintaan.index')->with('success', 'Permintaan barang berhasil dibuat.');
-
-        } catch (\Exception $e) {
-            DB::rollBack(); // Jika terjadi error, batalkan semua query yang sudah dijalankan
-            return redirect()->back()->with('error', 'Terjadi kesalahan fatal: ' . $e->getMessage())->withInput();
-        }
+        return redirect()
+            ->route('permintaan.show', $permintaan)
+            ->with('success', 'Permintaan barang ditolak.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-        public function show(PermintaanBarang $permintaan)
-        {
-            $permintaan->load('detail.barangMedis', 'userPeminta', 'lokasiPeminta');
-
-            // Kirim data ke view 'permintaan.show'
-            return view('permintaan.show', compact('permintaan'));
-        }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-        public function edit(PermintaanBarang $permintaan)
-        {
-            // Pastikan hanya PENGADAAN yang bisa mengakses halaman ini
-            if (!Auth::user()->hasRole('PENGADAAN')) {
-                abort(403, 'Anda tidak memiliki hak akses untuk memproses permintaan.');
-            }
-            // Pastikan hanya permintaan PENDING yang bisa diproses
-            if ($permintaan->status !== 'PENDING') {
-                return redirect()->route('permintaan.show', $permintaan->id)->with('warning', 'Permintaan ini sudah diproses.');
-            }
-
-            $permintaan->load('detail.barangMedis', 'userPeminta', 'lokasiPeminta');
-
-            return view('permintaan.edit', compact('permintaan'));
-        }
-
-    /**
-     * Update the specified resource in storage.
-     */
-        public function update(Request $request, PermintaanBarang $permintaan)
-        {
-            if (!Auth::user()->hasRole('PENGADAAN')) {
-                abort(403, 'Anda tidak memiliki hak akses.');
-            }
-
-            $request->validate([
-                'detail.*.jumlah_disetujui' => 'nullable|integer|min:0',
-                'action' => 'required|in:APPROVED,REJECTED'
-            ]);
-
-            DB::beginTransaction();
-            try {
-                // Update jumlah disetujui untuk setiap item detail
-                if($request->has('detail')) {
-                    foreach($request->detail as $itemData) {
-                        DB::table('detail_permintaan_barang')
-                            ->where('id', $itemData['id'])
-                            ->update(['jumlah_disetujui' => $itemData['jumlah_disetujui'] ?? null]);
-                    }
-                }
-
-                // Update status permintaan utama
-                $permintaan->status = $request->action;
-                $permintaan->save();
-
-                DB::commit();
-
-                return redirect()->route('permintaan.index')->with('success', 'Permintaan berhasil diproses dan status telah diubah menjadi ' . $request->action);
-
-            } catch (\Exception $e) {
-                DB::rollBack();
-                return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
-            }
-        }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(PermintaanBarang $permintaanBarang)
+    public function fulfill(Request $request, PermintaanBarang $permintaan): RedirectResponse
     {
-        // Untuk menghapus data permintaan
-        // (Akan dibuat nanti)
-    }
+        $this->authorizePengadaan();
 
-    /**
-     * [BARU] Untuk Dokter mengonfirmasi penerimaan barang.
-     */
-    public function konfirmasiPenerimaan(PermintaanBarang $permintaan)
-    {
-        // Validasi: hanya permintaan yang disetujui ('APPROVED') yang bisa diproses
-        if ($permintaan->status !== 'APPROVED') {
-            return redirect()->back()->with('error', 'Hanya permintaan yang berstatus DISETUJUI yang dapat dikonfirmasi.');
+        if (! $permintaan->isDisetujui()) {
+            return back()->with('error', 'Hanya permintaan yang sudah disetujui yang dapat dipenuhi.');
         }
+
+        $createBaru = collect($request->input('buat_barang_baru', []))->map(fn ($value) => (int) $value)->all();
 
         try {
-            DB::transaction(function () use ($permintaan) {
-                $lokasiTujuan = $permintaan->id_lokasi_peminta;
+            DB::transaction(function () use ($permintaan, $createBaru) {
+                $permintaan->loadMissing('details.barang', 'details.kemasan');
 
-                // Loop melalui setiap item dalam detail permintaan
-                foreach ($permintaan->detail as $detail) {
-                    // Hanya proses item yang memiliki id_barang dan jumlah disetujui > 0
-                    if ($detail->id_barang && $detail->jumlah_disetujui > 0) {
-                        $barangId = $detail->id_barang;
-                        $jumlahDiterima = $detail->jumlah_disetujui;
+                foreach ($permintaan->details as $detail) {
+                    if ($detail->barang_id) {
+                        $isi = $detail->kemasan?->isi_per_kemasan ?? 0;
+                    $jumlahUnit = $detail->total_unit ?? ((int) $detail->jumlah * $isi);
 
-                        // 1. Tambah stok di lokasi tujuan (lokasi dokter)
-                        $stokTujuan = StokBarang::firstOrCreate(
-                            ['id_barang' => $barangId, 'id_lokasi' => $lokasiTujuan],
-                            ['jumlah' => 0]
-                        );
+                    if ($jumlahUnit <= 0) {
+                        continue;
+                    }
 
-                        $stokSebelum = $stokTujuan->jumlah;
-                        $stokTujuan->increment('jumlah', $jumlahDiterima);
+                    $barang = $detail->barang;
+                    if ($detail->total_unit === null && $isi) {
+                        $detail->update(['total_unit' => $jumlahUnit]);
+                    }
+                    $stokSebelum = (int) $barang->stok;
 
-                        // 2. Catat riwayat penambahan stok
-                        StokHistory::create([
-                            'id_barang' => $barangId,
-                            'id_lokasi' => $lokasiTujuan,
-                            'perubahan' => $jumlahDiterima,
-                            'stok_sebelum' => $stokSebelum,
-                            'stok_sesudah' => $stokTujuan->jumlah,
-                            'keterangan' => 'Penerimaan barang dari permintaan ' . $permintaan->kode_permintaan,
-                            'tanggal_transaksi' => now()->toDateString(),
-                            'user_id' => Auth::id(),
+                    if ($stokSebelum < $jumlahUnit) {
+                        throw new \RuntimeException("Stok {$barang->nama_obat} tidak mencukupi.");
+                    }
+
+                    $barang->decrement('stok', $jumlahUnit);
+
+                    StokHistory::create([
+                        'id_barang' => $barang->id_obat,
+                        'id_lokasi' => $permintaan->lokasi_id,
+                        'perubahan' => -$jumlahUnit,
+                        'stok_sebelum' => $stokSebelum,
+                        'stok_sesudah' => $stokSebelum - $jumlahUnit,
+                        'keterangan' => 'Permintaan ' . $permintaan->kode,
+                        'user_id' => Auth::id(),
+                        'tanggal_transaksi' => now()->toDateString(),
+                        'jumlah_kemasan' => (int) $detail->jumlah,
+                        'isi_per_kemasan' => $isi ?: null,
+                        'satuan_kemasan' => $detail->kemasan,
+                        'kemasan_id' => $detail->barang_kemasan_id,
+                        'base_unit' => $barang->satuan_dasar,
+                    ]);
+                } elseif (in_array($detail->id, $createBaru, true)) {
+                    $barangBaru = BarangMedis::create([
+                        'kode_obat' => BarangMedis::generateKode('OBAT'),
+                        'nama_obat' => $detail->nama_barang_baru,
+                        'tipe' => 'OBAT',
+                        'satuan_dasar' => $detail->satuan ?? 'Unit',
+                        'stok' => 0,
+                        'created_by' => Auth::id(),
+                    ]);
+
+                    if ($detail->kemasan) {
+                        $kemasanBaru = $barangBaru->kemasanBarang()->create([
+                            'nama_kemasan' => $detail->kemasan,
+                            'isi_per_kemasan' => 1,
+                            'is_default' => true,
+                        ]);
+
+                        $detail->update([
+                            'barang_kemasan_id' => $kemasanBaru->id,
                         ]);
                     }
+
+                    $detail->update([
+                        'barang_id' => $barangBaru->id_obat,
+                    ]);
+                }
                 }
 
-                // 3. Update status permintaan menjadi 'COMPLETED' (DITERIMA/SELESAI)
-                $permintaan->update(['status' => 'COMPLETED']);
+                $permintaan->update(['status' => PermintaanBarang::STATUS_DIPENUHI]);
             });
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Terjadi kesalahan saat memproses penerimaan: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage());
         }
 
-        return redirect()->route('permintaan.show', $permintaan->id)->with('success', 'Permintaan barang telah berhasil diselesaikan.');
+        return redirect()
+            ->route('permintaan.show', $permintaan)
+            ->with('success', 'Permintaan telah dipenuhi dan stok diperbarui.');
+    }
+
+    public function searchBarang(Request $request): JsonResponse
+    {
+        if (! Auth::check() || ! Auth::user()->hasRole(['DOKTER', 'PENGADAAN', 'ADMIN'])) {
+            abort(403);
+        }
+
+        $term = $request->input('q');
+
+        $items = BarangMedis::query()
+            ->select(['id_obat', 'nama_obat', 'kode_obat', 'satuan_dasar'])
+            ->when($term, function ($query) use ($term) {
+                $query->where('nama_obat', 'like', "%{$term}%")
+                    ->orWhere('kode_obat', 'like', "%{$term}%");
+            })
+            ->orderBy('nama_obat')
+            ->limit(20)
+            ->get()
+            ->map(fn (BarangMedis $barang) => [
+                'id' => $barang->id_obat,
+                'text' => sprintf('%s (%s)', $barang->nama_obat, $barang->kode_obat),
+                'satuan' => $barang->satuan_dasar,
+            ]);
+
+        return response()->json(['results' => $items]);
+    }
+
+    public function kemasan(BarangMedis $barang): JsonResponse
+    {
+        if (! Auth::check() || ! Auth::user()->hasRole(['DOKTER', 'PENGADAAN', 'ADMIN'])) {
+            abort(403);
+        }
+
+        $barang->loadMissing('kemasanBarang');
+
+        $kemasan = $barang->kemasanBarang->map(fn (BarangKemasan $kemasan) => [
+            'id' => $kemasan->id,
+            'text' => $kemasan->nama_kemasan,
+            'isi' => $kemasan->isi_per_kemasan,
+            'is_default' => $kemasan->is_default,
+        ]);
+
+        return response()->json([
+            'data' => $kemasan,
+            'satuan' => $barang->satuan_dasar,
+        ]);
+    }
+
+    private function authorizeDoctor(): void
+    {
+        if (! Auth::check() || ! Auth::user()->hasRole('DOKTER')) {
+            abort(403);
+        }
+    }
+
+    private function authorizePengadaan(): void
+    {
+        if (! Auth::check() || ! Auth::user()->hasRole(['PENGADAAN', 'ADMIN'])) {
+            abort(403);
+        }
+    }
+
+    private function validatePermintaan(Request $request): array
+    {
+        $validator = Validator::make($request->all(), [
+            'tanggal' => ['required', 'date'],
+            'catatan' => ['nullable', 'string'],
+            'items' => ['nullable', 'array'],
+            'items.*.barang_id' => ['required_with:items', 'exists:barang_medis,id_obat'],
+            'items.*.barang_kemasan_id' => ['required_with:items', 'exists:barang_kemasan,id'],
+            'items.*.jumlah' => ['required_with:items', 'integer', 'min:1'],
+            'items.*.keterangan' => ['nullable', 'string', 'max:255'],
+            'new_items' => ['nullable', 'array'],
+            'new_items.*.nama' => ['required_with:new_items', 'string', 'max:255'],
+            'new_items.*.jumlah' => ['required_with:new_items', 'numeric', 'min:0.01'],
+            'new_items.*.satuan' => ['required_with:new_items', 'string', 'max:50'],
+            'new_items.*.kemasan' => ['nullable', 'string', 'max:150'],
+            'new_items.*.keterangan' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $validator->after(function ($validator) use ($request) {
+            $items = $request->input('items', []);
+            $newItems = $request->input('new_items', []);
+
+            if (empty($items) && empty($newItems)) {
+                $validator->errors()->add('items', 'Minimal satu detail harus ditambahkan.');
+            }
+
+            foreach ($items as $index => $item) {
+                $barangId = Arr::get($item, 'barang_id');
+                $kemasanId = Arr::get($item, 'barang_kemasan_id');
+
+                if ($barangId && $kemasanId) {
+                    $exists = BarangKemasan::where('id', $kemasanId)
+                        ->where('barang_id', $barangId)
+                        ->exists();
+
+                    if (! $exists) {
+                        $validator->errors()->add("items.{$index}.barang_kemasan_id", 'Kemasan tidak valid untuk barang yang dipilih.');
+                    }
+                }
+            }
+        });
+
+        $data = $validator->validate();
+
+        return [
+            'tanggal' => $data['tanggal'],
+            'catatan' => $data['catatan'] ?? null,
+            'items' => $data['items'] ?? [],
+            'new_items' => $data['new_items'] ?? [],
+        ];
+    }
+
+    private function syncDetails(PermintaanBarang $permintaan, array $items, array $newItems): void
+    {
+        foreach ($items as $item) {
+            $barang = BarangMedis::find($item['barang_id']);
+            $kemasan = BarangKemasan::find($item['barang_kemasan_id']);
+            $jumlah = (int) $item['jumlah'];
+
+            $permintaan->details()->create([
+                'barang_id' => $barang->id_obat,
+                'barang_kemasan_id' => $kemasan->id,
+                'jumlah' => $jumlah,
+                'total_unit' => $kemasan->isi_per_kemasan * $jumlah,
+                'satuan' => $barang->satuan_dasar,
+                'kemasan' => $kemasan->nama_kemasan,
+                'keterangan' => $item['keterangan'] ?? null,
+            ]);
+        }
+
+        foreach ($newItems as $item) {
+            $permintaan->details()->create([
+                'nama_barang_baru' => $item['nama'],
+                'jumlah' => (float) $item['jumlah'],
+                'satuan' => $item['satuan'],
+                'kemasan' => $item['kemasan'] ?? null,
+                'keterangan' => $item['keterangan'] ?? null,
+            ]);
+        }
     }
 }

@@ -10,7 +10,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Permintaan Pending</div>
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Permintaan Diajukan</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $permintaanPending }}</div>
                         </div>
                         <div class="col-auto">
@@ -59,7 +59,7 @@
         <div class="col-lg-7 mb-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold">5 Permintaan Terbaru (Pending)</h6>
+                    <h6 class="m-0 font-weight-bold">5 Permintaan Terbaru (Diajukan)</h6>
                     <a href="{{ route('permintaan.index') }}">Lihat Semua &rarr;</a>
                 </div>
                 <div class="card-body p-0">
@@ -69,12 +69,12 @@
                                 @forelse ($permintaanTerbaru as $permintaan)
                                 <tr>
                                     <td>
-                                        <strong>{{ $permintaan->kode_permintaan }}</strong><br>
-                                        <small class="text-muted">{{ $permintaan->lokasiPeminta->nama_lokasi ?? 'N/A' }}</small>
+                                        <strong>{{ $permintaan->kode }}</strong><br>
+                                        <small class="text-muted">{{ $permintaan->lokasi->nama_lokasi ?? 'N/A' }}</small>
                                     </td>
                                     <td class="text-end">
-                                        {{ \Carbon\Carbon::parse($permintaan->created_at)->diffForHumans() }}<br>
-                                        <a href="{{ route('permintaan.edit', $permintaan->id) }}" class="btn btn-warning btn-sm mt-1">Proses Permintaan</a>
+                                        {{ optional($permintaan->tanggal)->diffForHumans() ?? $permintaan->created_at->diffForHumans() }}<br>
+                                        <a href="{{ route('permintaan.show', $permintaan->id) }}" class="btn btn-warning btn-sm mt-1">Proses Permintaan</a>
                                     </td>
                                 </tr>
                                 @empty

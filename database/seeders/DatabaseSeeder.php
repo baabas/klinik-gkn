@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
 
             // Seeder untuk membuat akun user (Dokter, Pengadaan, dll.)
             AdminUserSeeder::class,
+            PermintaanBarangSeeder::class,
         ]);
     }
 }
