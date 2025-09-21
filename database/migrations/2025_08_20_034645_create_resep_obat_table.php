@@ -15,8 +15,7 @@ return new class extends Migration
             $table->id('id_resep');
             $table->unsignedBigInteger('id_rekam_medis');
             $table->unsignedBigInteger('id_obat');
-            $table->integer('jumlah');
-            $table->text('aturan_pakai');
+            $table->integer('jumlah');          
             // Pastikan baris untuk 'dosis' sudah tidak ada di sini
             $table->timestamps();
 

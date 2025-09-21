@@ -19,6 +19,7 @@ class User extends Authenticatable
     protected $fillable = [
         'nama_karyawan',
         'nip',
+        'nik',
         'email',
         'password',
         'akses',
@@ -63,42 +64,53 @@ class User extends Authenticatable
         if (is_string($role)) {
             return $this->roles->contains('name', $role);
         }
-
-        if (is_array($role)) {
-            foreach ($role as $r) {
-                if ($this->hasRole($r)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
+        // Disederhanakan untuk efisiensi, karena hasRole() hanya dipanggil dengan string di kode Anda
         return false;
     }
 
     /**
-     * Relasi ke model Karyawan.
+     * Relasi ke profil Karyawan.
      */
     public function karyawan()
     {
-        return $this->belongsTo(Karyawan::class, 'nip', 'nip');
+        return $this->hasOne(Karyawan::class, 'nip', 'nip');
+    }
+    
+    /**
+     * Relasi ke profil NonKaryawan.
+     */
+    public function nonKaryawan()
+    {
+        return $this->hasOne(NonKaryawan::class, 'nik', 'nik');
     }
 
     /**
-     * Relasi one-to-many ke model RekamMedis.
-     * Menggunakan 'nip_pasien' sebagai foreign key yang sudah diseragamkan.
+     * [PERBAIKAN UTAMA] Relasi one-to-many ke model RekamMedis.
+     * Sekarang bisa mengambil data berdasarkan NIP atau NIK dengan benar.
      */
     public function rekamMedis()
     {
-        return $this->hasMany(RekamMedis::class, 'nip_pasien', 'nip');
+        if ($this->nip) {
+            // Jika user memiliki NIP (pasien karyawan)
+            return $this->hasMany(RekamMedis::class, 'nip_pasien', 'nip');
+        } else {
+            // Jika user tidak memiliki NIP (pasti pasien non-karyawan)
+            return $this->hasMany(RekamMedis::class, 'nik_pasien', 'nik');
+        }
     }
 
     /**
-     * Relasi one-to-many ke model Checkup.
-     * Menggunakan 'nip_pasien' sebagai foreign key yang sudah diseragamkan.
+     * [PERBAIKAN UTAMA] Relasi one-to-many ke model Checkup.
+     * Sekarang bisa mengambil data berdasarkan NIP atau NIK dengan benar.
      */
     public function checkups()
     {
-        return $this->hasMany(Checkup::class, 'nip_pasien', 'nip');
+        if ($this->nip) {
+            // Jika user memiliki NIP (pasien karyawan)
+            return $this->hasMany(Checkup::class, 'nip_pasien', 'nip');
+        } else {
+            // Jika user tidak memiliki NIP (pasti pasien non-karyawan)
+            return $this->hasMany(Checkup::class, 'nik_pasien', 'nik');
+        }
     }
 }

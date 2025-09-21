@@ -1,6 +1,6 @@
 @extends('layouts.sidebar-layout')
 
-@section('title', 'Detail Pasien - ' . $user->nama_karyawan)
+@section('title', 'Detail Pasien - ' . $pasien->nama_karyawan)
 
 @push('styles')
 <style>
@@ -34,32 +34,30 @@
     <h1 class="h2">Kartu Pasien Digital</h1>
 </div>
 
-{{-- BIODATA KARTU --}}
+{{-- BIODATA KARTU (disesuaikan untuk Non-Karyawan) --}}
 <div class="card shadow-sm mb-4">
-    <div class="card-header bg-primary text-white">
-        <h4 class="mb-0">Nomor Index Pasien: {{ $user->id }}</h4>
+    <div class="card-header bg-success text-white">
+        <h4 class="mb-0">Nomor Index Pasien: {{ $pasien->id }}</h4>
     </div>
     <div class="card-body p-4">
-        {{-- [PERBAIKAN] Menggunakan relasi $user->karyawan untuk mengakses data profil --}}
-        @if($user->karyawan)
+        @if($pasien->nonKaryawan)
             <div class="row">
                 <div class="col-md-6">
-                    <p><strong>NIP:</strong><br> {{ $user->nip }}</p>
-                    <p><strong>Nama:</strong><br> {{ $user->nama_karyawan }}</p>
+                    <p><strong>NIK:</strong><br> {{ $pasien->nik }}</p>
+                    <p><strong>Nama:</strong><br> {{ $pasien->nama_karyawan }}</p>
                     <p><strong>Tanggal Lahir:</strong><br>
-                        {{ $user->karyawan->tanggal_lahir ? \Carbon\Carbon::parse($user->karyawan->tanggal_lahir)->translatedFormat('d F Y') : '-' }}
+                        {{ $pasien->nonKaryawan->tanggal_lahir ? \Carbon\Carbon::parse($pasien->nonKaryawan->tanggal_lahir)->translatedFormat('d F Y') : '-' }}
                     </p>
                     <p class="mb-md-0"><strong>Usia:</strong><br>
-                        {{ $user->karyawan->tanggal_lahir ? \Carbon\Carbon::parse($user->karyawan->tanggal_lahir)->age . ' Tahun' : '-' }}
+                        {{ $pasien->nonKaryawan->tanggal_lahir ? \Carbon\Carbon::parse($pasien->nonKaryawan->tanggal_lahir)->age . ' Tahun' : '-' }}
                     </p>
                 </div>
                 <div class="col-md-6">
-                    <p><strong>Kantor:</strong><br> {{ $user->karyawan->kantor ?? '-' }}</p>
-                    <p class="mb-0"><strong>Alamat:</strong><br> {{ $user->karyawan->alamat ?? '-' }}</p>
+                    <p class="mb-0"><strong>Alamat:</strong><br> {{ $pasien->nonKaryawan->alamat ?? '-' }}</p>
                 </div>
             </div>
         @else
-            <p class="text-center text-danger">Data detail karyawan tidak ditemukan.</p>
+            <p class="text-center text-danger">Data detail pasien tidak ditemukan.</p>
         @endif
     </div>
 </div>
@@ -82,10 +80,10 @@
         <div class="mt-2 mt-md-0">
             @if(Auth::user()->hasRole('DOKTER'))
                 <div class="btn-group">
-                    <a href="{{ route('rekam-medis.create', $user->nip) }}" class="btn btn-success btn-sm">
+                    <a href="{{ route('rekam-medis.create.non_karyawan', $pasien->nik) }}" class="btn btn-success btn-sm">
                         <i class="bi bi-plus-circle"></i> Rekam Medis Baru
                     </a>
-                    <a href="{{ route('checkup.create', $user->nip) }}" class="btn btn-info btn-sm text-white">
+                    <a href="{{ route('checkup.create.non_karyawan', $pasien->nik) }}" class="btn btn-info btn-sm text-white">
                         <i class="bi bi-clipboard2-pulse"></i> Check-up Baru
                     </a>
                 </div>
@@ -110,7 +108,7 @@
                             <tr><th>Tanggal</th><th>Pemeriksaan</th><th>Terapi</th><th>Berobat Untuk</th></tr>
                         </thead>
                         <tbody>
-                            @forelse ($user->rekamMedis as $rekam)
+                            @forelse ($pasien->rekamMedis as $rekam)
                                 <tr>
                                     <td>{{ \Carbon\Carbon::parse($rekam->tanggal_kunjungan)->translatedFormat('d M Y') }}</td>
                                     <td>
@@ -163,7 +161,7 @@
                             <tr><th>Tgl Pemeriksaan</th><th>Hasil Pemeriksaan</th><th>Hasil Pengukuran</th><th>Diperiksa Untuk</th></tr>
                         </thead>
                         <tbody>
-                            @forelse ($user->checkups as $checkup)
+                            @forelse ($pasien->checkups as $checkup)
                                 <tr>
                                     <td>{{ \Carbon\Carbon::parse($checkup->tanggal_pemeriksaan)->translatedFormat('d M Y') }}</td>
                                     <td>

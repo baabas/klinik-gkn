@@ -1,3 +1,5 @@
+// File: 2025_08_20_034643_create_rekam_medis_table.php
+
 <?php
 
 use Illuminate\Database\Migrations\Migration;
@@ -10,8 +12,7 @@ return new class extends Migration
     {
         Schema::create('rekam_medis', function (Blueprint $table) {
             $table->id('id_rekam_medis');
-            // PASTIKAN NAMA KOLOM INI ADALAH 'nip_pasien'
-            $table->string('nip_pasien', 30);
+            $table->string('nip_pasien', 30); // Biarkan seperti ini dulu
             $table->unsignedBigInteger('id_dokter');
             $table->date('tanggal_kunjungan');
             $table->text('anamnesa')->nullable();
@@ -20,7 +21,6 @@ return new class extends Migration
             $table->string('jenis_kelamin_sa')->nullable();
             $table->timestamps();
 
-            // PASTIKAN FOREIGN KEY JUGA MENGGUNAKAN 'nip_pasien'
             $table->foreign('nip_pasien')->references('nip')->on('karyawan')->onDelete('cascade');
             $table->foreign('id_dokter')->references('id')->on('users')->onDelete('cascade');
         });

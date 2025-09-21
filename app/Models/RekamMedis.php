@@ -18,8 +18,9 @@ class RekamMedis extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'nip_pasien',        // [DITAMBAHKAN]
-        'id_dokter',         // [DITAMBAHKAN]
+        'nip_pasien',
+        'nik_pasien', // [BARU] Ditambahkan untuk pasien non-karyawan
+        'id_dokter',
         'tanggal_kunjungan',
         'anamnesa',
         'terapi',
@@ -36,11 +37,19 @@ class RekamMedis extends Model
     }
 
     /**
-     * Relasi ke model User (Pasien).
+     * Relasi ke model User (Pasien Karyawan).
      */
     public function pasien()
     {
         return $this->belongsTo(User::class, 'nip_pasien', 'nip');
+    }
+
+    /**
+     * [BARU] Relasi ke model NonKaryawan (Pasien Non-Karyawan).
+     */
+    public function pasienNonKaryawan()
+    {
+        return $this->belongsTo(NonKaryawan::class, 'nik_pasien', 'nik');
     }
 
     /**

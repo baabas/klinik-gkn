@@ -13,14 +13,21 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('nip', 30)->unique();
-            $table->string('nama_karyawan');
-            $table->string('email')->unique();
-            $table->string('password');
-            // ===== PERBAIKAN DI SINI =====
-            // Menambahkan 'PASIEN' ke dalam daftar ENUM yang diizinkan
+
+            // [DIUBAH] Kolom untuk identitas Karyawan (bisa null jika non-karyawan)
+            $table->string('nip', 30)->nullable()->unique();
+
+            // [BARU] Kolom untuk identitas Non-Karyawan (bisa null jika karyawan)
+            $table->string('nik', 16)->nullable()->unique();
+
+            // Nama ini akan dipakai untuk semua user (pasien/dokter/dll)
+            $table->string('nama_karyawan'); 
+
+            // [DIUBAH] Email dan Password dibuat nullable untuk non-karyawan yang didaftarkan dokter
+            $table->string('email')->nullable()->unique();
+            $table->string('password')->nullable();
+
             $table->enum('akses', ['DOKTER', 'PENGADAAN', 'PASIEN']);
-            // =============================
             $table->rememberToken();
             $table->timestamps();
         });
