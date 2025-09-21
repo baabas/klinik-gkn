@@ -22,12 +22,7 @@
                             <input type="search" class="form-control" name="search" placeholder="Cari kode, peminta, lokasi..." value="{{ request('search') }}">
                         </div>
                         @php
-                            $statusOptions = [
-                                'PENDING' => 'Pending',
-                                'APPROVED' => 'Disetujui',
-                                'COMPLETED' => 'Selesai',
-                                'REJECTED' => 'Ditolak',
-                            ];
+                            $statusOptions = \App\Models\PermintaanBarang::statusLabels();
                         @endphp
                         <div class="col-12 col-md-4 col-lg-3 col-xl-3">
                             <select name="status" class="form-select w-100">
@@ -71,22 +66,7 @@
                                 <td>{{ $item->userPeminta->nama_karyawan ?? 'N/A' }}</td>
                                 <td>{{ $item->lokasiPeminta->nama_lokasi ?? 'N/A' }}</td>
                                 <td>
-                                    @switch($item->status)
-                                        @case('PENDING')
-                                            <span class="badge bg-warning text-dark">PENDING</span>
-                                            @break
-                                        @case('APPROVED')
-                                            <span class="badge bg-info">DISETUJUI</span>
-                                            @break
-                                        @case('COMPLETED')
-                                            <span class="badge bg-success">SELESAI</span>
-                                            @break
-                                        @case('REJECTED')
-                                            <span class="badge bg-danger">DITOLAK</span>
-                                            @break
-                                        @default
-                                            <span class="badge bg-secondary">{{ $item->status }}</span>
-                                    @endswitch
+                                    <span class="badge {{ $item->status_badge }}">{{ $item->status_label }}</span>
                                 </td>
                                 <td>
                                     @if(Auth::user()->hasRole('PENGADAAN') && $item->status == 'PENDING')

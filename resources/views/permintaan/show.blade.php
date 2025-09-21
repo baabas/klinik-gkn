@@ -36,22 +36,7 @@
 
                         <dt class="col-sm-4">Status</dt>
                         <dd class="col-sm-8">:
-                            @switch($permintaan->status)
-                                @case('PENDING')
-                                    <span class="badge bg-warning text-dark">PENDING</span>
-                                    @break
-                                @case('APPROVED')
-                                    <span class="badge bg-info">DISETUJUI</span>
-                                    @break
-                                @case('COMPLETED')
-                                    <span class="badge bg-success">DITERIMA</span>
-                                    @break
-                                @case('REJECTED')
-                                    <span class="badge bg-danger">DITOLAK</span>
-                                    @break
-                                @default
-                                    <span class="badge bg-secondary">{{ $permintaan->status }}</span>
-                            @endswitch
+                            <span class="badge {{ $permintaan->status_badge }}">{{ $permintaan->status_label }}</span>
                         </dd>
                          <dt class="col-sm-4">Catatan</dt>
                          <dd class="col-sm-8">: {{ $permintaan->catatan ?: '-' }}</dd>
