@@ -46,8 +46,10 @@ class StoreBarangMedisRequest extends FormRequest
 
     public function withValidator($validator): void
     {
-        $validator->after(function ($validator) {
-            $kemasan = collect($this->input('kemasan', []));
+        $kemasanPayload = request('kemasan', []);
+
+        $validator->after(function ($validator) use ($kemasanPayload) {
+            $kemasan = collect($kemasanPayload);
             $defaultCount = $kemasan->filter(function ($item) {
                 return !empty($item['is_default']);
             })->count();
