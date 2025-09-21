@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let barangIndex = 0;
     let barangBaruIndex = 0;
 
-    const selectOptions = `<option value="" disabled selected>-- Pilih Barang --</option>@foreach($barangMedis as $item)<option value="{{ $item->id_obat }}" data-kode="{{ $item->kode_obat }}" data-satuan="{{ $item->satuan }}" data-kemasan="{{ $item->kemasan ?? '' }}">{{ $item->kode_obat }} - {{ $item->nama_obat }}</option>@endforeach`;
+    const selectOptions = `<option value="" disabled selected>-- Pilih Barang --</option>@foreach($barangMedis as $item)<option value="{{ $item->id_obat }}" data-kode="{{ $item->kode_obat }}" data-satuan="{{ $item->satuan_dasar }}" data-kemasan="{{ $item->kemasan ?? '' }}">{{ $item->kode_obat }} - {{ $item->nama_obat }}</option>@endforeach`;
 
     const barangWrapper = document.getElementById('barang-terdaftar-wrapper');
     const barangPlaceholder = document.getElementById('barang-terdaftar-placeholder');

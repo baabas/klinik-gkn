@@ -103,8 +103,8 @@
                                         <small class="text-muted">{{ $barang->tipe }}</small>
                                     </td>
                                     <td class="text-end">
-                                        <strong class="fs-5">{{ (int)$barang->stok_sum_jumlah }}</strong><br>
-                                        <small class="text-muted">{{ $barang->satuan }}</small>
+                                        <strong class="fs-5">{{ number_format((int)$barang->stok_sum_jumlah) }}</strong><br>
+                                        <small class="text-muted">{{ \App\Support\Presenters\StokPresenter::formatWithDefault($barang, (int)$barang->stok_sum_jumlah) }}</small>
                                     </td>
                                 </tr>
                                 @empty

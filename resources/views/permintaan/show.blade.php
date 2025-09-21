@@ -104,7 +104,7 @@
                                 </td>
                                 <td>
                                     @if ($item->id_barang)
-                                        {{ $item->satuan_diminta ?? $item->barangMedis->satuan }}
+                                        {{ $item->satuan_diminta ?? $item->barangMedis->satuan_dasar }}
                                     @else
                                         {{ $item->satuan_barang_baru }}
                                     @endif

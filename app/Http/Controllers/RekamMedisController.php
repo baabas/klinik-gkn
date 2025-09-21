@@ -21,11 +21,11 @@ class RekamMedisController extends Controller
      */
     public function create(User $user): View
     {
-    $lokasiId = Auth::user()->id_lokasi;
-        $obat = BarangMedis::whereHas('stok', fn($q) =>
+        $lokasiId = Auth::user()->id_lokasi;
+        $obat = BarangMedis::whereHas('stokLokasi', fn($q) =>
                     $q->where('id_lokasi', $lokasiId)
                       ->where('jumlah', '>', 0))
-                ->with(['stok' => fn($q) => $q->where('id_lokasi', $lokasiId)])
+                ->with(['stokLokasi' => fn($q) => $q->where('id_lokasi', $lokasiId)])
                 ->orderBy('nama_obat')
                 ->get();
 

@@ -17,7 +17,7 @@ class DashboardController extends Controller
     public function index()
     {
         $activeRole = session('active_role');
-        
+
         switch ($activeRole) {
             case 'PASIEN':
                 return $this->dashboardPasien();
@@ -53,12 +53,14 @@ class DashboardController extends Controller
     private function dashboardPengadaan(): \Illuminate\View\View
     {
         $permintaanPending = PermintaanBarang::where('status', 'PENDING')->count();
-        $stokMenipis = BarangMedis::withSum('stok', 'jumlah')
+        $stokMenipis = BarangMedis::withSum('stokLokasi as stok_sum_jumlah', 'jumlah')
+            ->with('defaultKemasan')
             ->get()->where('stok_sum_jumlah', '<', 50)->count();
         $totalMasterBarang = BarangMedis::count();
         $permintaanTerbaru = PermintaanBarang::with('lokasiPeminta')
             ->where('status', 'PENDING')->latest()->limit(5)->get();
-        $stokTerendah = BarangMedis::withSum('stok', 'jumlah')
+       $stokTerendah = BarangMedis::withSum('stokLokasi as stok_sum_jumlah', 'jumlah')
+            ->with('defaultKemasan')
             ->orderBy('stok_sum_jumlah', 'asc')->limit(5)->get();
 
         return view('dashboard-pengadaan', compact(
@@ -81,22 +83,22 @@ class DashboardController extends Controller
             ->whereMonth('rm.tanggal_kunjungan', $bulanIni)->whereYear('rm.tanggal_kunjungan', $tahunIni)
             ->select('dp.nama_penyakit', DB::raw('COUNT(dd.ICD10) as jumlah')) // Count menggunakan ICD10
             ->groupBy('dp.nama_penyakit')->orderBy('jumlah', 'desc')->limit(5)->get();
-        
+
         $total_kasus_penyakit = DB::table('detail_diagnosa as dd')
             ->join('rekam_medis as rm', 'dd.id_rekam_medis', '=', 'rm.id_rekam_medis')
             ->whereMonth('rm.tanggal_kunjungan', $bulanIni)->whereYear('rm.tanggal_kunjungan', $tahunIni)->count();
-            
+
         $data_obat = DB::table('resep_obat as ro')
             ->join('barang_medis as bm', 'ro.id_obat', '=', 'bm.id_obat')
             ->join('rekam_medis as rm', 'ro.id_rekam_medis', '=', 'rm.id_rekam_medis')
             ->whereMonth('rm.tanggal_kunjungan', $bulanIni)->whereYear('rm.tanggal_kunjungan', $tahunIni)
             ->select('bm.nama_obat', DB::raw('SUM(ro.jumlah) as jumlah')) // Menggunakan `jumlah` sesuai migrasi resep_obat
             ->groupBy('bm.nama_obat')->orderBy('jumlah', 'desc')->limit(5)->get();
-            
+
         $total_pemakaian_obat = DB::table('resep_obat as ro')
             ->join('rekam_medis as rm', 'ro.id_rekam_medis', '=', 'rm.id_rekam_medis')
             ->whereMonth('rm.tanggal_kunjungan', $bulanIni)->whereYear('rm.tanggal_kunjungan', $tahunIni)->sum('ro.jumlah'); // Menggunakan `jumlah`
-            
+
         $kasus_hari_ini = DB::table('rekam_medis')->whereDate('tanggal_kunjungan', today())->count();
 
         return view('dashboard', compact(

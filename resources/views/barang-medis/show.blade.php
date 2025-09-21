@@ -1,6 +1,9 @@
 @extends('layouts.sidebar-layout')
 
 @section('content')
+    @php
+        use App\Support\Presenters\StokPresenter;
+    @endphp
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <div>
             <h1 class="h2 mb-1">Detail Barang: {{ $barang->nama_obat }}</h1>
@@ -32,10 +35,16 @@
                                 <dd class="col-sm-7">
                                     <span class="badge {{ $barang->tipe === 'OBAT' ? 'bg-primary' : 'bg-success' }}">{{ $barang->tipe }}</span>
                                 </dd>
-                                <dt class="col-sm-5">Satuan</dt>
-                                <dd class="col-sm-7">{{ $barang->satuan }}</dd>
-                                <dt class="col-sm-5">Kemasan</dt>
-                                <dd class="col-sm-7">{{ $barang->kemasan ?? '-' }}</dd>
+                                <dt class="col-sm-5">Satuan Dasar</dt>
+                                <dd class="col-sm-7">{{ $barang->satuan_dasar }}</dd>
+                                <dt class="col-sm-5">Kemasan Default</dt>
+                                <dd class="col-sm-7">
+                                    @if($barang->defaultKemasan)
+                                        {{ $barang->defaultKemasan->nama_kemasan }} @ {{ number_format($barang->defaultKemasan->isi_per_kemasan) }} {{ strtolower($barang->satuan_dasar ?? '') }}
+                                    @else
+                                        -
+                                    @endif
+                                </dd>
                             </dl>
                         </div>
                         <div class="col-md-6">
@@ -58,7 +67,7 @@
                     <div class="border rounded p-3 bg-light text-center">
                         <p class="text-muted mb-1">Total Stok</p>
                         <h2 class="display-6 mb-2">{{ number_format($totalStok) }}</h2>
-                        <p class="text-muted mb-0">{{ strtolower($barang->satuan) }}</p>
+                        <p class="text-muted mb-0">{{ StokPresenter::formatWithDefault($barang, $totalStok) }}</p>
                     </div>
                 </div>
             </div>
@@ -85,7 +94,7 @@
                         <div class="fw-semibold text-muted small">Isi per Kemasan</div>
                         <div>
                             @if(!is_null($barang->stokMasukTerakhir->isi_per_kemasan))
-                                {{ number_format($barang->stokMasukTerakhir->isi_per_kemasan) }} {{ strtolower($barang->satuan) }}
+                                {{ number_format($barang->stokMasukTerakhir->isi_per_kemasan) }} {{ strtolower($barang->satuan_dasar ?? '') }}
                             @else
                                 -
                             @endif
@@ -159,8 +168,8 @@
                             <tr>
                                 <td>{{ optional($history->tanggal_transaksi)->format('d/m/Y') ?? $history->created_at->format('d/m/Y H:i') }}</td>
                                 <td>{{ $history->lokasi->nama_lokasi ?? '-' }}</td>
-                                <td class="text-end">{{ number_format($history->perubahan) }}</td>
-                                <td class="text-end">{{ number_format($history->stok_sesudah ?? 0) }}</td>
+                                <td class="text-end">{{ number_format($history->perubahan) }} {{ strtolower($history->base_unit ?? $barang->satuan_dasar ?? '') }}</td>
+                                <td class="text-end">{{ number_format($history->stok_sesudah ?? 0) }} {{ strtolower($history->base_unit ?? $barang->satuan_dasar ?? '') }}</td>
                                 <td>{{ optional($history->user)->display_name ?? '-' }}</td>
                                 <td>{{ $history->keterangan ?? '-' }}</td>
                             </tr>

@@ -175,10 +175,10 @@
             // --- FUNGSI TAMBAH RESEP OBAT (KODE LAMA ANDA) ---
             let resepIndex = 0;
             @php
-                $obatList = $obat->load(['stok' => function ($q) {
+                $obatList = $obat->load(['stokLokasi' => function ($q) {
                     $q->where('id_lokasi', auth()->user()->id_lokasi);
                 }])->filter(function ($item) {
-                    return $item->stok->isNotEmpty() && $item->stok[0]->jumlah > 0;
+                    return $item->stokLokasi->isNotEmpty() && $item->stokLokasi[0]->jumlah > 0;
                 })->values();
             @endphp
             const obatList = @json($obatList);
@@ -186,7 +186,7 @@
             function addResepRow() {
                 resepIndex++;
                 const options = obatList.length
-                    ? obatList.map(o => `<option value="${o.id_obat}">${o.nama_obat} (stok: ${o.stok[0].jumlah})</option>`).join('')
+                    ? obatList.map(o => `<option value="${o.id_obat}">${o.nama_obat} (stok: ${o.stok_lokasi[0].jumlah})</option>`).join('')
                     : '<option value="">Tidak ada obat tersedia</option>';
                 const selectAttr = obatList.length ? 'required' : 'disabled';
                 const newResep = `

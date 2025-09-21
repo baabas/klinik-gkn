@@ -24,18 +24,18 @@ class BarangMedisController extends Controller
         $gkn2Id = LokasiKlinik::where('nama_lokasi', 'like', '%GKN 2%')->value('id');
 
         $barang = BarangMedis::query()
-            ->withSum('stok', 'jumlah')
-            ->withSum(['stok as stok_gkn1' => function ($q) use ($gkn1Id) {
+            ->withSum('stokLokasi as stok_sum_jumlah', 'jumlah')
+            ->withSum(['stokLokasi as stok_gkn1' => function ($q) use ($gkn1Id) {
                 $q->where('id_lokasi', $gkn1Id ?? 0);
             }], 'jumlah')
-            ->withSum(['stok as stok_gkn2' => function ($q) use ($gkn2Id) {
+            ->withSum(['stokLokasi as stok_gkn2' => function ($q) use ($gkn2Id) {
                 $q->where('id_lokasi', $gkn2Id ?? 0);
             }], 'jumlah')
             ->withSum('stokMasuk as total_kemasan_masuk', 'jumlah_kemasan')
             ->withSum('stokMasuk as total_unit_masuk', 'perubahan')
             ->withMax('stokMasuk as tanggal_masuk_terakhir', 'tanggal_transaksi')
             ->withMin('stokMasuk as expired_terdekat', 'expired_at')
-            ->with(['stokMasukTerakhir', 'creator'])
+            ->with(['stokMasukTerakhir', 'creator', 'defaultKemasan'])
             ->when($search, function ($query, $search) {
                 return $query->where(function ($q) use ($search) {
                     $q->where('nama_obat', 'like', "%{$search}%")
@@ -74,7 +74,7 @@ class BarangMedisController extends Controller
             'kode_obat' => 'required|string|max:50|unique:barang_medis,kode_obat',
             'nama_obat' => 'required|string|max:255',
             'tipe' => ['required', Rule::in(['OBAT', 'ALKES'])],
-            'satuan' => 'required|string|max:100',
+            'satuan_dasar' => 'required|string|max:100',
             'kemasan' => 'nullable|string|max:100',
         ]);
 
@@ -83,11 +83,12 @@ class BarangMedisController extends Controller
             $barangBaru = BarangMedis::create([
                 ...$validated,
                 'created_by' => Auth::id(),
+                'stok' => 0,
             ]);
 
             $lokasi = LokasiKlinik::all();
             foreach ($lokasi as $loc) {
-                $barangBaru->stok()->create([
+                $barangBaru->stokLokasi()->create([
                     'id_lokasi' => $loc->id,
                     'jumlah' => 0
                 ]);
@@ -106,9 +107,9 @@ class BarangMedisController extends Controller
      */
     public function show(BarangMedis $barangMedi)
     {
-        $barangMedi->load(['stok.lokasi', 'stokMasukTerakhir', 'creator']);
+        $barangMedi->load(['stokLokasi.lokasi', 'stokMasukTerakhir', 'creator']);
 
-        $stokPerLokasi = $barangMedi->stok->sortBy(function ($stok) {
+        $stokPerLokasi = $barangMedi->stokLokasi->sortBy(function ($stok) {
             return $stok->lokasi->nama_lokasi ?? $stok->id_lokasi;
         });
 
@@ -122,7 +123,7 @@ class BarangMedisController extends Controller
         return view('barang-medis.show', [
             'barang' => $barangMedi,
             'stokPerLokasi' => $stokPerLokasi,
-            'totalStok' => $barangMedi->stok->sum('jumlah'),
+            'totalStok' => $barangMedi->stokLokasi->sum('jumlah'),
             'recentHistories' => $recentHistories,
         ]);
     }
@@ -154,7 +155,7 @@ class BarangMedisController extends Controller
             'kode_obat' => ['required', 'string', 'max:50', Rule::unique('barang_medis')->ignore($barangMedi->id_obat, 'id_obat')],
             'nama_obat' => 'required|string|max:255',
             'tipe' => ['required', Rule::in(['OBAT', 'ALKES'])],
-            'satuan' => 'required|string|max:100',
+            'satuan_dasar' => 'required|string|max:100',
             'kemasan' => 'nullable|string|max:100',
         ]);
 

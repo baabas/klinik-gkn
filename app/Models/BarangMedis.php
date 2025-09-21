@@ -35,19 +35,35 @@ class BarangMedis extends Model
         'kode_obat',
         'nama_obat',
         'tipe', // Kolom baru kita
-        'satuan',
+        'satuan_dasar',
         'kemasan',
         'created_by',
+        'stok',
+    ];
+
+    protected $casts = [
+        'stok' => 'integer',
     ];
 
     // --- RELASI ---
 
     /**
-     * Relasi ke stok barang (satu barang bisa ada di banyak stok lokasi).
+     * Relasi ke stok barang per lokasi (satu barang bisa ada di banyak stok lokasi).
      */
-    public function stok(): HasMany
+    public function stokLokasi(): HasMany
     {
         return $this->hasMany(StokBarang::class, 'id_barang', 'id_obat');
+    }
+
+    public function kemasanBarang(): HasMany
+    {
+        return $this->hasMany(BarangKemasan::class, 'barang_id', 'id_obat');
+    }
+
+    public function defaultKemasan(): HasOne
+    {
+        return $this->hasOne(BarangKemasan::class, 'barang_id', 'id_obat')
+            ->where('is_default', true);
     }
 
     /**

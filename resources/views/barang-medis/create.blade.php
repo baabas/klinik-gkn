@@ -36,8 +36,8 @@
                         </select>
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label for="satuan" class="form-label">Satuan</label>
-                        <input type="text" name="satuan" class="form-control" id="satuan" placeholder="Contoh: Tablet, Box, Pcs" value="{{ old('satuan') }}" required>
+                        <label for="satuan_dasar" class="form-label">Satuan Dasar</label>
+                        <input type="text" name="satuan_dasar" class="form-control" id="satuan_dasar" placeholder="Contoh: tablet, kapsul, ml" value="{{ old('satuan_dasar') }}" required>
                     </div>
                     <div class="col-md-4 mb-3">
                         <label for="kemasan" class="form-label">Kemasan (Opsional)</label>

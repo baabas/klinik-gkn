@@ -63,7 +63,7 @@
                             <th>Lokasi</th>
                             <th>Jumlah Kemasan</th>
                             <th>Isi per Kemasan</th>
-                            <th>Total (Satuan)</th>
+                            <th>Total Unit Dasar</th>
                             <th>Kedaluwarsa</th>
                             <th>Keterangan</th>
                         </tr>
@@ -96,13 +96,13 @@
                                 </td>
                                 <td>
                                     @if($entry->isi_per_kemasan)
-                                        {{ number_format($entry->isi_per_kemasan) }} {{ strtolower($entry->barang->satuan ?? '') }}
+                                        {{ number_format($entry->isi_per_kemasan) }} {{ strtolower($entry->base_unit ?? $entry->barang->satuan_dasar ?? '') }}
                                     @else
                                         -
                                     @endif
                                 </td>
                                 <td>
-                                    {{ number_format($entry->perubahan) }} {{ strtolower($entry->barang->satuan ?? '') }}
+                                    {{ number_format($entry->perubahan) }} {{ strtolower($entry->base_unit ?? $entry->barang->satuan_dasar ?? '') }}
                                 </td>
                                 <td>
                                     {{ optional($entry->expired_at)->format('d/m/Y') ?? '-' }}

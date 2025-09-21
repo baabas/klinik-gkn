@@ -25,7 +25,7 @@
                             <th>No</th>
                             <th>Nama Obat</th>
                             <th>Stok</th>
-                            <th>Satuan</th>
+                            <th>Satuan Dasar</th>
                             <th>Kemasan</th>
                             <th>Aksi</th>
                         </tr>
@@ -36,7 +36,7 @@
                             <td>{{ $loop->iteration + $obat->firstItem() - 1 }}</td>
                             <td>{{ $item->nama_obat }}</td>
                             <td>{{ $item->stok_saat_ini }}</td>
-                            <td>{{ $item->satuan }}</td>
+                            <td>{{ $item->satuan_dasar }}</td>
                             <td>{{ $item->kemasan }}</td>
                             <td>
                                 <a href="{{ route('obat.edit', $item->id_obat) }}" class="btn btn-warning btn-sm">

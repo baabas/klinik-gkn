@@ -1,6 +1,9 @@
 @extends('layouts.sidebar-layout')
 
 @section('content')
+    @php
+        use App\Support\Presenters\StokPresenter;
+    @endphp
     <h1 class="h2 mb-4">Obat & Alat Medis</h1>
 
     <div class="card shadow-sm">
@@ -55,7 +58,8 @@
                             <th>Stok GKN 1</th>
                             <th>Stok GKN 2</th>
                             <th>Total Stok</th>
-                            <th>Satuan</th>
+                            <th>Kemasan Default</th>
+                            <th>Satuan Dasar</th>
                             <th style="width: 240px;">Aksi</th>
                         </tr>
                     </thead>
@@ -69,14 +73,17 @@
                                 $satuanKemasan = $lastEntry?->satuan_kemasan ?: ($item->kemasan ?: 'Kemasan');
                                 $stokGkn1 = (int) ($item->stok_gkn1 ?? 0);
                                 $stokGkn2 = (int) ($item->stok_gkn2 ?? 0);
-                                $totalStok = (int) ($item->stok_sum_jumlah ?? 0);
+                                $totalStok = (int) ($item->stok_sum_jumlah ?? $item->stok ?? 0);
+                                $defaultKemasan = $item->defaultKemasan;
+                                $defaultKemasanLabel = $defaultKemasan
+                                    ? $defaultKemasan->nama_kemasan . ' @ ' . number_format($defaultKemasan->isi_per_kemasan) . ' ' . strtolower($item->satuan_dasar ?? '')
+                                    : '-';
                             @endphp
                             <tr class="align-middle">
                                 <td>{{ $loop->iteration + $barang->firstItem() - 1 }}</td>
                                 <td>{{ $item->kode_obat }}</td>
                                 <td>
                                     <div class="fw-semibold">{{ $item->nama_obat }}</div>
-                                    <div class="text-muted small">{{ $totalStok ? number_format($totalStok) : 0 }} {{ strtolower($item->satuan ?? '') }}</div>
                                 </td>
                                 <td>
                                     <span class="badge {{ $item->tipe == 'OBAT' ? 'bg-primary' : 'bg-success' }}">{{ $item->tipe }}</span>
@@ -90,7 +97,7 @@
                                 <td>
                                     @if($lastEntry)
                                         <div>{{ number_format($lastEntry->jumlah_kemasan) }} {{ $lastEntry->satuan_kemasan ?? 'kemasan' }}</div>
-                                        <div class="text-muted small">Isi {{ number_format($lastEntry->isi_per_kemasan) }} {{ strtolower($item->satuan ?? '') }}</div>
+                                        <div class="text-muted small">Isi {{ number_format($lastEntry->isi_per_kemasan) }} {{ strtolower($item->satuan_dasar ?? '') }}</div>
                                         @if($lastEntry->expired_at)
                                             <div class="text-muted small">Exp: {{ $lastEntry->expired_at->format('d/m/Y') }}</div>
                                         @endif
@@ -100,8 +107,9 @@
                                 </td>
                                 <td><strong>{{ number_format($stokGkn1) }}</strong></td>
                                 <td><strong>{{ number_format($stokGkn2) }}</strong></td>
-                                <td><strong>{{ number_format($totalStok) }}</strong></td>
-                                <td>{{ $item->satuan }}</td>
+                                <td>{{ StokPresenter::formatWithDefault($item, $totalStok) }}</td>
+                                <td>{{ $defaultKemasanLabel }}</td>
+                                <td>{{ $item->satuan_dasar }}</td>
                                 <td>
                                     {{-- Tombol yang bisa diakses semua role terkait (Dokter & Pengadaan) --}}
                                     <a href="{{ route('barang-medis.show', $item->id_obat) }}" class="btn btn-info btn-sm" title="Lihat Detail Stok"><i class="bi bi-eye"></i></a>
