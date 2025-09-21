@@ -60,9 +60,30 @@ class BarangMasukController extends Controller
             }])
             ->orderBy('nama_obat')
             ->get();
+
+        $barangOptions = $barang
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id_obat,
+                    'satuan_dasar' => $item->satuan_dasar,
+                    'kemasan' => $item->kemasanBarang
+                        ->map(function ($kemasan) {
+                            return [
+                                'id' => $kemasan->id,
+                                'nama' => $kemasan->nama_kemasan,
+                                'isi' => $kemasan->isi_per_kemasan,
+                                'is_default' => (bool) $kemasan->is_default,
+                            ];
+                        })
+                        ->values()
+                        ->toArray(),
+                ];
+            })
+            ->values()
+            ->toArray();
         $lokasi = LokasiKlinik::orderBy('nama_lokasi')->get();
 
-        return view('barang-medis.masuk.create', compact('barang', 'lokasi'));
+        return view('barang-medis.masuk.create', compact('barang', 'lokasi', 'barangOptions'));
     }
 
     /**

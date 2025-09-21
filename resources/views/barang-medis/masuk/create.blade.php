@@ -109,16 +109,7 @@
         const isiPerKemasanInput = document.getElementById('isi_per_kemasan');
         const jumlahKemasanInput = document.getElementById('jumlah_kemasan');
         const previewElement = document.getElementById('konversi-preview');
-        const barangOptions = @json($barang->map(fn($item) => [
-            'id' => $item->id_obat,
-            'satuan_dasar' => $item->satuan_dasar,
-            'kemasan' => $item->kemasanBarang->map(fn($kemasan) => [
-                'id' => $kemasan->id,
-                'nama' => $kemasan->nama_kemasan,
-                'isi' => $kemasan->isi_per_kemasan,
-                'is_default' => (bool) $kemasan->is_default,
-            ]),
-        ]));
+        const barangOptions = @json($barangOptions);
 
         const oldBarangId = @json(old('id_barang'));
         let initialKemasanId = @json(old('kemasan_id'));
