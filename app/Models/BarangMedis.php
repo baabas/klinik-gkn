@@ -36,7 +36,6 @@ class BarangMedis extends Model
         'nama_obat',
         'tipe', // Kolom baru kita
         'satuan_dasar',
-        'kemasan',
         'created_by',
         'stok',
     ];
@@ -64,6 +63,43 @@ class BarangMedis extends Model
     {
         return $this->hasOne(BarangKemasan::class, 'barang_id', 'id_obat')
             ->where('is_default', true);
+    }
+
+    public function kemasanDefault(): ?BarangKemasan
+    {
+        if ($this->relationLoaded('kemasanBarang')) {
+            return $this->kemasanBarang->firstWhere('is_default', true);
+        }
+
+        if ($this->relationLoaded('defaultKemasan')) {
+            return $this->defaultKemasan;
+        }
+
+        return $this->defaultKemasan()->first();
+    }
+
+    public static function generateKode(string $tipe): string
+    {
+        $prefixMap = [
+            'OBAT' => 'OBT',
+            'ALKES' => 'ALK',
+        ];
+
+        $prefix = $prefixMap[$tipe] ?? 'BRG';
+
+        $lastKode = static::where('tipe', $tipe)
+            ->orderByDesc('id_obat')
+            ->value('kode_obat');
+
+        $lastNumber = 0;
+
+        if ($lastKode && preg_match('/(\d+)$/', $lastKode, $matches)) {
+            $lastNumber = (int) $matches[1];
+        }
+
+        $nextNumber = str_pad((string) ($lastNumber + 1), 4, '0', STR_PAD_LEFT);
+
+        return sprintf('%s-%s', $prefix, $nextNumber);
     }
 
     /**

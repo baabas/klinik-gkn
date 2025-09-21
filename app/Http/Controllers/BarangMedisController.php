@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreBarangMedisRequest;
 use App\Models\BarangMedis;
 use App\Models\LokasiKlinik;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Auth;
 use App\Models\StokHistory;
 use App\Models\StokBarang;
 
@@ -58,33 +59,44 @@ class BarangMedisController extends Controller
             abort(403, 'Anda tidak memiliki hak akses.');
         }
 
-        return view('barang-medis.create');
+        $opsiKemasan = ['Box', 'Strip', 'Botol', 'Rol', 'Pcs'];
+
+        return view('barang-medis.create', compact('opsiKemasan'));
     }
 
     /**
      * Menyimpan barang baru ke database.
      */
-    public function store(Request $request)
+    public function store(StoreBarangMedisRequest $request)
     {
         if (!Auth::user()->hasRole('PENGADAAN')) {
             abort(403, 'Anda tidak memiliki hak akses.');
         }
 
-        $validated = $request->validate([
-            'kode_obat' => 'required|string|max:50|unique:barang_medis,kode_obat',
-            'nama_obat' => 'required|string|max:255',
-            'tipe' => ['required', Rule::in(['OBAT', 'ALKES'])],
-            'satuan_dasar' => 'required|string|max:100',
-            'kemasan' => 'nullable|string|max:100',
-        ]);
+        $validated = $request->validated();
+
+        $kodeObat = BarangMedis::generateKode($validated['tipe']);
 
         DB::beginTransaction();
         try {
             $barangBaru = BarangMedis::create([
-                ...$validated,
+                'kode_obat' => $kodeObat,
+                'nama_obat' => $validated['nama_obat'],
+                'tipe' => $validated['tipe'],
+                'satuan_dasar' => $validated['satuan_dasar'],
                 'created_by' => Auth::id(),
                 'stok' => 0,
             ]);
+
+            $kemasanData = collect($validated['kemasan'])->map(function ($item) {
+                return [
+                    'nama_kemasan' => $item['nama_kemasan'],
+                    'isi_per_kemasan' => $item['isi_per_kemasan'],
+                    'is_default' => !empty($item['is_default']),
+                ];
+            })->all();
+
+            $barangBaru->kemasanBarang()->createMany($kemasanData);
 
             $lokasi = LokasiKlinik::all();
             foreach ($lokasi as $loc) {
