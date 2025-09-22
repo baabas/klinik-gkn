@@ -16,6 +16,25 @@ class LokasiKlinik extends Model
         'alamat',
     ];
 
+    public static function boot()
+    {
+        parent::boot();
+
+        // Validasi sebelum menyimpan
+        static::saving(function ($lokasi) {
+            // Hanya izinkan ID 1 dan 2
+            if ($lokasi->id && !in_array($lokasi->id, [1, 2])) {
+                throw new \Exception('Hanya ID lokasi 1 dan 2 yang diperbolehkan.');
+            }
+        });
+    }
+
+    // Scope untuk membatasi query hanya ke lokasi 1 dan 2
+    public function scopeValid($query)
+    {
+        return $query->whereIn('id', [1, 2]);
+    }
+
     // --- RELASI ---
 
     /**

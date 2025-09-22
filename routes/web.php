@@ -30,6 +30,16 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+// Route untuk permintaan barang
+Route::middleware(['auth'])->group(function () {
+    Route::get('/permintaan-barang/create', [PermintaanBarangController::class, 'create'])
+        ->name('permintaan-barang.create');
+    Route::post('/permintaan-barang/store', [PermintaanBarangController::class, 'store'])
+        ->name('permintaan-barang.store');
+    Route::get('/permintaan-barang', [PermintaanBarangController::class, 'index'])
+        ->name('permintaan-barang.index');
+});
+
 // Rute login custom untuk admin (Dokter & Pengadaan)
 Route::get('/admin/login', [AdminLoginController::class, 'showLoginForm'])->name('admin.login');
 Route::post('/admin/login', [AdminLoginController::class, 'login'])->name('admin.login.submit');

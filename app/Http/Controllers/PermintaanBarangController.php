@@ -37,10 +37,27 @@ class PermintaanBarangController extends Controller
      */
     public function create()
     {
-        // Mengambil semua data barang untuk ditampilkan di dropdown form
-        $barangMedis = BarangMedis::orderBy('nama_obat')->get();
+        // Get user with location
+        $user = Auth::user()->load('lokasi');
+        
+        // Generate nomor permintaan
+        $today = now();
+        $prefix = 'REQ-' . $today->format('Ymd');
+        $lastNumber = PermintaanBarang::where('nomor_permintaan', 'like', $prefix . '%')
+            ->orderBy('nomor_permintaan', 'desc')
+            ->first();
+        
+        $sequence = $lastNumber ? intval(substr($lastNumber->nomor_permintaan, -4)) + 1 : 1;
+        $nomorPermintaan = $prefix . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
 
-        return view('permintaan.create', compact('barangMedis'));
+        // Mengambil semua data barang untuk ditampilkan di dropdown form
+        $barangList = BarangMedis::with(['stok' => function($query) use ($user) {
+            $query->where('id_lokasi', $user->id_lokasi);
+        }])
+        ->orderBy('nama_obat')
+        ->get();
+
+        return view('permintaan-barang.create-new', compact('barangList', 'nomorPermintaan', 'user'));
     }
 
     /**

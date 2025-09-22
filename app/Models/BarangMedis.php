@@ -33,10 +33,25 @@ class BarangMedis extends Model
     protected $fillable = [
         'kode_obat',
         'nama_obat',
-        'tipe', // Kolom baru kita
+        'tipe',
         'satuan',
         'kemasan',
+        'jumlah_satuan_perkemasan',
+        'jumlah_unit_persatuan',
+        'satuan_terkecil',
+        'min_stok',
     ];
+
+    /**
+     * Menghitung total unit dari jumlah kemasan yang diminta
+     *
+     * @param int $jumlahKemasan
+     * @return int
+     */
+    public function hitungTotalUnit(int $jumlahKemasan): int
+    {
+        return $jumlahKemasan * $this->jumlah_satuan_perkemasan * $this->jumlah_unit_persatuan;
+    }
 
     // --- RELASI ---
 
