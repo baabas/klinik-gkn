@@ -79,22 +79,23 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/api/penyakit/{icd10}', [RekamMedisController::class, 'findPenyakit'])->name('api.penyakit.find');
 
-        // Daftar dan Detail Pasien (parameter disamakan menjadi 'pasien')
+        // --- PERUBAHAN: Rute Pasien, Rekam Medis, dan Checkup Disatukan ---
+        
+        // Daftar Pasien (tetap sama)
         Route::get('/pasien', [PasienController::class, 'index'])->name('pasien.index');
-        Route::get('/pasien/{pasien:nip}', [PasienController::class, 'show'])->name('pasien.show');
-        Route::get('/pasien-non-karyawan/{pasien:nik}', [PasienController::class, 'showNonKaryawan'])->name('pasien.show_non_karyawan');
 
-        // Rekam Medis (parameter disamakan menjadi 'pasien')
-        Route::get('/pasien/{pasien:nip}/rekam-medis/create', [RekamMedisController::class, 'create'])->name('rekam-medis.create');
-        Route::post('/pasien/{pasien:nip}/rekam-medis', [RekamMedisController::class, 'store'])->name('rekam-medis.store');
-        Route::get('/pasien-non-karyawan/{pasien:nik}/rekam-medis/create', [RekamMedisController::class, 'create'])->name('rekam-medis.create.non_karyawan');
-        Route::post('/pasien-non-karyawan/{pasien:nik}/rekam-medis', [RekamMedisController::class, 'store'])->name('rekam-medis.store.non_karyawan');
+        // Detail Pasien (menggunakan {identifier} generik)
+        Route::get('/pasien/{identifier}', [PasienController::class, 'show'])->name('pasien.show');
 
-        // Check-up (parameter disamakan menjadi 'pasien')
-        Route::get('/pasien/{pasien:nip}/checkup/create', [CheckupController::class, 'create'])->name('checkup.create');
-        Route::post('/pasien/{pasien:nip}/checkup', [CheckupController::class, 'store'])->name('checkup.store');
-        Route::get('/pasien-non-karyawan/{pasien:nik}/checkup/create', [CheckupController::class, 'create'])->name('checkup.create.non_karyawan');
-        Route::post('/pasien-non-karyawan/{pasien:nik}/checkup', [CheckupController::class, 'store'])->name('checkup.store.non_karyawan');
+        // Membuat Rekam Medis
+        Route::get('/pasien/{identifier}/rekam-medis/create', [RekamMedisController::class, 'create'])->name('rekam-medis.create');
+        Route::post('/pasien/{identifier}/rekam-medis', [RekamMedisController::class, 'store'])->name('rekam-medis.store');
+
+        // Membuat Check-up
+        Route::get('/pasien/{identifier}/checkup/create', [CheckupController::class, 'create'])->name('checkup.create');
+        Route::post('/pasien/{identifier}/checkup', [CheckupController::class, 'store'])->name('checkup.store');
+        
+        // --- AKHIR PERUBAHAN ---
 
         // Laporan
         Route::get('/laporan/harian', [LaporanViewController::class, 'laporanHarian'])->name('laporan.harian');

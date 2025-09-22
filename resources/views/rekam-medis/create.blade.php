@@ -1,6 +1,6 @@
 @extends('layouts.sidebar-layout')
 
-@section('title', 'Buat Rekam Medis - ' . $user->nama_karyawan)
+@section('title', 'Buat Rekam Medis - ' . $pasien->nama_karyawan)
 
 @push('styles')
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
@@ -16,13 +16,7 @@
     <h1 class="h2">Rekam Medis Baru</h1>
 </div>
 
-@php
-    $actionRoute = $user->nip 
-        ? route('rekam-medis.store', $user->nip) 
-        : route('rekam-medis.store.non_karyawan', $user->nik);
-@endphp
-
-<form action="{{ $actionRoute }}" method="POST" id="rekamMedisForm">
+<form action="{{ route('rekam-medis.store', $pasien->nip ?? $pasien->nik) }}" method="POST" id="rekamMedisForm">
     @csrf
     <div class="row">
         <div class="col-lg-8">
@@ -30,6 +24,7 @@
             <div class="card shadow-sm mb-4">
                 <div class="card-header"><h5 class="mb-0 form-section-title">1. Anamnesa (Pemeriksaan Subjektif)</h5></div>
                 <div class="card-body">
+                    {{-- ... Konten form lainnya tetap sama ... --}}
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="tanggal_kunjungan" class="form-label fw-bold">Tanggal Kunjungan <span class="text-danger">*</span></label>
@@ -45,6 +40,7 @@
             </div>
 
             <div class="card shadow-sm mb-4">
+                {{-- ... Konten form diagnosa tetap sama ... --}}
                 <div class="card-header"><h5 class="mb-0 form-section-title">2. Diagnosa</h5></div>
                 <div class="card-body">
                     <label class="form-label fw-bold">Diagnosa Penyakit</label>
@@ -85,16 +81,16 @@
         </div>
 
         <div class="col-lg-4">
-            {{-- Bagian Samping --}}
-            <div class="card shadow-sm mb-4">
+            {{-- ... Bagian samping tetap sama ... --}}
+             <div class="card shadow-sm mb-4">
                  <div class="card-header d-flex justify-content-between align-items-center"><h5 class="mb-0">Informasi Pasien</h5><i class="bi bi-person-circle fs-4 text-primary"></i></div>
                 <div class="card-body">
-                    <h5 class="card-title fw-bold">{{ $user->nama_karyawan }}</h5>
+                    <h5 class="card-title fw-bold">{{ $pasien->nama_karyawan }}</h5>
                     <p class="card-text text-muted mb-0">
-                        @if($user->nip)
-                            NIP: {{ $user->nip }}
-                        @elseif($user->nik)
-                            NIK: {{ $user->nik }}
+                        @if($pasien->nip)
+                            NIP: {{ $pasien->nip }}
+                        @elseif($pasien->nik)
+                            NIK: {{ $pasien->nik }}
                         @endif
                     </p>
                 </div>
@@ -121,12 +117,7 @@
 
             <div class="d-grid gap-2">
                  <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-save"></i> Simpan Rekam Medis</button>
-                 @php
-                    $cancelRoute = $user->nip 
-                        ? route('pasien.show', $user->nip) 
-                        : route('pasien.show_non_karyawan', $user->nik);
-                 @endphp
-                <a href="{{ $cancelRoute }}" class="btn btn-outline-secondary">Batal</a>
+                <a href="{{ route('pasien.show', $pasien->nip ?? $pasien->nik) }}" class="btn btn-outline-secondary">Batal</a>
             </div>
              @if(session('error'))<div class="alert alert-danger mt-3" role="alert">{{ session('error') }}</div>@endif
         </div>
@@ -139,31 +130,35 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
-            // --- FUNGSI AUTOCOMPLETE ICD-10 ---
+            // ... (Fungsi autocomplete dan tambah diagnosa tetap sama) ...
+             // --- FUNGSI AUTOCOMPLETE ICD-10 ---
+             let debounceTimer;
             $('#diagnosa-container').on('keyup', '.icd10-input', function() {
+                clearTimeout(debounceTimer);
                 let icd10Input = $(this);
                 let namaPenyakitOutput = icd10Input.closest('.diagnosa-entry').find('.nama-penyakit-output');
                 let query = icd10Input.val();
 
-                if (query.length >= 2) {
-                    $.ajax({
-                        url: `{{ url('/api/penyakit') }}/${query}`,
-                        type: 'GET',
-                        success: function(data) {
-                            if (data.success) {
-                                namaPenyakitOutput.val(data.nama_penyakit);
-                                icd10Input.val(data.kode_penyakit);
-                            } else {
-                                namaPenyakitOutput.val('Kode tidak ditemukan');
+                debounceTimer = setTimeout(() => {
+                    if (query.length >= 2) {
+                        $.ajax({
+                            url: `{{ url('/api/penyakit') }}/${query}`, // Pastikan route ini ada
+                            type: 'GET',
+                            success: function(response) {
+                                if (response.success && response.data.length > 0) {
+                                    namaPenyakitOutput.val(response.data[0].nama_penyakit);
+                                } else {
+                                    namaPenyakitOutput.val('Kode tidak ditemukan');
+                                }
+                            },
+                            error: function() {
+                                namaPenyakitOutput.val('Gagal memuat data');
                             }
-                        },
-                        error: function() {
-                            namaPenyakitOutput.val('Gagal memuat data');
-                        }
-                    });
-                } else {
-                    namaPenyakitOutput.val('');
-                }
+                        });
+                    } else {
+                        namaPenyakitOutput.val('');
+                    }
+                }, 300);
             });
 
             // --- FUNGSI TAMBAH DIAGNOSA ---
@@ -193,11 +188,11 @@
             const obatList = @json($obat);
 
             function addResepRow() {
+                // PERBAIKAN: Menggunakan 'id_obat' dan 'nama_obat' sesuai data dari controller.
                 const options = obatList.length > 0
                     ? obatList.map(o => `<option value="${o.id_obat}">${o.nama_obat} (stok: ${o.stok[0] ? o.stok[0].jumlah : 0})</option>`).join('')
                     : '<option value="">Tidak ada obat tersedia</option>';
                 
-                // [PERBAIKAN] Input 'aturan_pakai' dihapus
                 const newResep = `
                     <div class="row g-2 mb-2 align-items-center resep-entry" id="resep-entry-${resepIndex}">
                         <div class="col-sm-8">
@@ -232,4 +227,4 @@
             });
         });
     </script>
-@endpush    
+@endpush

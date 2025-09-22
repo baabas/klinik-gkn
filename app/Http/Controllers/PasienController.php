@@ -25,20 +25,24 @@ class PasienController extends Controller
         return view('pasien.index', compact('pasien'));
     }
 
-    /**
-     * [DIUBAH] Menggunakan $pasien sebagai nama parameter agar konsisten.
-     */
-    public function show(User $pasien)
+    public function show($identifier)
     {
-        $pasien->load('karyawan', 'rekamMedis', 'checkups');
-        // Variabel yang dikirim ke view tetap 'user' agar view lama tidak rusak.
-        return view('pasien.show', ['user' => $pasien]);
-    }
+        $pasien = User::whereHas('roles', fn($q) => $q->where('name', 'PASIEN'))
+            ->where(function ($query) use ($identifier) {
+                $query->where('nip', $identifier)
+                      ->orWhere('nik', $identifier);
+            })
+            ->first();
 
-    public function showNonKaryawan(User $pasien)
-    {
-        $pasien->load('nonKaryawan', 'rekamMedis', 'checkups');
-        return view('pasien.show-non-karyawan', compact('pasien'));
+        if (!$pasien) {
+            abort(404, 'Pasien tidak ditemukan.');
+        }
+
+        // PERBAIKAN UTAMA: Hapus 'rekamMedis' dan 'checkups' dari sini.
+        // Accessor di Model akan menanganinya secara otomatis.
+        $pasien->load('karyawan', 'nonKaryawan');
+
+        return view('pasien.show', ['pasien' => $pasien]);
     }
 
     public function myCard()

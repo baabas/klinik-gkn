@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Collection; // Import Collection
 
 class User extends Authenticatable
 {
@@ -64,7 +65,6 @@ class User extends Authenticatable
         if (is_string($role)) {
             return $this->roles->contains('name', $role);
         }
-        // Disederhanakan untuk efisiensi, karena hasRole() hanya dipanggil dengan string di kode Anda
         return false;
     }
 
@@ -84,35 +84,69 @@ class User extends Authenticatable
         return $this->hasOne(NonKaryawan::class, 'nik', 'nik');
     }
 
+    // --- PERBAIKAN UTAMA DIMULAI DI SINI ---
+
     /**
-     * [PERBAIKAN UTAMA] Relasi one-to-many ke model RekamMedis.
-     * Sekarang bisa mengambil data berdasarkan NIP atau NIK dengan benar.
+     * Relasi terpisah HANYA untuk rekam medis pasien KARYAWAN via NIP.
      */
-    public function rekamMedis()
+    public function rekamMedisByNip()
     {
-        if ($this->nip) {
-            // Jika user memiliki NIP (pasien karyawan)
-            return $this->hasMany(RekamMedis::class, 'nip_pasien', 'nip');
-        } else {
-            // Jika user tidak memiliki NIP (pasti pasien non-karyawan)
-            return $this->hasMany(RekamMedis::class, 'nik_pasien', 'nik');
-        }
+        return $this->hasMany(RekamMedis::class, 'nip_pasien', 'nip');
     }
 
     /**
-     * [PERBAIKAN UTAMA] Relasi one-to-many ke model Checkup.
-     * Sekarang bisa mengambil data berdasarkan NIP atau NIK dengan benar.
+     * Relasi terpisah HANYA untuk rekam medis pasien NON-KARYAWAN via NIK.
      */
-    public function checkups()
+    public function rekamMedisByNik()
     {
-        if ($this->nip) {
-            // Jika user memiliki NIP (pasien karyawan)
-            return $this->hasMany(Checkup::class, 'nip_pasien', 'nip');
-        } else {
-            // Jika user tidak memiliki NIP (pasti pasien non-karyawan)
-            return $this->hasMany(Checkup::class, 'nik_pasien', 'nik');
-        }
+        return $this->hasMany(RekamMedis::class, 'nik_pasien', 'nik');
     }
+
+    /**
+     * Accessor yang dipanggil saat kita mengakses '$pasien->rekamMedis'.
+     * Ini akan secara cerdas menggabungkan riwayat rekam medis.
+     */
+    public function getRekamMedisAttribute(): Collection
+    {
+        // Jika user ini adalah karyawan (punya NIP), ambil riwayat berdasarkan NIP.
+        if ($this->nip) {
+            return $this->rekamMedisByNip;
+        }
+        // Jika tidak, pasti non-karyawan, ambil riwayat berdasarkan NIK.
+        return $this->rekamMedisByNik;
+    }
+
+    /**
+     * Relasi terpisah HANYA untuk checkup pasien KARYAWAN via NIP.
+     */
+    public function checkupsByNip()
+    {
+        return $this->hasMany(Checkup::class, 'nip_pasien', 'nip');
+    }
+
+    /**
+     * Relasi terpisah HANYA untuk checkup pasien NON-KARYAWAN via NIK.
+     */
+    public function checkupsByNik()
+    {
+        return $this->hasMany(Checkup::class, 'nik_pasien', 'nik');
+    }
+
+    /**
+     * Accessor yang dipanggil saat kita mengakses '$pasien->checkups'.
+     * Ini akan secara cerdas menggabungkan riwayat checkup.
+     */
+    public function getCheckupsAttribute(): Collection
+    {
+        // Jika user ini adalah karyawan (punya NIP), ambil riwayat berdasarkan NIP.
+        if ($this->nip) {
+            return $this->checkupsByNip;
+        }
+        // Jika tidak, pasti non-karyawan, ambil riwayat berdasarkan NIK.
+        return $this->checkupsByNik;
+    }
+
+    // --- AKHIR DARI PERBAIKAN ---
 
     /**
      * Relasi ke model LokasiKlinik.

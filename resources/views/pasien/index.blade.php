@@ -56,12 +56,8 @@
                                 {{ $tanggal_lahir ? \Carbon\Carbon::parse($tanggal_lahir)->isoFormat('D MMMM YYYY') : '-' }}
                             </td>
                             <td>
-                                {{-- Arahkan ke rute detail yang sesuai --}}
-                                @if($p->karyawan)
-                                     <a href="{{ route('pasien.show', $p->nip) }}" class="btn btn-info btn-sm">Lihat Kartu</a>
-                                @else
-                                     <a href="{{ route('pasien.show_non_karyawan', $p->nik) }}" class="btn btn-info btn-sm">Lihat Kartu</a>
-                                @endif
+                                {{-- PERUBAHAN: Menggunakan satu rute 'pasien.show' untuk semua tipe pasien --}}
+                                <a href="{{ route('pasien.show', $p->nip ?? $p->nik) }}" class="btn btn-info btn-sm">Lihat Kartu</a>
                             </td>
                         </tr>
                         @empty
