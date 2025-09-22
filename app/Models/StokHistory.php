@@ -28,6 +28,8 @@ class StokHistory extends Model
         'expired_at',
         'kemasan_id',
         'base_unit',
+        'catatan_pembulatan',
+        'override_reason',
     ];
 
     protected $casts = [

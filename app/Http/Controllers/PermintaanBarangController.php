@@ -329,7 +329,7 @@ class PermintaanBarangController extends Controller
 
     public function searchBarang(Request $request): JsonResponse
     {
-        if (! Auth::check() || ! Auth::user()->hasRole(['DOKTER', 'PENGADAAN', 'ADMIN'])) {
+        if (! Auth::check() || ! Auth::user()->hasRole(['DOKTER', 'PENGADAAN', 'ADMIN', 'APOTEKER'])) {
             abort(403);
         }
 
@@ -355,7 +355,7 @@ class PermintaanBarangController extends Controller
 
     public function kemasan(BarangMedis $barang): JsonResponse
     {
-        if (! Auth::check() || ! Auth::user()->hasRole(['DOKTER', 'PENGADAAN', 'ADMIN'])) {
+        if (! Auth::check() || ! Auth::user()->hasRole(['DOKTER', 'PENGADAAN', 'ADMIN', 'APOTEKER'])) {
             abort(403);
         }
 
