@@ -9,6 +9,7 @@ use App\Models\StokBarang;
 use App\Models\StokHistory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
@@ -66,7 +67,7 @@ class PermintaanBarangController extends Controller
         $validated = $this->validatePermintaan($request);
 
         $permintaan = DB::transaction(function () use ($validated, $user) {
-            
+
             $permintaan = PermintaanBarang::create([
                 'kode' => PermintaanBarang::generateKode(),
                 'tanggal' => $validated['tanggal'],
