@@ -17,13 +17,11 @@ class BarangKemasan extends Model
         'nama_kemasan',
         'isi_per_kemasan',
         'is_default',
-        'level',
     ];
 
     protected $casts = [
         'isi_per_kemasan' => 'integer',
         'is_default' => 'boolean',
-        'level' => 'integer',
     ];
 
     public function barang(): BelongsTo

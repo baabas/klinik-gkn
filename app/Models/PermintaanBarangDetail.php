@@ -120,30 +120,4 @@ class PermintaanBarangDetail extends Model
 
         return trim($label);
     }
-
-    public function getCatatanPembulatanAttribute(): ?string
-    {
-        $jumlahKemasan = $this->jumlah_kemasan ?? ($this->jumlah !== null ? (int) round($this->jumlah) : null);
-        $isi = $this->isi_per_kemasan ?? $this->kemasan()?->value('isi_per_kemasan');
-        $total = $this->total_unit_dasar ?? $this->total_unit;
-
-        if ($jumlahKemasan !== null && $isi && $total) {
-            $hasil = $jumlahKemasan * $isi;
-
-            if ($hasil !== (int) $total) {
-                $kemasan = $this->satuan_kemasan ?? $this->kemasan ?? 'kemasan';
-                $baseUnit = $this->base_unit ?? $this->barang?->satuan_dasar ?? 'unit';
-
-                return sprintf(
-                    'Dibulatkan menjadi %s %s (≈ %s %s)',
-                    number_format($jumlahKemasan),
-                    $kemasan,
-                    number_format((int) $total),
-                    $baseUnit
-                );
-            }
-        }
-
-        return null;
-    }
 }
