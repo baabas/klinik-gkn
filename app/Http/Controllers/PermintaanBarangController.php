@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BarangKemasan;
 use App\Models\BarangMedis;
 use App\Models\PermintaanBarang;
+use App\Models\StokBarang;
 use App\Models\StokHistory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -233,6 +234,21 @@ class PermintaanBarangController extends Controller
                             throw new \RuntimeException("Stok {$barang->nama_obat} tidak mencukupi.");
                         }
 
+                        $stokLokasi = StokBarang::query()
+                            ->lockForUpdate()
+                            ->firstOrCreate(
+                                [
+                                    'id_barang' => $barang->id_obat,
+                                    'id_lokasi' => $permintaan->lokasi_id,
+                                ],
+                                [
+                                    'jumlah' => 0,
+                                ],
+                            );
+
+                        $stokLokasiSebelum = (int) $stokLokasi->jumlah;
+                        $stokLokasiSesudah = $stokLokasiSebelum + $jumlahUnit;
+
                         $detail->update([
                             'kemasan_id' => $detail->kemasan_id ?? $kemasan?->id,
                             'barang_kemasan_id' => $detail->barang_kemasan_id ?? $kemasan?->id,
@@ -246,14 +262,23 @@ class PermintaanBarangController extends Controller
                             'base_unit' => $detail->base_unit ?? $barang->satuan_dasar,
                         ]);
 
-                        $barang->decrement('stok', $jumlahUnit);
+                        $stokLokasi->jumlah = $stokLokasiSesudah;
+                        $stokLokasi->save();
+
+                        $totalStokBarang = StokBarang::query()
+                            ->where('id_barang', $barang->id_obat)
+                            ->sum('jumlah');
+
+                        $barang->update([
+                            'stok' => $totalStokBarang,
+                        ]);
 
                         StokHistory::create([
                             'id_barang' => $barang->id_obat,
                             'id_lokasi' => $permintaan->lokasi_id,
-                            'perubahan' => -$jumlahUnit,
-                            'stok_sebelum' => $stokSebelum,
-                            'stok_sesudah' => $stokSebelum - $jumlahUnit,
+                            'perubahan' => $jumlahUnit,
+                            'stok_sebelum' => $stokLokasiSebelum,
+                            'stok_sesudah' => $stokLokasiSesudah,
                             'keterangan' => 'Pemenuhan permintaan '.$permintaan->kode,
                             'user_id' => Auth::id(),
                             'tanggal_transaksi' => now()->toDateString(),
