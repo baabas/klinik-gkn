@@ -35,7 +35,7 @@ class DistribusiController extends Controller
 
         // Ambil semua item dari permintaan yg statusnya APPROVED untuk klinik ini,
         // lalu kelompokkan berdasarkan barang yang sama dan jumlahkan totalnya.
-        $barangUntukDikirim = PermintaanBarangDetail::select('barang_id', DB::raw('SUM(total_unit) as total_unit'))
+        $barangUntukDikirim = PermintaanBarangDetail::select('barang_id', DB::raw('SUM(COALESCE(total_unit_dasar, total_unit)) as total_unit_dasar'))
             ->whereNotNull('barang_id')
             ->whereHas('permintaan', function ($query) use ($id_lokasi_tujuan) {
                 $query->where('status', PermintaanBarang::STATUS_DISETUJUI)

@@ -75,7 +75,7 @@ class PermintaanBarangController extends Controller
                 'lokasi_id' => $user->id_lokasi,
             ]);
 
-            $this->syncDetails($permintaan, $validated['items'], $validated['new_items']);
+            $this->syncDetails($permintaan, $validated['details_registered'], $validated['details_new']);
 
             return $permintaan;
         });
@@ -127,7 +127,7 @@ class PermintaanBarangController extends Controller
 
             $permintaan->details()->delete();
 
-            $this->syncDetails($permintaan, $validated['items'], $validated['new_items']);
+            $this->syncDetails($permintaan, $validated['details_registered'], $validated['details_new']);
         });
 
         return redirect()
@@ -214,41 +214,56 @@ class PermintaanBarangController extends Controller
 
                 foreach ($permintaan->details as $detail) {
                     if ($detail->barang_id) {
-                        $isi = $detail->kemasan?->isi_per_kemasan ?? 0;
-                    $jumlahUnit = $detail->total_unit ?? ((int) $detail->jumlah * $isi);
+                        $barang = $detail->barang;
+                        $kemasan = $detail->kemasan;
+                        $jumlahKemasan = $detail->jumlah_kemasan ?? ($detail->jumlah !== null ? (int) $detail->jumlah : 0);
+                        $isi = $detail->isi_per_kemasan ?? $kemasan?->isi_per_kemasan ?? 0;
 
-                    if ($jumlahUnit <= 0) {
-                        continue;
-                    }
+                        $jumlahUnit = $detail->total_unit_dasar
+                            ?? $detail->total_unit
+                            ?? ($isi > 0 ? $jumlahKemasan * $isi : null);
 
-                    $barang = $detail->barang;
-                    if ($detail->total_unit === null && $isi) {
-                        $detail->update(['total_unit' => $jumlahUnit]);
-                    }
-                    $stokSebelum = (int) $barang->stok;
+                        if (! $jumlahUnit || $jumlahUnit <= 0) {
+                            continue;
+                        }
 
-                    if ($stokSebelum < $jumlahUnit) {
-                        throw new \RuntimeException("Stok {$barang->nama_obat} tidak mencukupi.");
-                    }
+                        $stokSebelum = (int) $barang->stok;
 
-                    $barang->decrement('stok', $jumlahUnit);
+                        if ($stokSebelum < $jumlahUnit) {
+                            throw new \RuntimeException("Stok {$barang->nama_obat} tidak mencukupi.");
+                        }
 
-                    StokHistory::create([
-                        'id_barang' => $barang->id_obat,
-                        'id_lokasi' => $permintaan->lokasi_id,
-                        'perubahan' => -$jumlahUnit,
-                        'stok_sebelum' => $stokSebelum,
-                        'stok_sesudah' => $stokSebelum - $jumlahUnit,
-                        'keterangan' => 'Permintaan ' . $permintaan->kode,
-                        'user_id' => Auth::id(),
-                        'tanggal_transaksi' => now()->toDateString(),
-                        'jumlah_kemasan' => (int) $detail->jumlah,
-                        'isi_per_kemasan' => $isi ?: null,
-                        'satuan_kemasan' => $detail->kemasan,
-                        'kemasan_id' => $detail->barang_kemasan_id,
-                        'base_unit' => $barang->satuan_dasar,
-                    ]);
-                } elseif (in_array($detail->id, $createBaru, true)) {
+                        $detail->update([
+                            'kemasan_id' => $detail->kemasan_id ?? $kemasan?->id,
+                            'barang_kemasan_id' => $detail->barang_kemasan_id ?? $kemasan?->id,
+                            'jumlah' => $jumlahKemasan,
+                            'jumlah_kemasan' => $jumlahKemasan ?: null,
+                            'isi_per_kemasan' => $isi ?: null,
+                            'satuan_kemasan' => $detail->satuan_kemasan ?? $kemasan?->nama_kemasan,
+                            'kemasan' => $detail->satuan_kemasan ?? $kemasan?->nama_kemasan,
+                            'total_unit' => $jumlahUnit,
+                            'total_unit_dasar' => $jumlahUnit,
+                            'base_unit' => $detail->base_unit ?? $barang->satuan_dasar,
+                        ]);
+
+                        $barang->decrement('stok', $jumlahUnit);
+
+                        StokHistory::create([
+                            'id_barang' => $barang->id_obat,
+                            'id_lokasi' => $permintaan->lokasi_id,
+                            'perubahan' => -$jumlahUnit,
+                            'stok_sebelum' => $stokSebelum,
+                            'stok_sesudah' => $stokSebelum - $jumlahUnit,
+                            'keterangan' => 'Pemenuhan permintaan '.$permintaan->kode,
+                            'user_id' => Auth::id(),
+                            'tanggal_transaksi' => now()->toDateString(),
+                            'jumlah_kemasan' => $jumlahKemasan ?: null,
+                            'isi_per_kemasan' => $isi ?: null,
+                            'satuan_kemasan' => $detail->satuan_kemasan ?? $kemasan?->nama_kemasan,
+                            'kemasan_id' => $detail->kemasan_id ?? $kemasan?->id,
+                            'base_unit' => $detail->base_unit ?? $barang->satuan_dasar,
+                        ]);
+                    } elseif (in_array($detail->id, $createBaru, true)) {
                     $barangBaru = BarangMedis::create([
                         'kode_obat' => BarangMedis::generateKode('OBAT'),
                         'nama_obat' => $detail->nama_barang_baru,
@@ -350,33 +365,76 @@ class PermintaanBarangController extends Controller
 
     private function validatePermintaan(Request $request): array
     {
-        $validator = Validator::make($request->all(), [
+        $payload = $request->all();
+
+        $payload['details_registered'] = collect($request->input('details_registered', []))
+            ->filter(function ($detail) {
+                $jumlah = Arr::get($detail, 'jumlah_kemasan');
+
+                return Arr::get($detail, 'barang_id')
+                    || Arr::get($detail, 'kemasan_id')
+                    || ($jumlah !== null && $jumlah !== '');
+            })
+            ->map(function ($detail) {
+                return [
+                    'barang_id' => Arr::get($detail, 'barang_id'),
+                    'kemasan_id' => Arr::get($detail, 'kemasan_id'),
+                    'jumlah_kemasan' => Arr::get($detail, 'jumlah_kemasan'),
+                    'keterangan' => Arr::get($detail, 'keterangan'),
+                ];
+            })
+            ->values()
+            ->toArray();
+
+        $payload['details_new'] = collect($request->input('details_new', []))
+            ->filter(function ($detail) {
+                $jumlah = Arr::get($detail, 'jumlah');
+
+                return Arr::get($detail, 'nama')
+                    || ($jumlah !== null && $jumlah !== '')
+                    || Arr::get($detail, 'satuan')
+                    || Arr::get($detail, 'kemasan')
+                    || Arr::get($detail, 'keterangan');
+            })
+            ->map(function ($detail) {
+                return [
+                    'nama' => Arr::get($detail, 'nama'),
+                    'jumlah' => Arr::get($detail, 'jumlah'),
+                    'satuan' => Arr::get($detail, 'satuan'),
+                    'kemasan' => Arr::get($detail, 'kemasan'),
+                    'keterangan' => Arr::get($detail, 'keterangan'),
+                ];
+            })
+            ->values()
+            ->toArray();
+
+        $validator = Validator::make($payload, [
             'tanggal' => ['required', 'date'],
             'catatan' => ['nullable', 'string'],
-            'items' => ['nullable', 'array'],
-            'items.*.barang_id' => ['required_with:items', 'exists:barang_medis,id_obat'],
-            'items.*.barang_kemasan_id' => ['required_with:items', 'exists:barang_kemasan,id'],
-            'items.*.jumlah' => ['required_with:items', 'integer', 'min:1'],
-            'items.*.keterangan' => ['nullable', 'string', 'max:255'],
-            'new_items' => ['nullable', 'array'],
-            'new_items.*.nama' => ['required_with:new_items', 'string', 'max:255'],
-            'new_items.*.jumlah' => ['required_with:new_items', 'numeric', 'min:0.01'],
-            'new_items.*.satuan' => ['required_with:new_items', 'string', 'max:50'],
-            'new_items.*.kemasan' => ['nullable', 'string', 'max:150'],
-            'new_items.*.keterangan' => ['nullable', 'string', 'max:255'],
+            'details_registered' => ['nullable', 'array'],
+            'details_registered.*.barang_id' => ['required', 'exists:barang_medis,id_obat'],
+            'details_registered.*.kemasan_id' => ['required', 'exists:barang_kemasan,id'],
+            'details_registered.*.jumlah_kemasan' => ['required', 'integer', 'min:1'],
+            'details_registered.*.keterangan' => ['nullable', 'string', 'max:255'],
+            'details_new' => ['nullable', 'array'],
+            'details_new.*.nama' => ['required', 'string', 'max:255'],
+            'details_new.*.jumlah' => ['required', 'numeric', 'min:0.01'],
+            'details_new.*.satuan' => ['required', 'string', 'max:50'],
+            'details_new.*.kemasan' => ['nullable', 'string', 'max:150'],
+            'details_new.*.keterangan' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $validator->after(function ($validator) use ($request) {
-            $items = $request->input('items', []);
-            $newItems = $request->input('new_items', []);
+        $validator->after(function ($validator) use ($payload) {
+            $registered = $payload['details_registered'] ?? [];
+            $new = $payload['details_new'] ?? [];
 
-            if (empty($items) && empty($newItems)) {
-                $validator->errors()->add('items', 'Minimal satu detail harus ditambahkan.');
+            if (empty($registered) && empty($new)) {
+                $validator->errors()->add('details_registered', 'Minimal satu detail harus ditambahkan.');
             }
 
-            foreach ($items as $index => $item) {
+            foreach ($registered as $index => $item) {
                 $barangId = Arr::get($item, 'barang_id');
-                $kemasanId = Arr::get($item, 'barang_kemasan_id');
+                $kemasanId = Arr::get($item, 'kemasan_id');
 
                 if ($barangId && $kemasanId) {
                     $exists = BarangKemasan::where('id', $kemasanId)
@@ -384,7 +442,7 @@ class PermintaanBarangController extends Controller
                         ->exists();
 
                     if (! $exists) {
-                        $validator->errors()->add("items.{$index}.barang_kemasan_id", 'Kemasan tidak valid untuk barang yang dipilih.');
+                        $validator->errors()->add("details_registered.{$index}.kemasan_id", 'Kemasan tidak valid untuk barang yang dipilih.');
                     }
                 }
             }
@@ -395,25 +453,56 @@ class PermintaanBarangController extends Controller
         return [
             'tanggal' => $data['tanggal'],
             'catatan' => $data['catatan'] ?? null,
-            'items' => $data['items'] ?? [],
-            'new_items' => $data['new_items'] ?? [],
+            'details_registered' => collect($data['details_registered'] ?? [])
+                ->map(function ($detail) {
+                    return [
+                        'barang_id' => (int) $detail['barang_id'],
+                        'kemasan_id' => (int) $detail['kemasan_id'],
+                        'jumlah_kemasan' => (int) $detail['jumlah_kemasan'],
+                        'keterangan' => $detail['keterangan'] ?? null,
+                    ];
+                })
+                ->toArray(),
+            'details_new' => collect($data['details_new'] ?? [])
+                ->map(function ($detail) {
+                    return [
+                        'nama' => $detail['nama'],
+                        'jumlah' => (float) $detail['jumlah'],
+                        'satuan' => $detail['satuan'],
+                        'kemasan' => $detail['kemasan'] ?? null,
+                        'keterangan' => $detail['keterangan'] ?? null,
+                    ];
+                })
+                ->toArray(),
         ];
     }
 
-    private function syncDetails(PermintaanBarang $permintaan, array $items, array $newItems): void
+    private function syncDetails(PermintaanBarang $permintaan, array $registeredItems, array $newItems): void
     {
-        foreach ($items as $item) {
+        foreach ($registeredItems as $item) {
             $barang = BarangMedis::find($item['barang_id']);
-            $kemasan = BarangKemasan::find($item['barang_kemasan_id']);
-            $jumlah = (int) $item['jumlah'];
+            $kemasan = BarangKemasan::find($item['kemasan_id']);
+
+            if (! $barang || ! $kemasan) {
+                continue;
+            }
+
+            $jumlah = (int) $item['jumlah_kemasan'];
+            $totalUnit = $kemasan->isi_per_kemasan * $jumlah;
 
             $permintaan->details()->create([
                 'barang_id' => $barang->id_obat,
                 'barang_kemasan_id' => $kemasan->id,
+                'kemasan_id' => $kemasan->id,
                 'jumlah' => $jumlah,
-                'total_unit' => $kemasan->isi_per_kemasan * $jumlah,
+                'jumlah_kemasan' => $jumlah,
+                'isi_per_kemasan' => $kemasan->isi_per_kemasan,
+                'total_unit' => $totalUnit,
+                'total_unit_dasar' => $totalUnit,
                 'satuan' => $barang->satuan_dasar,
+                'base_unit' => $barang->satuan_dasar,
                 'kemasan' => $kemasan->nama_kemasan,
+                'satuan_kemasan' => $kemasan->nama_kemasan,
                 'keterangan' => $item['keterangan'] ?? null,
             ]);
         }

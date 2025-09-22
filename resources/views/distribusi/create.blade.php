@@ -61,17 +61,17 @@
                                         <strong>{{ $item->barangMedis->nama_obat }}</strong>
                                         <small class="d-block text-muted">{{ $item->barangMedis->tipe }} • {{ $item->barangMedis->satuan_dasar }}</small>
                                     </td>
-                                    <td class="text-center fs-5"><strong>{{ number_format($item->total_unit) }}</strong></td>
-                                    <td class="text-center {{ $item->stok_gudang < $item->total_unit ? 'text-danger' : '' }}">
+                                    <td class="text-center fs-5"><strong>{{ number_format($item->total_unit_dasar) }}</strong></td>
+                                    <td class="text-center {{ $item->stok_gudang < $item->total_unit_dasar ? 'text-danger' : '' }}">
                                         {{ number_format($item->stok_gudang) }}
-                                        @if ($item->stok_gudang < $item->total_unit)
+                                        @if ($item->stok_gudang < $item->total_unit_dasar)
                                             <i class="bi bi-exclamation-triangle-fill" title="Stok tidak mencukupi!"></i>
                                         @endif
                                     </td>
                                     <td class="text-center">
                                         <input type="number" name="barang[{{ $index }}][jumlah_dikirim]"
                                                class="form-control text-center"
-                                               value="{{ min($item->total_unit, $item->stok_gudang) }}"
+                                               value="{{ min($item->total_unit_dasar, $item->stok_gudang) }}"
                                                max="{{ $item->stok_gudang }}"
                                                min="0" required>
                                     </td>

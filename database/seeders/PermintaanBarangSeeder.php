@@ -53,10 +53,16 @@ class PermintaanBarangSeeder extends Seeder
                 $permintaan->details()->create([
                     'barang_id' => $barang->id_obat,
                     'barang_kemasan_id' => $kemasan->id,
+                    'kemasan_id' => $kemasan->id,
                     'jumlah' => 2,
+                    'jumlah_kemasan' => 2,
+                    'isi_per_kemasan' => $kemasan->isi_per_kemasan,
                     'total_unit' => $kemasan->isi_per_kemasan * 2,
+                    'total_unit_dasar' => $kemasan->isi_per_kemasan * 2,
                     'satuan' => $barang->satuan_dasar,
+                    'base_unit' => $barang->satuan_dasar,
                     'kemasan' => $kemasan->nama_kemasan,
+                    'satuan_kemasan' => $kemasan->nama_kemasan,
                     'keterangan' => 'Permintaan rutin',
                 ]);
             }

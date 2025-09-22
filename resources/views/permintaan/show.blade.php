@@ -72,8 +72,20 @@
                                         <span class="badge bg-warning text-dark">Barang baru</span>
                                     @endif
                                 </td>
-                                <td>{{ rtrim(rtrim(number_format($detail->jumlah, 2, ',', '.'), '0'), ',') }}</td>
-                                <td>{{ $detail->kemasan ?? '-' }}</td>
+                                <td>
+                                    @if($detail->barang)
+                                        {{ $detail->jumlah_kemasan_label ?? '-' }}
+                                    @else
+                                        {{ rtrim(rtrim(number_format($detail->jumlah, 2, ',', '.'), '0'), ',') }} {{ $detail->satuan ?? '' }}
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($detail->barang)
+                                        {{ $detail->satuan_kemasan ?? $detail->kemasan ?? '-' }}
+                                    @else
+                                        {{ $detail->kemasan ?? '-' }}
+                                    @endif
+                                </td>
                                 <td>{{ $detail->konversi_label ?? '-' }}</td>
                                 <td>{{ $detail->keterangan ?? '-' }}</td>
                             </tr>

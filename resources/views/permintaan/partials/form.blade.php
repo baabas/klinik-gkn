@@ -1,22 +1,23 @@
 @php
-    $registeredDetails = collect(old('items', isset($permintaan)
+    $registeredDetails = collect(old('details_registered', isset($permintaan)
         ? $permintaan->details
             ->whereNotNull('barang_id')
             ->map(fn ($detail) => [
                 'barang_id' => $detail->barang_id,
                 'barang_text' => $detail->barang?->nama_obat . ' (' . $detail->barang?->kode_obat . ')',
-                'barang_kemasan_id' => $detail->barang_kemasan_id,
-                'barang_kemasan_text' => $detail->kemasan,
-                'jumlah' => (int) $detail->jumlah,
-                'satuan' => $detail->barang?->satuan_dasar,
-                'total_unit' => $detail->total_unit,
+                'kemasan_id' => $detail->kemasan_id ?? $detail->barang_kemasan_id,
+                'kemasan_text' => $detail->satuan_kemasan ?? $detail->kemasan,
+                'jumlah_kemasan' => $detail->jumlah_kemasan ?? ($detail->jumlah !== null ? (int) $detail->jumlah : null),
+                'isi_per_kemasan' => $detail->isi_per_kemasan ?? $detail->kemasan?->isi_per_kemasan,
+                'total_unit_dasar' => $detail->total_unit_dasar ?? $detail->total_unit,
+                'base_unit' => $detail->base_unit ?? $detail->barang?->satuan_dasar,
                 'keterangan' => $detail->keterangan,
             ])
             ->values()
             ->toArray()
         : []));
 
-    $newDetails = collect(old('new_items', isset($permintaan)
+    $newDetails = collect(old('details_new', isset($permintaan)
         ? $permintaan->details
             ->whereNull('barang_id')
             ->map(fn ($detail) => [
@@ -69,17 +70,26 @@
                 <tr>
                     <th style="width:30%">Obat</th>
                     <th style="width:18%">Kemasan</th>
-                    <th style="width:12%">Jumlah</th>
-                    <th style="width:15%">Satuan Dasar</th>
+                    <th style="width:12%">Jumlah Kemasan</th>
+                    <th style="width:18%">Konversi</th>
+                    <th style="width:12%">Satuan Dasar</th>
                     <th>Keterangan</th>
                     <th style="width:5%"></th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($registeredDetails as $index => $detail)
-                    <tr data-index="{{ $index }}">
+                    @php
+                        $conversionValue = '';
+                        if (!empty($detail['total_unit_dasar']) && !empty($detail['base_unit'])) {
+                            $conversionValue = '≈ ' . number_format((int) $detail['total_unit_dasar']) . ' ' . $detail['base_unit'];
+                        } elseif (!empty($detail['total_unit_dasar'])) {
+                            $conversionValue = '≈ ' . number_format((int) $detail['total_unit_dasar']);
+                        }
+                    @endphp
+                    <tr data-index="{{ $index }}" data-base-unit="{{ $detail['base_unit'] ?? '' }}" data-current-kemasan="{{ $detail['kemasan_id'] ?? '' }}">
                         <td>
-                            <select class="form-select select-barang" name="items[{{ $index }}][barang_id]" data-placeholder="Cari nama atau kode obat" required>
+                            <select class="form-select select-barang" name="details_registered[{{ $index }}][barang_id]" data-placeholder="Cari nama atau kode obat" required>
                                 <option value="">Pilih barang</option>
                                 @if($detail['barang_id'])
                                     <option value="{{ $detail['barang_id'] }}" selected>{{ $detail['barang_text'] }}</option>
@@ -87,24 +97,24 @@
                             </select>
                         </td>
                         <td>
-                            <select class="form-select select-kemasan" name="items[{{ $index }}][barang_kemasan_id]" data-placeholder="Pilih kemasan" required>
+                            <select class="form-select select-kemasan" name="details_registered[{{ $index }}][kemasan_id]" data-placeholder="Pilih kemasan" required>
                                 <option value="">Pilih kemasan</option>
-                                @if($detail['barang_kemasan_id'])
-                                    <option value="{{ $detail['barang_kemasan_id'] }}" selected>{{ $detail['barang_kemasan_text'] }}</option>
+                                @if($detail['kemasan_id'])
+                                    <option value="{{ $detail['kemasan_id'] }}" data-isi="{{ $detail['isi_per_kemasan'] ?? '' }}" selected>{{ $detail['kemasan_text'] }}</option>
                                 @endif
                             </select>
                         </td>
                         <td>
-                            <div class="input-group">
-                                <input type="number" min="1" class="form-control input-jumlah" name="items[{{ $index }}][jumlah]" value="{{ $detail['jumlah'] }}" required>
-                            </div>
-                            <small class="text-muted conversion-text">{{ $detail['total_unit'] ? '≈ ' . number_format($detail['total_unit']) . ' ' . ($detail['satuan'] ?? '') : '' }}</small>
+                            <input type="number" min="1" class="form-control input-jumlah" name="details_registered[{{ $index }}][jumlah_kemasan]" value="{{ $detail['jumlah_kemasan'] ?? 1 }}" required>
                         </td>
                         <td>
-                            <span class="badge bg-light text-dark satuan-text">{{ $detail['satuan'] ?? '-' }}</span>
+                            <input type="text" class="form-control conversion-input" value="{{ $conversionValue }}" readonly tabindex="-1">
                         </td>
                         <td>
-                            <input type="text" class="form-control" name="items[{{ $index }}][keterangan]" value="{{ $detail['keterangan'] }}" placeholder="Keterangan (opsional)">
+                            <span class="badge bg-light text-dark satuan-text">{{ $detail['base_unit'] ?? '-' }}</span>
+                        </td>
+                        <td>
+                            <input type="text" class="form-control" name="details_registered[{{ $index }}][keterangan]" value="{{ $detail['keterangan'] }}" placeholder="Keterangan (opsional)">
                         </td>
                         <td class="text-center">
                             <button type="button" class="btn btn-outline-danger btn-sm remove-row" title="Hapus baris">
@@ -114,7 +124,7 @@
                     </tr>
                 @empty
                     <tr class="empty-registered text-muted">
-                        <td colspan="6" class="text-center">Belum ada obat terdaftar ditambahkan.</td>
+                        <td colspan="7" class="text-center">Belum ada obat terdaftar ditambahkan.</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -143,19 +153,19 @@
                 @forelse($newDetails as $index => $detail)
                     <tr data-index="{{ $index }}">
                         <td>
-                            <input type="text" class="form-control" name="new_items[{{ $index }}][nama]" value="{{ $detail['nama'] }}" placeholder="Nama barang" required>
+                            <input type="text" class="form-control" name="details_new[{{ $index }}][nama]" value="{{ $detail['nama'] }}" placeholder="Nama barang" required>
                         </td>
                         <td>
-                            <input type="number" min="0" step="0.01" class="form-control" name="new_items[{{ $index }}][jumlah]" value="{{ $detail['jumlah'] }}" required>
+                            <input type="number" min="0" step="0.01" class="form-control" name="details_new[{{ $index }}][jumlah]" value="{{ $detail['jumlah'] }}" required>
                         </td>
                         <td>
-                            <input type="text" class="form-control" name="new_items[{{ $index }}][satuan]" value="{{ $detail['satuan'] }}" placeholder="Contoh: Tablet" required>
+                            <input type="text" class="form-control" name="details_new[{{ $index }}][satuan]" value="{{ $detail['satuan'] }}" placeholder="Contoh: Tablet" required>
                         </td>
                         <td>
-                            <input type="text" class="form-control" name="new_items[{{ $index }}][kemasan]" value="{{ $detail['kemasan'] }}" placeholder="Contoh: Box isi 10">
+                            <input type="text" class="form-control" name="details_new[{{ $index }}][kemasan]" value="{{ $detail['kemasan'] }}" placeholder="Contoh: Box isi 10">
                         </td>
                         <td>
-                            <input type="text" class="form-control" name="new_items[{{ $index }}][keterangan]" value="{{ $detail['keterangan'] }}" placeholder="Keterangan (opsional)">
+                            <input type="text" class="form-control" name="details_new[{{ $index }}][keterangan]" value="{{ $detail['keterangan'] }}" placeholder="Keterangan (opsional)">
                         </td>
                         <td class="text-center">
                             <button type="button" class="btn btn-outline-danger btn-sm remove-row" title="Hapus baris">
@@ -213,8 +223,11 @@
                         if (!data.id) {
                             return data.text;
                         }
-                        element.closest('tr').dataset.barangSatuan = data.satuan || '';
-                        updateSatuan(element.closest('tr'));
+                        const row = element.closest('tr');
+                        if (row) {
+                            row.dataset.baseUnit = data.satuan || '';
+                            updateSatuan(row);
+                        }
                         return data.text;
                     }
                 });
@@ -251,14 +264,14 @@
                         } else {
                             $(kemasanSelect).val('').trigger('change');
                         }
-                        row.dataset.barangSatuan = data.satuan || '';
+                        row.dataset.baseUnit = data.satuan || '';
                         updateSatuan(row);
                     });
             }
 
             function updateSatuan(row) {
                 const satuanBadge = row.querySelector('.satuan-text');
-                const satuan = row.dataset.barangSatuan || '-';
+                const satuan = row.dataset.baseUnit || '-';
                 if (satuanBadge) {
                     satuanBadge.textContent = satuan || '-';
                 }
@@ -269,15 +282,25 @@
                 const jumlah = parseInt(row.querySelector('.input-jumlah')?.value || 0, 10);
                 const kemasanSelect = row.querySelector('.select-kemasan');
                 const option = kemasanSelect?.options[kemasanSelect.selectedIndex];
-                const conversionText = row.querySelector('.conversion-text');
-                const satuan = row.dataset.barangSatuan || '';
+                const conversionInput = row.querySelector('.conversion-input');
+                const satuan = row.dataset.baseUnit || '';
+
+                if (!conversionInput) {
+                    return;
+                }
 
                 if (jumlah > 0 && option && option.dataset.isi) {
-                    const total = jumlah * parseInt(option.dataset.isi, 10);
-                    conversionText.textContent = `≈ ${new Intl.NumberFormat('id-ID').format(total)} ${satuan}`;
-                } else {
-                    conversionText.textContent = '';
+                    const isiValue = parseInt(option.dataset.isi, 10);
+                    if (!Number.isNaN(isiValue) && isiValue > 0) {
+                        const total = jumlah * isiValue;
+                        conversionInput.value = `≈ ${new Intl.NumberFormat('id-ID').format(total)} ${satuan}`.trim();
+                        conversionInput.dataset.totalUnit = String(total);
+                        return;
+                    }
                 }
+
+                conversionInput.value = '';
+                delete conversionInput.dataset.totalUnit;
             }
 
             function attachRowEvents(row) {
@@ -296,7 +319,9 @@
 
                 $(kemasanSelect).on('select2:select', function (e) {
                     const option = e.params.data.element;
-                    row.dataset.currentKemasan = option.value;
+                    if (option) {
+                        row.dataset.currentKemasan = option.value;
+                    }
                     updateConversion(row);
                 });
 
@@ -307,7 +332,7 @@
                     if (!registeredTable.querySelectorAll('tr[data-index]').length) {
                         registeredTable.insertAdjacentHTML('beforeend', `
                             <tr class="empty-registered text-muted">
-                                <td colspan="6" class="text-center">Belum ada obat terdaftar ditambahkan.</td>
+                                <td colspan="7" class="text-center">Belum ada obat terdaftar ditambahkan.</td>
                             </tr>`);
                     }
                 });
@@ -318,34 +343,46 @@
                 const index = registeredIndex++;
                 const row = document.createElement('tr');
                 row.dataset.index = index;
+                if (data.base_unit) {
+                    row.dataset.baseUnit = data.base_unit;
+                }
+                if (data.kemasan_id) {
+                    row.dataset.currentKemasan = data.kemasan_id;
+                }
                 row.innerHTML = `
                     <td>
-                        <select class="form-select select-barang" name="items[${index}][barang_id]" data-placeholder="Cari nama atau kode obat" required>
+                        <select class="form-select select-barang" name="details_registered[${index}][barang_id]" data-placeholder="Cari nama atau kode obat" required>
                             <option value="">Pilih barang</option>
                             ${data.barang_id ? `<option value="${data.barang_id}" selected>${data.barang_text}</option>` : ''}
                         </select>
                     </td>
                     <td>
-                        <select class="form-select select-kemasan" name="items[${index}][barang_kemasan_id]" data-placeholder="Pilih kemasan" required>
+                        <select class="form-select select-kemasan" name="details_registered[${index}][kemasan_id]" data-placeholder="Pilih kemasan" required>
                             <option value="">Pilih kemasan</option>
-                            ${data.barang_kemasan_id ? `<option value="${data.barang_kemasan_id}" data-isi="${data.isi || 0}" selected>${data.barang_kemasan_text}</option>` : ''}
+                            ${data.kemasan_id ? `<option value="${data.kemasan_id}" data-isi="${data.isi_per_kemasan || 0}" selected>${data.kemasan_text}</option>` : ''}
                         </select>
                     </td>
                     <td>
-                        <input type="number" min="1" class="form-control input-jumlah" name="items[${index}][jumlah]" value="${data.jumlah || 1}" required>
-                        <small class="text-muted conversion-text"></small>
+                        <input type="number" min="1" class="form-control input-jumlah" name="details_registered[${index}][jumlah_kemasan]" value="${data.jumlah_kemasan || 1}" required>
                     </td>
-                    <td><span class="badge bg-light text-dark satuan-text">${data.satuan || '-'}</span></td>
-                    <td><input type="text" class="form-control" name="items[${index}][keterangan]" value="${data.keterangan || ''}" placeholder="Keterangan (opsional)"></td>
+                    <td>
+                        <input type="text" class="form-control conversion-input" value="${data.total_unit_dasar && data.base_unit ? `≈ ${new Intl.NumberFormat('id-ID').format(data.total_unit_dasar)} ${data.base_unit}` : ''}" readonly tabindex="-1">
+                    </td>
+                    <td><span class="badge bg-light text-dark satuan-text">${data.base_unit || '-'}</span></td>
+                    <td><input type="text" class="form-control" name="details_registered[${index}][keterangan]" value="${data.keterangan || ''}" placeholder="Keterangan (opsional)"></td>
                     <td class="text-center"><button type="button" class="btn btn-outline-danger btn-sm remove-row"><i class="bi bi-trash"></i></button></td>`;
 
                 registeredTable.appendChild(row);
-                if (data.satuan) {
-                    row.dataset.barangSatuan = data.satuan;
+                if (data.base_unit) {
+                    row.dataset.baseUnit = data.base_unit;
                 }
                 attachRowEvents(row);
-                if (data.total_unit) {
-                    row.querySelector('.conversion-text').textContent = `≈ ${new Intl.NumberFormat('id-ID').format(data.total_unit)} ${data.satuan || ''}`;
+                if (data.total_unit_dasar) {
+                    const conversionInput = row.querySelector('.conversion-input');
+                    if (conversionInput) {
+                        conversionInput.value = `≈ ${new Intl.NumberFormat('id-ID').format(data.total_unit_dasar)} ${data.base_unit || ''}`.trim();
+                        conversionInput.dataset.totalUnit = String(data.total_unit_dasar);
+                    }
                 }
             }
 
@@ -355,11 +392,11 @@
                 const row = document.createElement('tr');
                 row.dataset.index = index;
                 row.innerHTML = `
-                    <td><input type="text" class="form-control" name="new_items[${index}][nama]" value="${data.nama || ''}" placeholder="Nama barang" required></td>
-                    <td><input type="number" min="0" step="0.01" class="form-control" name="new_items[${index}][jumlah]" value="${data.jumlah || ''}" required></td>
-                    <td><input type="text" class="form-control" name="new_items[${index}][satuan]" value="${data.satuan || ''}" placeholder="Contoh: Tablet" required></td>
-                    <td><input type="text" class="form-control" name="new_items[${index}][kemasan]" value="${data.kemasan || ''}" placeholder="Contoh: Box isi 10"></td>
-                    <td><input type="text" class="form-control" name="new_items[${index}][keterangan]" value="${data.keterangan || ''}" placeholder="Keterangan (opsional)"></td>
+                    <td><input type="text" class="form-control" name="details_new[${index}][nama]" value="${data.nama || ''}" placeholder="Nama barang" required></td>
+                    <td><input type="number" min="0" step="0.01" class="form-control" name="details_new[${index}][jumlah]" value="${data.jumlah || ''}" required></td>
+                    <td><input type="text" class="form-control" name="details_new[${index}][satuan]" value="${data.satuan || ''}" placeholder="Contoh: Tablet" required></td>
+                    <td><input type="text" class="form-control" name="details_new[${index}][kemasan]" value="${data.kemasan || ''}" placeholder="Contoh: Box isi 10"></td>
+                    <td><input type="text" class="form-control" name="details_new[${index}][keterangan]" value="${data.keterangan || ''}" placeholder="Keterangan (opsional)"></td>
                     <td class="text-center"><button type="button" class="btn btn-outline-danger btn-sm remove-row"><i class="bi bi-trash"></i></button></td>`;
 
                 row.querySelector('.remove-row').addEventListener('click', function () {
@@ -380,10 +417,7 @@
 
             registeredTable.querySelectorAll('tr[data-index]').forEach(row => {
                 attachRowEvents(row);
-                const jumlahInput = row.querySelector('.input-jumlah');
-                if (jumlahInput) {
-                    jumlahInput.dispatchEvent(new Event('input'));
-                }
+                updateSatuan(row);
             });
 
             newTable.querySelectorAll('tr[data-index]').forEach(row => {
@@ -396,6 +430,25 @@
                             </tr>`);
                     }
                 });
+            });
+
+            document.getElementById('permintaan-form')?.addEventListener('submit', function (event) {
+                let valid = true;
+
+                registeredTable.querySelectorAll('tr[data-index]').forEach(row => {
+                    row.classList.remove('table-danger');
+                    const jumlah = parseInt(row.querySelector('.input-jumlah')?.value || '0', 10);
+                    const kemasanValue = row.querySelector('.select-kemasan')?.value;
+                    if (jumlah < 1 || !kemasanValue) {
+                        valid = false;
+                        row.classList.add('table-danger');
+                    }
+                });
+
+                if (!valid) {
+                    event.preventDefault();
+                    alert('Pastikan setiap obat terdaftar memiliki kemasan dan jumlah kemasan lebih dari 0.');
+                }
             });
         });
     </script>
