@@ -120,4 +120,77 @@ class PermintaanBarangFulfillmentTest extends TestCase
         $permintaan->refresh();
         $this->assertSame(PermintaanBarang::STATUS_DIPENUHI, $permintaan->status);
     }
+
+    public function test_fulfill_creates_new_barang_with_sanitized_satuan(): void
+    {
+        $lokasiKlinik = LokasiKlinik::create([
+            'nama_lokasi' => 'Klinik B',
+            'alamat' => 'Jalan Klinik B',
+        ]);
+
+        $peminta = User::create([
+            'nama_karyawan' => 'Dokter Baru',
+            'nip' => '1988123456789012',
+            'email' => 'dokter-baru@example.com',
+            'password' => Hash::make('password'),
+            'akses' => 'DOKTER',
+            'id_lokasi' => $lokasiKlinik->id,
+        ]);
+
+        $permintaan = PermintaanBarang::create([
+            'kode' => 'REQ-TEST-0002',
+            'tanggal' => now()->toDateString(),
+            'peminta_id' => $peminta->id,
+            'lokasi_id' => $lokasiKlinik->id,
+            'status' => PermintaanBarang::STATUS_DISETUJUI,
+        ]);
+
+        $detailTablet = PermintaanBarangDetail::create([
+            'permintaan_id' => $permintaan->id,
+            'nama_barang_baru' => 'Obat Tablet',
+            'satuan' => 'Tablet',
+            'kemasan' => 'Kotak',
+        ]);
+
+        $detailStrip = PermintaanBarangDetail::create([
+            'permintaan_id' => $permintaan->id,
+            'nama_barang_baru' => 'Obat Strip',
+            'satuan' => 'Strip',
+            'kemasan' => 'Strip',
+        ]);
+
+        $rolePengadaan = Role::create(['name' => 'PENGADAAN']);
+
+        $petugasPengadaan = User::create([
+            'nama_karyawan' => 'Petugas Pengadaan',
+            'nip' => '1977123456789012',
+            'email' => 'pengadaan@example.com',
+            'password' => Hash::make('password'),
+            'akses' => 'PENGADAAN',
+        ]);
+
+        $petugasPengadaan->roles()->attach($rolePengadaan->id);
+
+        $response = $this->actingAs($petugasPengadaan)->post(route('permintaan.fulfill', $permintaan), [
+            'buat_barang_baru' => [$detailTablet->id, $detailStrip->id],
+        ]);
+
+        $response->assertRedirect(route('permintaan.show', $permintaan));
+
+        $barangTablet = BarangMedis::where('nama_obat', 'Obat Tablet')->first();
+        $barangStrip = BarangMedis::where('nama_obat', 'Obat Strip')->first();
+
+        $this->assertNotNull($barangTablet);
+        $this->assertNotNull($barangStrip);
+        $this->assertSame('tablet', $barangTablet->satuan_dasar);
+        $this->assertSame('pcs', $barangStrip->satuan_dasar);
+
+        $detailTablet->refresh();
+        $detailStrip->refresh();
+
+        $this->assertNotNull($detailTablet->barang_id);
+        $this->assertSame($barangTablet->id_obat, $detailTablet->barang_id);
+        $this->assertNotNull($detailStrip->barang_id);
+        $this->assertSame($barangStrip->id_obat, $detailStrip->barang_id);
+    }
 }

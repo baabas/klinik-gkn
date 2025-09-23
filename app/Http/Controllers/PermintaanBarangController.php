@@ -15,6 +15,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class PermintaanBarangController extends Controller
@@ -295,31 +296,38 @@ class PermintaanBarangController extends Controller
                             'base_unit' => $detail->base_unit ?? $barang->satuan_dasar,
                         ]);
                     } elseif (in_array($detail->id, $createBaru, true)) {
-                    $barangBaru = BarangMedis::create([
-                        'kode_obat' => BarangMedis::generateKode('OBAT'),
-                        'nama_obat' => $detail->nama_barang_baru,
-                        'tipe' => 'OBAT',
-                        'satuan_dasar' => $detail->satuan ?? 'Unit',
-                        'stok' => 0,
-                        'created_by' => Auth::id(),
-                    ]);
+                        $allowedUnits = ['kaplet', 'tablet', 'kapsul', 'pcs'];
+                        $normalizedSatuan = Str::lower(trim((string) ($detail->satuan ?? '')));
 
-                    if ($detail->kemasan) {
-                        $kemasanBaru = $barangBaru->kemasanBarang()->create([
-                            'nama_kemasan' => $detail->kemasan,
-                            'isi_per_kemasan' => 1,
-                            'is_default' => true,
+                        if (! in_array($normalizedSatuan, $allowedUnits, true)) {
+                            $normalizedSatuan = 'pcs';
+                        }
+
+                        $barangBaru = BarangMedis::create([
+                            'kode_obat' => BarangMedis::generateKode('OBAT'),
+                            'nama_obat' => $detail->nama_barang_baru,
+                            'tipe' => 'OBAT',
+                            'satuan_dasar' => $normalizedSatuan,
+                            'stok' => 0,
+                            'created_by' => Auth::id(),
                         ]);
+
+                        if ($detail->kemasan) {
+                            $kemasanBaru = $barangBaru->kemasanBarang()->create([
+                                'nama_kemasan' => $detail->kemasan,
+                                'isi_per_kemasan' => 1,
+                                'is_default' => true,
+                            ]);
+
+                            $detail->update([
+                                'barang_kemasan_id' => $kemasanBaru->id,
+                            ]);
+                        }
 
                         $detail->update([
-                            'barang_kemasan_id' => $kemasanBaru->id,
+                            'barang_id' => $barangBaru->id_obat,
                         ]);
                     }
-
-                    $detail->update([
-                        'barang_id' => $barangBaru->id_obat,
-                    ]);
-                }
                 }
 
                 $permintaan->update(['status' => PermintaanBarang::STATUS_DIPENUHI]);
