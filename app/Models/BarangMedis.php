@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class BarangMedis extends Model
 {
@@ -65,7 +67,7 @@ class BarangMedis extends Model
             ->where('is_default', true);
     }
 
-    public function kemasanDefault(): ?BarangKemasan
+    public function getKemasanDefaultAttribute(): ?BarangKemasan
     {
         if ($this->relationLoaded('kemasanBarang')) {
             return $this->kemasanBarang->firstWhere('is_default', true);
@@ -76,6 +78,43 @@ class BarangMedis extends Model
         }
 
         return $this->defaultKemasan()->first();
+    }
+
+    public function breakdownPacks(int $qtyBase): array
+    {
+        $qtyBase = max(0, $qtyBase);
+
+        $kemasan = $this->relationLoaded('kemasanBarang')
+            ? $this->kemasanBarang
+            : $this->kemasanBarang()->get();
+
+        if (! $kemasan instanceof Collection) {
+            $kemasan = collect($kemasan);
+        }
+
+        $sortedKemasan = $kemasan
+            ->filter(fn (BarangKemasan $item) => (int) $item->isi_per_kemasan > 0)
+            ->sortByDesc('isi_per_kemasan')
+            ->values();
+
+        $remaining = $qtyBase;
+        $result = [];
+
+        foreach ($sortedKemasan->take(2) as $item) {
+            $isi = (int) $item->isi_per_kemasan;
+
+            if ($isi <= 0) {
+                continue;
+            }
+
+            $key = Str::slug($item->nama_kemasan, '_');
+            $result[$key] = intdiv($remaining, $isi);
+            $remaining %= $isi;
+        }
+
+        $result['base'] = $remaining;
+
+        return $result;
     }
 
     public static function generateKode(string $tipe): string

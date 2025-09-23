@@ -1,6 +1,9 @@
 @extends('layouts.top-nav-layout')
 
 @section('content')
+    @php
+        use App\Support\Presenters\StokPresenter;
+    @endphp
     <h1 class="h2 mb-4">Dashboard Pengadaan</h1>
 
     {{-- Baris untuk Card Statistik --}}
@@ -104,7 +107,7 @@
                                     </td>
                                     <td class="text-end">
                                         <strong class="fs-5">{{ number_format((int)$barang->stok_sum_jumlah) }}</strong><br>
-                                        <small class="text-muted">{{ \App\Support\Presenters\StokPresenter::formatWithDefault($barang, (int)$barang->stok_sum_jumlah) }}</small>
+                                        <small class="text-muted">{{ StokPresenter::format((int) $barang->stok_sum_jumlah, $barang->satuan_dasar ?? 'unit', $barang->kemasanBarang?->all()) }}</small>
                                     </td>
                                 </tr>
                                 @empty

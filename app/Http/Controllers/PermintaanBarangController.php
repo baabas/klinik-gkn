@@ -248,7 +248,12 @@ class PermintaanBarangController extends Controller
                             );
 
                         $stokLokasiSebelum = (int) $stokLokasi->jumlah;
-                        $stokLokasiSesudah = $stokLokasiSebelum + $jumlahUnit;
+
+                        if ($stokLokasiSebelum < $jumlahUnit) {
+                            throw new \RuntimeException("Stok {$barang->nama_obat} tidak mencukupi di lokasi.");
+                        }
+
+                        $stokLokasiSesudah = $stokLokasiSebelum - $jumlahUnit;
 
                         $detail->update([
                             'kemasan_id' => $detail->kemasan_id ?? $kemasan?->id,
@@ -277,7 +282,7 @@ class PermintaanBarangController extends Controller
                         StokHistory::create([
                             'id_barang' => $barang->id_obat,
                             'id_lokasi' => $permintaan->lokasi_id,
-                            'perubahan' => $jumlahUnit,
+                            'perubahan' => -$jumlahUnit,
                             'stok_sebelum' => $stokLokasiSebelum,
                             'stok_sesudah' => $stokLokasiSesudah,
                             'keterangan' => 'Pemenuhan permintaan '.$permintaan->kode,

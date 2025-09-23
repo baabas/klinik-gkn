@@ -31,9 +31,13 @@
                     </div>
                     <div class="col-md-3">
                         <label for="satuan_dasar" class="form-label">Satuan Dasar</label>
-                        <input type="text" name="satuan_dasar" id="satuan_dasar"
-                               class="form-control @error('satuan_dasar') is-invalid @enderror"
-                               placeholder="Contoh: tablet, kapsul, ml, pcs" value="{{ old('satuan_dasar') }}" required>
+                        <select name="satuan_dasar" id="satuan_dasar"
+                                class="form-select @error('satuan_dasar') is-invalid @enderror" required>
+                            <option value="" disabled {{ old('satuan_dasar') ? '' : 'selected' }}>Pilih satuan dasar</option>
+                            @foreach (['kaplet', 'tablet', 'kapsul', 'pcs'] as $unit)
+                                <option value="{{ $unit }}" {{ old('satuan_dasar') === $unit ? 'selected' : '' }}>{{ strtoupper($unit) }}</option>
+                            @endforeach
+                        </select>
                         @error('satuan_dasar')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -66,16 +70,31 @@
                                 ]]);
                             @endphp
                             @foreach ($oldKemasan as $index => $row)
+                                @php
+                                    $namaKemasan = $row['nama_kemasan'] ?? '';
+                                    $preset = collect($opsiKemasan)->first(function ($opsi) use ($namaKemasan) {
+                                        return strtolower($opsi) === strtolower($namaKemasan);
+                                    });
+                                    $isCustom = empty($preset) && !empty($namaKemasan);
+                                @endphp
                                 <tr class="kemasan-row" data-index="{{ $index }}">
                                     <td>
-                                        <select name="kemasan[{{ $index }}][nama_kemasan]"
-                                                class="form-select kemasan-select @error('kemasan.' . $index . '.nama_kemasan') is-invalid @enderror"
-                                                required>
-                                            <option value="" disabled {{ empty($row['nama_kemasan']) ? 'selected' : '' }}>Pilih nama kemasan</option>
-                                            @foreach ($opsiKemasan as $opsi)
-                                                <option value="{{ $opsi }}" {{ ($row['nama_kemasan'] ?? '') === $opsi ? 'selected' : '' }}>{{ $opsi }}</option>
-                                            @endforeach
-                                        </select>
+                                        <div class="input-group input-group-sm kemasan-name-group">
+                                            <select class="form-select kemasan-select @error('kemasan.' . $index . '.nama_kemasan') is-invalid @enderror"
+                                                    data-hidden="kemasan-nama-{{ $index }}"
+                                                    data-custom="kemasan-custom-{{ $index }}"
+                                                    required>
+                                                <option value="" disabled {{ $namaKemasan === '' ? 'selected' : '' }}>Pilih nama kemasan</option>
+                                                @foreach ($opsiKemasan as $opsi)
+                                                    <option value="{{ strtolower($opsi) }}" {{ strtolower($preset ?? '') === strtolower($opsi) ? 'selected' : '' }}>{{ $opsi }}</option>
+                                                @endforeach
+                                                <option value="__custom__" {{ $isCustom ? 'selected' : '' }}>Custom</option>
+                                            </select>
+                                            <input type="text" class="form-control kemasan-custom {{ $isCustom ? '' : 'd-none' }}"
+                                                   id="kemasan-custom-{{ $index }}" placeholder="Nama kemasan"
+                                                   value="{{ $isCustom ? $namaKemasan : '' }}">
+                                        </div>
+                                        <input type="hidden" name="kemasan[{{ $index }}][nama_kemasan]" id="kemasan-nama-{{ $index }}" class="kemasan-nama-hidden" value="{{ $namaKemasan }}">
                                         @error('kemasan.' . $index . '.nama_kemasan')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
@@ -124,12 +143,17 @@
     <script type="text/template" id="kemasan-row-template">
         <tr class="kemasan-row" data-index="__INDEX__">
             <td>
-                <select name="kemasan[__INDEX__][nama_kemasan]" class="form-select kemasan-select" required>
-                    <option value="" disabled selected>Pilih nama kemasan</option>
-                    @foreach ($opsiKemasan as $opsi)
-                        <option value="{{ $opsi }}">{{ $opsi }}</option>
-                    @endforeach
-                </select>
+                <div class="input-group input-group-sm kemasan-name-group">
+                    <select class="form-select kemasan-select" data-hidden="kemasan-nama-__INDEX__" data-custom="kemasan-custom-__INDEX__" required>
+                        <option value="" disabled selected>Pilih nama kemasan</option>
+                        @foreach ($opsiKemasan as $opsi)
+                            <option value="{{ strtolower($opsi) }}">{{ $opsi }}</option>
+                        @endforeach
+                        <option value="__custom__">Custom</option>
+                    </select>
+                    <input type="text" class="form-control kemasan-custom d-none" id="kemasan-custom-__INDEX__" placeholder="Nama kemasan">
+                </div>
+                <input type="hidden" name="kemasan[__INDEX__][nama_kemasan]" id="kemasan-nama-__INDEX__" class="kemasan-nama-hidden" value="">
             </td>
             <td>
                 <input type="number" min="1" name="kemasan[__INDEX__][isi_per_kemasan]" class="form-control isi-input" required>
@@ -176,6 +200,30 @@
                 updatePreview();
             };
 
+            const syncKemasanValue = (row) => {
+                const select = row.querySelector('.kemasan-select');
+                const hidden = row.querySelector('.kemasan-nama-hidden');
+                const customInput = row.querySelector('.kemasan-custom');
+
+                if (!select || !hidden) {
+                    return;
+                }
+
+                if (select.value === '__custom__') {
+                    if (customInput) {
+                        customInput.classList.remove('d-none');
+                        hidden.value = customInput.value.trim();
+                    }
+                } else {
+                    if (customInput) {
+                        customInput.classList.add('d-none');
+                    }
+
+                    const selectedOption = select.options[select.selectedIndex];
+                    hidden.value = selectedOption ? selectedOption.text : '';
+                }
+            };
+
             const updatePreview = () => {
                 const defaultRow = Array.from(tableBody.querySelectorAll('.kemasan-row')).find((row) => {
                     const checkbox = row.querySelector('.default-checkbox');
@@ -187,7 +235,7 @@
                     return;
                 }
 
-                const kemasanName = defaultRow.querySelector('.kemasan-select')?.value;
+                const kemasanName = defaultRow.querySelector('.kemasan-nama-hidden')?.value;
                 const isi = defaultRow.querySelector('.isi-input')?.value;
                 const satuan = satuanInput.value;
 
@@ -207,10 +255,28 @@
                     });
                 }
 
-                row.querySelectorAll('.kemasan-select, .isi-input').forEach((element) => {
-                    element.addEventListener('input', updatePreview);
-                    element.addEventListener('change', updatePreview);
-                });
+                const kemasanSelect = row.querySelector('.kemasan-select');
+                const kemasanCustom = row.querySelector('.kemasan-custom');
+                const isiInput = row.querySelector('.isi-input');
+
+                if (kemasanSelect) {
+                    kemasanSelect.addEventListener('change', () => {
+                        syncKemasanValue(row);
+                        updatePreview();
+                    });
+                }
+
+                if (kemasanCustom) {
+                    kemasanCustom.addEventListener('input', () => {
+                        syncKemasanValue(row);
+                        updatePreview();
+                    });
+                }
+
+                if (isiInput) {
+                    isiInput.addEventListener('input', updatePreview);
+                    isiInput.addEventListener('change', updatePreview);
+                }
 
                 const removeButton = row.querySelector('.remove-row');
                 if (removeButton) {
@@ -228,6 +294,8 @@
                         updatePreview();
                     });
                 }
+
+                syncKemasanValue(row);
             };
 
             Array.from(tableBody.querySelectorAll('.kemasan-row')).forEach((row) => {
@@ -252,6 +320,7 @@
             }
 
             satuanInput.addEventListener('input', updatePreview);
+            satuanInput.addEventListener('change', updatePreview);
             updatePreview();
         });
     </script>

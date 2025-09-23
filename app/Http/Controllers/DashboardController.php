@@ -54,7 +54,7 @@ class DashboardController extends Controller
     {
         $permintaanPending = PermintaanBarang::where('status', PermintaanBarang::STATUS_DIAJUKAN)->count();
         $stokMenipis = BarangMedis::withSum('stokLokasi as stok_sum_jumlah', 'jumlah')
-            ->with('defaultKemasan')
+            ->with(['defaultKemasan', 'kemasanBarang'])
             ->get()->where('stok_sum_jumlah', '<', 50)->count();
         $totalMasterBarang = BarangMedis::count();
         $permintaanTerbaru = PermintaanBarang::with(['lokasi'])
@@ -63,7 +63,7 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
        $stokTerendah = BarangMedis::withSum('stokLokasi as stok_sum_jumlah', 'jumlah')
-            ->with('defaultKemasan')
+            ->with(['defaultKemasan', 'kemasanBarang'])
             ->orderBy('stok_sum_jumlah', 'asc')->limit(5)->get();
 
         return view('dashboard-pengadaan', compact(

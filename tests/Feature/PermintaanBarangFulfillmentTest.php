@@ -21,11 +21,6 @@ class PermintaanBarangFulfillmentTest extends TestCase
 
     public function test_fulfill_increments_location_stock_and_logs_history(): void
     {
-        $lokasiGudang = LokasiKlinik::create([
-            'nama_lokasi' => 'Gudang Pusat',
-            'alamat' => 'Jalan Gudang',
-        ]);
-
         $lokasiKlinik = LokasiKlinik::create([
             'nama_lokasi' => 'Klinik A',
             'alamat' => 'Jalan Klinik',
@@ -35,7 +30,7 @@ class PermintaanBarangFulfillmentTest extends TestCase
             'kode_obat' => 'OBT-0001',
             'nama_obat' => 'Paracetamol',
             'tipe' => 'OBAT',
-            'satuan_dasar' => 'Tablet',
+            'satuan_dasar' => 'tablet',
             'stok' => 100,
         ]);
 
@@ -48,7 +43,7 @@ class PermintaanBarangFulfillmentTest extends TestCase
 
         StokBarang::create([
             'id_barang' => $barang->id_obat,
-            'id_lokasi' => $lokasiGudang->id,
+            'id_lokasi' => $lokasiKlinik->id,
             'jumlah' => 100,
         ]);
 
@@ -80,7 +75,7 @@ class PermintaanBarangFulfillmentTest extends TestCase
             'total_unit' => 12,
             'total_unit_dasar' => 12,
             'satuan' => 'Pack',
-            'base_unit' => 'Tablet',
+            'base_unit' => 'tablet',
             'kemasan' => 'Strip',
             'satuan_kemasan' => 'Strip',
         ]);
@@ -106,7 +101,7 @@ class PermintaanBarangFulfillmentTest extends TestCase
             ->first();
 
         $this->assertNotNull($stokKlinik);
-        $this->assertSame(12, $stokKlinik->jumlah);
+        $this->assertSame(88, $stokKlinik->jumlah);
 
         $history = StokHistory::where('id_barang', $barang->id_obat)
             ->where('id_lokasi', $lokasiKlinik->id)
@@ -114,9 +109,9 @@ class PermintaanBarangFulfillmentTest extends TestCase
             ->first();
 
         $this->assertNotNull($history);
-        $this->assertSame(12, $history->perubahan);
-        $this->assertSame(0, $history->stok_sebelum);
-        $this->assertSame(12, $history->stok_sesudah);
+        $this->assertSame(-12, $history->perubahan);
+        $this->assertSame(100, $history->stok_sebelum);
+        $this->assertSame(88, $history->stok_sesudah);
 
         $barang->refresh();
         $totalStokLokasi = StokBarang::where('id_barang', $barang->id_obat)->sum('jumlah');

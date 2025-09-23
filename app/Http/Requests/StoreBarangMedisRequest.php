@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class StoreBarangMedisRequest extends FormRequest
@@ -17,9 +18,9 @@ class StoreBarangMedisRequest extends FormRequest
         return [
             'nama_obat' => ['required', 'string'],
             'tipe' => ['required', Rule::in(['OBAT', 'ALKES'])],
-            'satuan_dasar' => ['required', 'string'],
+            'satuan_dasar' => ['required', Rule::in(['kaplet', 'tablet', 'kapsul', 'pcs'])],
             'kemasan' => ['required', 'array', 'min:1'],
-            'kemasan.*.nama_kemasan' => ['required', 'string', Rule::in(['Box', 'Strip', 'Botol', 'Rol', 'Pcs']), 'distinct'],
+            'kemasan.*.nama_kemasan' => ['required', 'string', 'max:100'],
             'kemasan.*.isi_per_kemasan' => ['required', 'integer', 'min:1'],
             'kemasan.*.is_default' => ['boolean'],
         ];
@@ -36,8 +37,7 @@ class StoreBarangMedisRequest extends FormRequest
             'kemasan.array' => 'Format definisi kemasan tidak valid.',
             'kemasan.min' => 'Minimal satu kemasan harus diisi.',
             'kemasan.*.nama_kemasan.required' => 'Nama kemasan wajib dipilih.',
-            'kemasan.*.nama_kemasan.in' => 'Nama kemasan tidak valid.',
-            'kemasan.*.nama_kemasan.distinct' => 'Nama kemasan tidak boleh sama dalam satu barang.',
+            'satuan_dasar.in' => 'Satuan dasar hanya boleh kaplet, tablet, kapsul, atau pcs.',
             'kemasan.*.isi_per_kemasan.required' => 'Isi per kemasan wajib diisi.',
             'kemasan.*.isi_per_kemasan.integer' => 'Isi per kemasan harus berupa angka.',
             'kemasan.*.isi_per_kemasan.min' => 'Isi per kemasan minimal 1.',
@@ -51,11 +51,20 @@ class StoreBarangMedisRequest extends FormRequest
         $validator->after(function ($validator) use ($kemasanPayload) {
             $kemasan = collect($kemasanPayload);
             $defaultCount = $kemasan->filter(function ($item) {
-                return !empty($item['is_default']);
+                return ! empty($item['is_default']);
             })->count();
 
             if ($defaultCount !== 1) {
                 $validator->errors()->add('kemasan', 'Tepat satu kemasan harus ditandai sebagai default.');
+            }
+
+            $duplicates = $kemasan
+                ->map(fn ($item) => Str::lower(trim($item['nama_kemasan'] ?? '')))
+                ->filter()
+                ->duplicates();
+
+            if ($duplicates->isNotEmpty()) {
+                $validator->errors()->add('kemasan', 'Nama kemasan tidak boleh duplikat.');
             }
         });
     }

@@ -39,8 +39,11 @@
                                 <dd class="col-sm-7">{{ $barang->satuan_dasar }}</dd>
                                 <dt class="col-sm-5">Kemasan Default</dt>
                                 <dd class="col-sm-7">
-                                    @if($barang->defaultKemasan)
-                                        {{ $barang->defaultKemasan->nama_kemasan }} @ {{ number_format($barang->defaultKemasan->isi_per_kemasan) }} {{ strtolower($barang->satuan_dasar ?? '') }}
+                                    @php
+                                        $defaultKemasan = $barang->kemasan_default ?? $barang->defaultKemasan;
+                                    @endphp
+                                    @if($defaultKemasan)
+                                        {{ \App\Support\Presenters\StokPresenter::descriptorDefaultPackaging($defaultKemasan, $barang->satuan_dasar ?? '') }}
                                     @else
                                         -
                                     @endif
@@ -67,7 +70,7 @@
                     <div class="border rounded p-3 bg-light text-center">
                         <p class="text-muted mb-1">Total Stok</p>
                         <h2 class="display-6 mb-2">{{ number_format($totalStok) }}</h2>
-                        <p class="text-muted mb-0">{{ StokPresenter::formatWithDefault($barang, $totalStok) }}</p>
+                        <p class="text-muted mb-0">{{ StokPresenter::format($totalStok, $barang->satuan_dasar ?? 'unit', $barang->kemasanBarang?->all()) }}</p>
                     </div>
                 </div>
             </div>

@@ -9,8 +9,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use App\Models\StokHistory;
 use App\Models\StokBarang;
+use Illuminate\Support\Str;
 
 class BarangMedisController extends Controller
 {
@@ -36,7 +38,7 @@ class BarangMedisController extends Controller
             ->withSum('stokMasuk as total_unit_masuk', 'perubahan')
             ->withMax('stokMasuk as tanggal_masuk_terakhir', 'tanggal_transaksi')
             ->withMin('stokMasuk as expired_terdekat', 'expired_at')
-            ->with(['stokMasukTerakhir', 'creator', 'defaultKemasan'])
+            ->with(['stokMasukTerakhir', 'creator', 'defaultKemasan', 'kemasanBarang'])
             ->when($search, function ($query, $search) {
                 return $query->where(function ($q) use ($search) {
                     $q->where('nama_obat', 'like', "%{$search}%")
@@ -59,7 +61,7 @@ class BarangMedisController extends Controller
             abort(403, 'Anda tidak memiliki hak akses.');
         }
 
-        $opsiKemasan = ['Box', 'Strip', 'Botol', 'Rol', 'Pcs'];
+        $opsiKemasan = ['Box', 'Strip', 'Botol', 'Custom'];
 
         return view('barang-medis.create', compact('opsiKemasan'));
     }
@@ -74,6 +76,7 @@ class BarangMedisController extends Controller
         }
 
         $validated = $request->validated();
+        $validated['satuan_dasar'] = Str::lower($validated['satuan_dasar']);
 
         $kodeObat = BarangMedis::generateKode($validated['tipe']);
 
@@ -88,13 +91,27 @@ class BarangMedisController extends Controller
                 'stok' => 0,
             ]);
 
-            $kemasanData = collect($validated['kemasan'])->map(function ($item) {
-                return [
-                    'nama_kemasan' => $item['nama_kemasan'],
-                    'isi_per_kemasan' => $item['isi_per_kemasan'],
-                    'is_default' => !empty($item['is_default']),
-                ];
-            })->all();
+            $kemasanCollection = collect($validated['kemasan']);
+
+            $defaultCount = $kemasanCollection
+                ->filter(fn ($item) => ! empty($item['is_default']))
+                ->count();
+
+            if ($defaultCount !== 1) {
+                throw ValidationException::withMessages([
+                    'kemasan' => 'Tepat satu kemasan harus ditandai sebagai default.',
+                ]);
+            }
+
+            $kemasanData = $kemasanCollection
+                ->map(function ($item) {
+                    return [
+                        'nama_kemasan' => Str::of($item['nama_kemasan'])->trim()->title()->toString(),
+                        'isi_per_kemasan' => (int) $item['isi_per_kemasan'],
+                        'is_default' => ! empty($item['is_default']),
+                    ];
+                })
+                ->all();
 
             $barangBaru->kemasanBarang()->createMany($kemasanData);
 
@@ -119,7 +136,7 @@ class BarangMedisController extends Controller
      */
     public function show(BarangMedis $barangMedi)
     {
-        $barangMedi->load(['stokLokasi.lokasi', 'stokMasukTerakhir', 'creator']);
+        $barangMedi->load(['stokLokasi.lokasi', 'stokMasukTerakhir', 'creator', 'kemasanBarang', 'defaultKemasan']);
 
         $stokPerLokasi = $barangMedi->stokLokasi->sortBy(function ($stok) {
             return $stok->lokasi->nama_lokasi ?? $stok->id_lokasi;
@@ -167,9 +184,10 @@ class BarangMedisController extends Controller
             'kode_obat' => ['required', 'string', 'max:50', Rule::unique('barang_medis')->ignore($barangMedi->id_obat, 'id_obat')],
             'nama_obat' => 'required|string|max:255',
             'tipe' => ['required', Rule::in(['OBAT', 'ALKES'])],
-            'satuan_dasar' => 'required|string|max:100',
-            'kemasan' => 'nullable|string|max:100',
+            'satuan_dasar' => ['required', Rule::in(['kaplet', 'tablet', 'kapsul', 'pcs'])],
         ]);
+
+        $validated['satuan_dasar'] = Str::lower($validated['satuan_dasar']);
 
         $barangMedi->update($validated);
         return redirect()->route('barang-medis.index')->with('success', 'Data barang berhasil diperbarui.');

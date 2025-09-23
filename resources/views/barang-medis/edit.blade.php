@@ -38,11 +38,11 @@
                     </div>
                     <div class="col-md-4 mb-3">
                         <label for="satuan_dasar" class="form-label">Satuan Dasar</label>
-                        <input type="text" name="satuan_dasar" class="form-control" id="satuan_dasar" value="{{ old('satuan_dasar', $barang->satuan_dasar) }}" required>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label for="kemasan" class="form-label">Kemasan (Opsional)</label>
-                        <input type="text" name="kemasan" class="form-control" id="kemasan" value="{{ old('kemasan', $barang->kemasan) }}">
+                        <select name="satuan_dasar" id="satuan_dasar" class="form-select" required>
+                            @foreach (['kaplet', 'tablet', 'kapsul', 'pcs'] as $unit)
+                                <option value="{{ $unit }}" {{ old('satuan_dasar', $barang->satuan_dasar) === $unit ? 'selected' : '' }}>{{ strtoupper($unit) }}</option>
+                            @endforeach
+                        </select>
                     </div>
                 </div>
                 <div class="mt-3">
