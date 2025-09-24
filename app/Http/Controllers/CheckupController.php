@@ -12,18 +12,20 @@ use Illuminate\Http\RedirectResponse;
 class CheckupController extends Controller
 {
     /**
-     * Menampilkan form untuk membuat data check-up baru.
+     * [DIUBAH] Menggunakan $pasien sebagai nama parameter.
      */
-    public function create(User $user): View
+    public function create(User $pasien): View
     {
+        $user = $pasien;
         return view('checkup.create', compact('user'));
     }
 
     /**
-     * Menyimpan data check-up baru ke database.
+     * [DIUBAH] Menggunakan $pasien sebagai nama parameter.
      */
-    public function store(Request $request, User $user): RedirectResponse
+    public function store(Request $request, User $pasien): RedirectResponse
     {
+        $user = $pasien;
         $validated = $request->validate([
             'tanggal_pemeriksaan' => ['required', 'date'],
             'tekanan_darah' => ['nullable', 'string', 'max:20'],
@@ -39,10 +41,12 @@ class CheckupController extends Controller
         ]);
 
         $validated['nip_pasien'] = $user->nip;
+        $validated['nik_pasien'] = $user->nik;
         $validated['id_dokter'] = Auth::id();
 
         Checkup::create($validated);
 
-        return redirect()->route('pasien.show', $user->nip)->with('success', 'Data check-up berhasil disimpan.');
+        $redirectRoute = $user->nip ? route('pasien.show', $user->nip) : route('pasien.show_non_karyawan', $user->nik);
+        return redirect($redirectRoute)->with('success', 'Data check-up berhasil disimpan.');
     }
 }

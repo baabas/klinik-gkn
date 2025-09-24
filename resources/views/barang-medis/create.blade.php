@@ -5,323 +5,140 @@
 
     <div class="card shadow-sm">
         <div class="card-body">
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul class="mb-0">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <form action="{{ route('barang-medis.store') }}" method="POST">
                 @csrf
-
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label for="nama_obat" class="form-label">Nama Barang</label>
-                        <input type="text" name="nama_obat" id="nama_obat"
-                               class="form-control @error('nama_obat') is-invalid @enderror"
-                               placeholder="Contoh: Paracetamol 500mg" value="{{ old('nama_obat') }}" required>
-                        @error('nama_obat')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-                    <div class="col-md-3">
-                        <label for="tipe" class="form-label">Tipe</label>
-                        <select name="tipe" id="tipe" class="form-select @error('tipe') is-invalid @enderror" required>
-                            <option value="" disabled {{ old('tipe') ? '' : 'selected' }}>Pilih tipe barang</option>
-                            <option value="OBAT" {{ old('tipe') === 'OBAT' ? 'selected' : '' }}>OBAT</option>
-                            <option value="ALKES" {{ old('tipe') === 'ALKES' ? 'selected' : '' }}>ALKES</option>
+                
+                <!-- Kategori Barang -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="kategori_barang" class="form-label">Kategori Barang</label>
+                        <select name="kategori_barang" id="kategori_barang" class="form-select" required>
+                            <option value="">Pilih Kategori Barang</option>
+                            <option value="Obat" {{ old('kategori_barang') == 'Obat' ? 'selected' : '' }}>Obat</option>
+                            <option value="BMHP" {{ old('kategori_barang') == 'BMHP' ? 'selected' : '' }}>BMHP (Bahan Medis Habis Pakai)</option>
+                            <option value="Alkes" {{ old('kategori_barang') == 'Alkes' ? 'selected' : '' }}>Alkes (Alat Kesehatan)</option>
+                            <option value="APD" {{ old('kategori_barang') == 'APD' ? 'selected' : '' }}>APD (Alat Pelindung Diri)</option>
                         </select>
-                        @error('tipe')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
                     </div>
-                    <div class="col-md-3">
-                        <label for="satuan_dasar" class="form-label">Satuan Dasar</label>
-                        <select name="satuan_dasar" id="satuan_dasar"
-                                class="form-select @error('satuan_dasar') is-invalid @enderror" required>
-                            <option value="" disabled {{ old('satuan_dasar') ? '' : 'selected' }}>Pilih satuan dasar</option>
-                            @foreach (['kaplet', 'tablet', 'kapsul', 'pcs'] as $unit)
-                                <option value="{{ $unit }}" {{ old('satuan_dasar') === $unit ? 'selected' : '' }}>{{ strtoupper($unit) }}</option>
-                            @endforeach
+                </div>
+
+                <!-- Kode dan Nama Barang -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="kode_obat" class="form-label">Kode Barang</label>
+                        <input type="text" name="kode_obat" class="form-control" id="kode_obat" placeholder="Kode akan dibuat otomatis" value="{{ old('kode_obat') }}" readonly>
+                        <small class="text-muted">Kode akan dibuat otomatis berdasarkan kategori barang</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="nama_obat" class="form-label">Nama</label>
+                        <input type="text" name="nama_obat" class="form-control" id="nama_obat" placeholder="Contoh: Paracetamol 500mg" value="{{ old('nama_obat') }}" required>
+                    </div>
+                </div>
+
+                <!-- Kemasan dan Isi Kemasan -->
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="kemasan" class="form-label">Kemasan</label>
+                        <input type="text" name="kemasan" class="form-control" id="kemasan" value="Box" readonly>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="isi_kemasan" class="form-label">Isi Kemasan</label>
+                        <div class="input-group">
+                            <input type="number" name="isi_kemasan_jumlah" class="form-control" id="isi_kemasan_jumlah" placeholder="10" value="{{ old('isi_kemasan_jumlah') }}" required>
+                            <select name="isi_kemasan_satuan" id="isi_kemasan_satuan" class="form-select" required>
+                                <option value="">Pilih</option>
+                                <option value="strip" {{ old('isi_kemasan_satuan') == 'strip' ? 'selected' : '' }}>strip</option>
+                                <option value="kotak" {{ old('isi_kemasan_satuan') == 'kotak' ? 'selected' : '' }}>kotak</option>
+                                <option value="botol" {{ old('isi_kemasan_satuan') == 'botol' ? 'selected' : '' }}>botol</option>
+                                <option value="vial" {{ old('isi_kemasan_satuan') == 'vial' ? 'selected' : '' }}>vial</option>
+                                <option value="tube" {{ old('isi_kemasan_satuan') == 'tube' ? 'selected' : '' }}>tube</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="isi_per_satuan" class="form-label">Isi per <span id="satuan_label">strip</span></label>
+                        <input type="number" name="isi_per_satuan" class="form-control" id="isi_per_satuan" placeholder="25" value="{{ old('isi_per_satuan') }}" required>
+                    </div>
+                </div>
+
+                <!-- Satuan Terkecil -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="satuan_terkecil" class="form-label">Satuan Terkecil</label>
+                        <select name="satuan_terkecil" id="satuan_terkecil" class="form-select" required>
+                            <option value="">Pilih Satuan Terkecil</option>
+                            <option value="Tablet" {{ old('satuan_terkecil') == 'Tablet' ? 'selected' : '' }}>Tablet</option>
+                            <option value="Botol" {{ old('satuan_terkecil') == 'Botol' ? 'selected' : '' }}>Botol</option>
+                            <option value="Pcs" {{ old('satuan_terkecil') == 'Pcs' ? 'selected' : '' }}>Pcs</option>
+                            <option value="Vial" {{ old('satuan_terkecil') == 'Vial' ? 'selected' : '' }}>Vial</option>
+                            <option value="Tube" {{ old('satuan_terkecil') == 'Tube' ? 'selected' : '' }}>Tube</option>
+                            <option value="Troches" {{ old('satuan_terkecil') == 'Troches' ? 'selected' : '' }}>Troches</option>
+                            <option value="Kapsul" {{ old('satuan_terkecil') == 'Kapsul' ? 'selected' : '' }}>Kapsul</option>
+                            <option value="Sirup" {{ old('satuan_terkecil') == 'Sirup' ? 'selected' : '' }}>Sirup</option>
                         </select>
-                        @error('satuan_dasar')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
                     </div>
                 </div>
-
-                <hr class="my-4">
-
-                <div class="mb-3 d-flex align-items-center justify-content-between">
-                    <h5 class="mb-0">Definisi Kemasan</h5>
-                    <button type="button" class="btn btn-outline-primary btn-sm" id="add-kemasan">Tambah Kemasan</button>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle">
-                        <thead>
-                            <tr>
-                                <th class="w-50">Nama Kemasan</th>
-                                <th class="w-25">Isi per Kemasan</th>
-                                <th class="text-center">Default</th>
-                                <th class="text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="kemasan-rows">
-                            @php
-                                $oldKemasan = old('kemasan', [[
-                                    'nama_kemasan' => null,
-                                    'isi_per_kemasan' => null,
-                                    'is_default' => true,
-                                ]]);
-                            @endphp
-                            @foreach ($oldKemasan as $index => $row)
-                                @php
-                                    $namaKemasan = $row['nama_kemasan'] ?? '';
-                                    $preset = collect($opsiKemasan)->first(function ($opsi) use ($namaKemasan) {
-                                        return strtolower($opsi) === strtolower($namaKemasan);
-                                    });
-                                    $isCustom = empty($preset) && !empty($namaKemasan);
-                                @endphp
-                                <tr class="kemasan-row" data-index="{{ $index }}">
-                                    <td>
-                                        <div class="input-group input-group-sm kemasan-name-group">
-                                            <select class="form-select kemasan-select @error('kemasan.' . $index . '.nama_kemasan') is-invalid @enderror"
-                                                    data-hidden="kemasan-nama-{{ $index }}"
-                                                    data-custom="kemasan-custom-{{ $index }}"
-                                                    required>
-                                                <option value="" disabled {{ $namaKemasan === '' ? 'selected' : '' }}>Pilih nama kemasan</option>
-                                                @foreach ($opsiKemasan as $opsi)
-                                                    <option value="{{ strtolower($opsi) }}" {{ strtolower($preset ?? '') === strtolower($opsi) ? 'selected' : '' }}>{{ $opsi }}</option>
-                                                @endforeach
-                                                <option value="__custom__" {{ $isCustom ? 'selected' : '' }}>Custom</option>
-                                            </select>
-                                            <input type="text" class="form-control kemasan-custom {{ $isCustom ? '' : 'd-none' }}"
-                                                   id="kemasan-custom-{{ $index }}" placeholder="Nama kemasan"
-                                                   value="{{ $isCustom ? $namaKemasan : '' }}">
-                                        </div>
-                                        <input type="hidden" name="kemasan[{{ $index }}][nama_kemasan]" id="kemasan-nama-{{ $index }}" class="kemasan-nama-hidden" value="{{ $namaKemasan }}">
-                                        @error('kemasan.' . $index . '.nama_kemasan')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </td>
-                                    <td>
-                                        <input type="number" min="1" name="kemasan[{{ $index }}][isi_per_kemasan]"
-                                               class="form-control isi-input @error('kemasan.' . $index . '.isi_per_kemasan') is-invalid @enderror"
-                                               value="{{ $row['isi_per_kemasan'] ?? '' }}" required>
-                                        @error('kemasan.' . $index . '.isi_per_kemasan')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </td>
-                                    <td class="text-center">
-                                        <div class="form-check d-inline-flex justify-content-center">
-                                            <input type="checkbox" class="form-check-input default-checkbox"
-                                                   name="kemasan[{{ $index }}][is_default]" value="1"
-                                                   {{ !empty($row['is_default']) ? 'checked' : '' }}>
-                                        </div>
-                                    </td>
-                                    <td class="text-center">
-                                        <button type="button" class="btn btn-outline-danger btn-sm remove-row">Hapus</button>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-                @if ($errors->has('kemasan'))
-                    <div class="text-danger small mb-2">{{ $errors->first('kemasan') }}</div>
-                @endif
-                <p class="text-muted small">Semua konversi berasal dari definisi kemasan dan akan dipakai saat input stok.</p>
-
-                <div class="alert alert-light border mt-3" id="preview-konversi">
-                    Pilih kemasan default untuk melihat konversi.
-                </div>
-
-                <div class="d-flex flex-column flex-sm-row justify-content-end gap-2 mt-4">
-                    <a href="{{ route('barang-medis.index') }}" class="btn btn-secondary w-100 w-sm-auto">Batal</a>
-                    <button type="submit" class="btn btn-primary w-100 w-sm-auto">Simpan</button>
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary">Simpan Barang</button>
+                    <a href="{{ route('barang-medis.index') }}" class="btn btn-secondary">Batal</a>
                 </div>
             </form>
         </div>
     </div>
 
-    <script type="text/template" id="kemasan-row-template">
-        <tr class="kemasan-row" data-index="__INDEX__">
-            <td>
-                <div class="input-group input-group-sm kemasan-name-group">
-                    <select class="form-select kemasan-select" data-hidden="kemasan-nama-__INDEX__" data-custom="kemasan-custom-__INDEX__" required>
-                        <option value="" disabled selected>Pilih nama kemasan</option>
-                        @foreach ($opsiKemasan as $opsi)
-                            <option value="{{ strtolower($opsi) }}">{{ $opsi }}</option>
-                        @endforeach
-                        <option value="__custom__">Custom</option>
-                    </select>
-                    <input type="text" class="form-control kemasan-custom d-none" id="kemasan-custom-__INDEX__" placeholder="Nama kemasan">
-                </div>
-                <input type="hidden" name="kemasan[__INDEX__][nama_kemasan]" id="kemasan-nama-__INDEX__" class="kemasan-nama-hidden" value="">
-            </td>
-            <td>
-                <input type="number" min="1" name="kemasan[__INDEX__][isi_per_kemasan]" class="form-control isi-input" required>
-            </td>
-            <td class="text-center">
-                <div class="form-check d-inline-flex justify-content-center">
-                    <input type="checkbox" class="form-check-input default-checkbox" name="kemasan[__INDEX__][is_default]" value="1">
-                </div>
-            </td>
-            <td class="text-center">
-                <button type="button" class="btn btn-outline-danger btn-sm remove-row">Hapus</button>
-            </td>
-        </tr>
-    </script>
-@endsection
-
-@push('scripts')
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const tableBody = document.getElementById('kemasan-rows');
-            const addButton = document.getElementById('add-kemasan');
-            const template = document.getElementById('kemasan-row-template').textContent.trim();
-            const preview = document.getElementById('preview-konversi');
-            const satuanInput = document.getElementById('satuan_dasar');
-
-            let rowIndex = Array.from(tableBody.querySelectorAll('.kemasan-row')).reduce((max, row) => {
-                const current = parseInt(row.getAttribute('data-index'), 10);
-                return Number.isNaN(current) ? max : Math.max(max, current);
-            }, -1);
-
-            const ensureSingleDefault = (changedCheckbox) => {
-                if (changedCheckbox.checked) {
-                    tableBody.querySelectorAll('.default-checkbox').forEach((checkbox) => {
-                        if (checkbox !== changedCheckbox) {
-                            checkbox.checked = false;
-                        }
-                    });
-                } else {
-                    const anyChecked = Array.from(tableBody.querySelectorAll('.default-checkbox')).some((checkbox) => checkbox.checked);
-                    if (!anyChecked) {
-                        changedCheckbox.checked = true;
-                    }
-                }
-                updatePreview();
-            };
-
-            const syncKemasanValue = (row) => {
-                const select = row.querySelector('.kemasan-select');
-                const hidden = row.querySelector('.kemasan-nama-hidden');
-                const customInput = row.querySelector('.kemasan-custom');
-
-                if (!select || !hidden) {
-                    return;
-                }
-
-                if (select.value === '__custom__') {
-                    if (customInput) {
-                        customInput.classList.remove('d-none');
-                        hidden.value = customInput.value.trim();
-                    }
-                } else {
-                    if (customInput) {
-                        customInput.classList.add('d-none');
-                    }
-
-                    const selectedOption = select.options[select.selectedIndex];
-                    hidden.value = selectedOption ? selectedOption.text : '';
-                }
-            };
-
-            const updatePreview = () => {
-                const defaultRow = Array.from(tableBody.querySelectorAll('.kemasan-row')).find((row) => {
-                    const checkbox = row.querySelector('.default-checkbox');
-                    return checkbox && checkbox.checked;
-                });
-
-                if (!defaultRow) {
-                    preview.textContent = 'Pilih kemasan default untuk melihat konversi.';
-                    return;
-                }
-
-                const kemasanName = defaultRow.querySelector('.kemasan-nama-hidden')?.value;
-                const isi = defaultRow.querySelector('.isi-input')?.value;
-                const satuan = satuanInput.value;
-
-                if (kemasanName && isi) {
-                    const satuanLabel = satuan ? satuan : 'satuan dasar';
-                    preview.textContent = `1 ${kemasanName} = ${isi} ${satuanLabel}`;
-                } else {
-                    preview.textContent = 'Lengkapi data kemasan default untuk melihat konversi.';
-                }
-            };
-
-            const bindRowEvents = (row) => {
-                const checkbox = row.querySelector('.default-checkbox');
-                if (checkbox) {
-                    checkbox.addEventListener('change', function () {
-                        ensureSingleDefault(this);
-                    });
-                }
-
-                const kemasanSelect = row.querySelector('.kemasan-select');
-                const kemasanCustom = row.querySelector('.kemasan-custom');
-                const isiInput = row.querySelector('.isi-input');
-
-                if (kemasanSelect) {
-                    kemasanSelect.addEventListener('change', () => {
-                        syncKemasanValue(row);
-                        updatePreview();
-                    });
-                }
-
-                if (kemasanCustom) {
-                    kemasanCustom.addEventListener('input', () => {
-                        syncKemasanValue(row);
-                        updatePreview();
-                    });
-                }
-
-                if (isiInput) {
-                    isiInput.addEventListener('input', updatePreview);
-                    isiInput.addEventListener('change', updatePreview);
-                }
-
-                const removeButton = row.querySelector('.remove-row');
-                if (removeButton) {
-                    removeButton.addEventListener('click', () => {
-                        if (tableBody.children.length <= 1) {
-                            return;
-                        }
-
-                        row.remove();
-
-                        const hasDefault = Array.from(tableBody.querySelectorAll('.default-checkbox')).some((checkbox) => checkbox.checked);
-                        if (!hasDefault && tableBody.querySelector('.default-checkbox')) {
-                            tableBody.querySelector('.default-checkbox').checked = true;
-                        }
-                        updatePreview();
-                    });
-                }
-
-                syncKemasanValue(row);
-            };
-
-            Array.from(tableBody.querySelectorAll('.kemasan-row')).forEach((row) => {
-                bindRowEvents(row);
-            });
-
-            addButton.addEventListener('click', () => {
-                rowIndex += 1;
-                const newRowHtml = template.replace(/__INDEX__/g, rowIndex);
-                const tempWrapper = document.createElement('tbody');
-                tempWrapper.innerHTML = newRowHtml;
-                const newRow = tempWrapper.firstElementChild;
-                tableBody.appendChild(newRow);
-                bindRowEvents(newRow);
-            });
-
-            if (!Array.from(tableBody.querySelectorAll('.default-checkbox')).some((checkbox) => checkbox.checked)) {
-                const firstCheckbox = tableBody.querySelector('.default-checkbox');
-                if (firstCheckbox) {
-                    firstCheckbox.checked = true;
-                }
+        // Update label "Isi per" ketika satuan kemasan berubah
+        document.getElementById('isi_kemasan_satuan').addEventListener('change', function() {
+            const selectedSatuan = this.value;
+            const satuanLabel = document.getElementById('satuan_label');
+            
+            // Hanya update label jika ada pilihan yang dipilih (bukan default "Pilih")
+            if (selectedSatuan && selectedSatuan !== '') {
+                satuanLabel.textContent = selectedSatuan;
+            } else {
+                // Kembali ke default jika tidak ada yang dipilih
+                satuanLabel.textContent = 'strip';
             }
+        });
 
-            satuanInput.addEventListener('input', updatePreview);
-            satuanInput.addEventListener('change', updatePreview);
-            updatePreview();
+        // Generate preview kode barang berdasarkan kategori
+        document.getElementById('kategori_barang').addEventListener('change', function() {
+            const kategori = this.value;
+            const kodeInput = document.getElementById('kode_obat');
+            
+            let prefix = '';
+            switch(kategori) {
+                case 'Obat':
+                    prefix = 'OBT';
+                    break;
+                case 'BMHP':
+                    prefix = 'BMHP';
+                    break;
+                case 'Alkes':
+                    prefix = 'ALK';
+                    break;
+                case 'APD':
+                    prefix = 'APD';
+                    break;
+                default:
+                    prefix = '';
+            }
+            
+            if (prefix) {
+                kodeInput.placeholder = `${prefix}-XXXX (akan dibuat otomatis)`;
+            } else {
+                kodeInput.placeholder = 'Kode akan dibuat otomatis';
+            }
         });
     </script>
-@endpush
+@endsection

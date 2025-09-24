@@ -26,8 +26,8 @@
 
  <div class="row g-3 mb-4">
     <div class="col-md-6">
-        <label for="satuan_dasar" class="form-label">Satuan Dasar (Contoh: tablet, kapsul)</label>
-        <input type="text" name="satuan_dasar" id="satuan_dasar" class="form-control" value="{{ old('satuan_dasar', $obat->satuan_dasar ?? '') }}">
+        <label for="satuan" class="form-label">Satuan (Contoh: Tablet, Kapsul)</label>
+        <input type="text" name="satuan" id="satuan" class="form-control" value="{{ old('satuan', $obat->satuan ?? '') }}">
     </div>
     <div class="col-md-6">
         <label for="kemasan" class="form-label">Kemasan (Contoh: Strip, Box)</label>

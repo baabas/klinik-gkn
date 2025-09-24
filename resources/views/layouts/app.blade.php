@@ -76,7 +76,7 @@
         </nav>
 
         <main class="container-fluid py-4 px-4">
-            {{ $slot }}
+            @yield('content')
         </main>
     </body>
 </html>

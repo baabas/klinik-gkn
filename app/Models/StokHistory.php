@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 
 class StokHistory extends Model
@@ -26,24 +25,17 @@ class StokHistory extends Model
         'isi_per_kemasan',
         'satuan_kemasan',
         'expired_at',
-        'kemasan_id',
-        'base_unit',
     ];
 
     protected $casts = [
         'tanggal_transaksi' => 'date',
         'expired_at' => 'date',
-        'perubahan' => 'integer',
-        'stok_sebelum' => 'integer',
-        'stok_sesudah' => 'integer',
-        'jumlah_kemasan' => 'integer',
-        'isi_per_kemasan' => 'integer',
     ];
 
     /**
      * Relasi ke lokasi klinik.
      */
-    public function lokasi(): BelongsTo
+    public function lokasi()
     {
         return $this->belongsTo(LokasiKlinik::class, 'id_lokasi', 'id');
     }
@@ -51,7 +43,7 @@ class StokHistory extends Model
     /**
      * Relasi ke master barang medis.
      */
-    public function barang(): BelongsTo
+    public function barang()
     {
         return $this->belongsTo(BarangMedis::class, 'id_barang', 'id_obat');
     }
@@ -59,13 +51,8 @@ class StokHistory extends Model
     /**
      * Relasi ke pengguna yang melakukan transaksi.
      */
-    public function user(): BelongsTo
+    public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function kemasan(): BelongsTo
-    {
-        return $this->belongsTo(BarangKemasan::class, 'kemasan_id');
     }
 }

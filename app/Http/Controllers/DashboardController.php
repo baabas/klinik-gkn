@@ -7,6 +7,7 @@ use App\Models\PermintaanBarang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 // use Illuminate\View\View; // Tidak perlu karena sudah dihapus dari return type
 
 class DashboardController extends Controller
@@ -16,7 +17,27 @@ class DashboardController extends Controller
      */
     public function index()
     {
+        // [DEBUG] Tambahkan debugging
+        $user = Auth::user();
         $activeRole = session('active_role');
+        
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'Silakan login terlebih dahulu');
+        }
+        
+        // [DEBUG] Jika tidak ada active_role, set default
+        if (!$activeRole && $user->roles->isNotEmpty()) {
+            $firstRole = $user->roles->first()->name;
+            session(['active_role' => $firstRole]);
+            $activeRole = $firstRole;
+        }
+        
+        // [DEBUG] Log untuk debugging
+        Log::info('Dashboard access', [
+            'user_id' => $user->id,
+            'active_role' => $activeRole,
+            'user_roles' => $user->roles->pluck('name')
+        ]);
 
         switch ($activeRole) {
             case 'PASIEN':
@@ -26,8 +47,11 @@ class DashboardController extends Controller
             case 'DOKTER':
                 return $this->dashboardDokter();
             default:
-                Auth::logout();
-                return redirect()->route('login');
+                return response()->view('errors.dashboard-error', [
+                    'message' => 'Role tidak valid: ' . $activeRole,
+                    'user_id' => $user->id,
+                    'available_roles' => $user->roles->pluck('name')
+                ], 500);
         }
     }
 
@@ -52,19 +76,19 @@ class DashboardController extends Controller
      */
     private function dashboardPengadaan(): \Illuminate\View\View
     {
-        $permintaanPending = PermintaanBarang::where('status', PermintaanBarang::STATUS_DIAJUKAN)->count();
-        $stokMenipis = BarangMedis::withSum('stokLokasi as stok_sum_jumlah', 'jumlah')
-            ->with(['defaultKemasan', 'kemasanBarang'])
+        $permintaanPending = PermintaanBarang::where('status', 'DIAJUKAN')->count();
+        $stokMenipis = BarangMedis::withSum('stok as stok_sum_jumlah', 'jumlah')
             ->get()->where('stok_sum_jumlah', '<', 50)->count();
         $totalMasterBarang = BarangMedis::count();
-        $permintaanTerbaru = PermintaanBarang::with(['lokasi'])
-            ->where('status', PermintaanBarang::STATUS_DIAJUKAN)
-            ->latest('tanggal')
+        $permintaanTerbaru = PermintaanBarang::with(['lokasiPeminta'])
+            ->where('status', 'DIAJUKAN')
+            ->latest('tanggal_permintaan')
             ->limit(5)
             ->get();
-       $stokTerendah = BarangMedis::withSum('stokLokasi as stok_sum_jumlah', 'jumlah')
-            ->with(['defaultKemasan', 'kemasanBarang'])
-            ->orderBy('stok_sum_jumlah', 'asc')->limit(5)->get();
+       $stokTerendah = BarangMedis::withSum('stok as stok_sum_jumlah', 'jumlah')
+            ->get()
+            ->sortBy('stok_sum_jumlah')
+            ->take(5);
 
         return view('dashboard-pengadaan', compact(
             'permintaanPending', 'stokMenipis', 'totalMasterBarang', 'permintaanTerbaru', 'stokTerendah'

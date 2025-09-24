@@ -3,26 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Models\BarangMedis;
-use App\Models\BarangKemasan;
 use App\Models\LokasiKlinik;
 use App\Models\StokBarang;
 use App\Models\StokHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
 
 class BarangMasukController extends Controller
 {
     /**
-     * Tampilkan daftar riwayat barang masuk.
+     * Tampilkan daftar riwayat barang masuk dan koreksi stok.
      */
     public function index(Request $request)
     {
         $entries = StokHistory::query()
-            ->with(['barang.creator', 'lokasi', 'user.karyawan'])
-            ->where('perubahan', '>', 0)
+            ->with(['barang', 'lokasi', 'user'])
+            // Tampilkan semua transaksi termasuk koreksi pengurangan
             ->when($request->filled('barang'), function ($query) use ($request) {
                 $query->where('id_barang', $request->input('barang'));
             })
@@ -55,35 +53,10 @@ class BarangMasukController extends Controller
             abort(403, 'Anda tidak memiliki hak akses.');
         }
 
-        $barang = BarangMedis::with(['kemasanBarang' => function ($query) {
-                $query->orderByDesc('is_default')->orderBy('nama_kemasan');
-            }])
-            ->orderBy('nama_obat')
-            ->get();
-
-        $barangOptions = $barang
-            ->map(function ($item) {
-                return [
-                    'id' => $item->id_obat,
-                    'satuan_dasar' => $item->satuan_dasar,
-                    'kemasan' => $item->kemasanBarang
-                        ->map(function ($kemasan) {
-                            return [
-                                'id' => $kemasan->id,
-                                'nama' => $kemasan->nama_kemasan,
-                                'isi' => $kemasan->isi_per_kemasan,
-                                'is_default' => (bool) $kemasan->is_default,
-                            ];
-                        })
-                        ->values()
-                        ->toArray(),
-                ];
-            })
-            ->values()
-            ->toArray();
+        $barang = BarangMedis::orderBy('nama_obat')->get();
         $lokasi = LokasiKlinik::orderBy('nama_lokasi')->get();
 
-        return view('barang-medis.masuk.create', compact('barang', 'lokasi', 'barangOptions'));
+        return view('barang-medis.masuk.create', compact('barang', 'lokasi'));
     }
 
     /**
@@ -98,83 +71,71 @@ class BarangMasukController extends Controller
         $validated = $request->validate([
             'id_barang' => 'required|exists:barang_medis,id_obat',
             'id_lokasi' => 'required|exists:lokasi_klinik,id',
-            'kemasan_id' => [
-                'required',
-                Rule::exists('barang_kemasan', 'id')->where(function ($query) use ($request) {
-                    return $query->where('barang_id', $request->input('id_barang'));
-                }),
-            ],
-            'jumlah_kemasan' => 'required|integer|min:1',
-            'tanggal_transaksi' => 'required|date',
-            'expired_at' => 'nullable|date|after_or_equal:tanggal_transaksi',
-            'keterangan' => 'nullable|string|max:255',
+            'tanggal_masuk' => 'required|date',
+            'keterangan_umum' => 'nullable|string|max:500',
+            'batches' => 'required|array|min:1',
+            'batches.*.jumlah_kemasan' => 'required|integer|min:1',
+            'batches.*.expired_at' => 'nullable|date|after_or_equal:today',
+            'batches.*.keterangan' => 'nullable|string|max:255',
         ]);
 
         DB::transaction(function () use ($validated) {
-            $barang = BarangMedis::with('kemasanBarang')
-                ->lockForUpdate()
-                ->find($validated['id_barang']);
+            // Ambil data barang untuk mendapatkan informasi kemasan
+            $barang = BarangMedis::findOrFail($validated['id_barang']);
+            
+            $totalSatuanMasuk = 0;
 
-            if (!$barang) {
-                throw ValidationException::withMessages([
-                    'id_barang' => 'Barang medis tidak ditemukan.',
-                ]);
-            }
+            // Proses setiap batch
+            foreach ($validated['batches'] as $batchIndex => $batch) {
+                // Hitung total satuan terkecil untuk batch ini
+                // Jumlah kemasan * isi kemasan * isi per satuan
+                $satuanBatch = $batch['jumlah_kemasan'] * 
+                              ($barang->isi_kemasan_jumlah ?? 1) * 
+                              ($barang->isi_per_satuan ?? 1);
 
-            $kemasan = $barang->kemasanBarang->firstWhere('id', (int) $validated['kemasan_id']);
+                $totalSatuanMasuk += $satuanBatch;
 
-            if (!$kemasan instanceof BarangKemasan) {
-                throw ValidationException::withMessages([
-                    'kemasan_id' => 'Jenis kemasan tidak valid untuk barang ini.',
-                ]);
-            }
+                // Update atau buat stok barang
+                $stok = StokBarang::firstOrCreate(
+                    [
+                        'id_barang' => $validated['id_barang'],
+                        'id_lokasi' => $validated['id_lokasi'],
+                    ],
+                    ['jumlah' => 0]
+                );
 
-            $isiPerKemasan = (int) $kemasan->isi_per_kemasan;
-            $jumlahKemasan = (int) $validated['jumlah_kemasan'];
-            $totalUnitDasar = $jumlahKemasan * $isiPerKemasan;
+                $stokSebelum = $stok->jumlah;
+                $stok->increment('jumlah', $satuanBatch);
 
-            $stokSebelumBarang = (int) $barang->stok;
-            $stokSesudahBarang = $stokSebelumBarang + $totalUnitDasar;
+                // Siapkan keterangan batch
+                $keteranganBatch = $batch['keterangan'] ?? 
+                    "Batch " . chr(65 + $batchIndex) . " - {$batch['jumlah_kemasan']} {$barang->kemasan}";
+                
+                // Tambahkan keterangan umum jika ada
+                if (!empty($validated['keterangan_umum'])) {
+                    $keteranganBatch .= " | " . $validated['keterangan_umum'];
+                }
 
-            $stokLokasi = StokBarang::where('id_barang', $barang->id_obat)
-                ->where('id_lokasi', $validated['id_lokasi'])
-                ->lockForUpdate()
-                ->first();
-
-            if (!$stokLokasi) {
-                $stokLokasi = StokBarang::create([
-                    'id_barang' => $barang->id_obat,
+                // Catat riwayat stok untuk setiap batch
+                StokHistory::create([
+                    'id_barang' => $validated['id_barang'],
                     'id_lokasi' => $validated['id_lokasi'],
-                    'jumlah' => 0,
+                    'perubahan' => $satuanBatch,
+                    'stok_sebelum' => $stokSebelum,
+                    'stok_sesudah' => $stok->jumlah,
+                    'tanggal_transaksi' => $validated['tanggal_masuk'],
+                    'expired_at' => $batch['expired_at'] ?? null,
+                    'jumlah_kemasan' => $batch['jumlah_kemasan'],
+                    'isi_per_kemasan' => ($barang->isi_kemasan_jumlah ?? 1) * ($barang->isi_per_satuan ?? 1),
+                    'satuan_kemasan' => $barang->kemasan ?? 'Box',
+                    'keterangan' => $keteranganBatch,
+                    'user_id' => Auth::id(),
                 ]);
             }
-
-            $stokLokasi->increment('jumlah', $totalUnitDasar);
-
-            $barang->update([
-                'stok' => $stokSesudahBarang,
-            ]);
-
-            StokHistory::create([
-                'id_barang' => $barang->id_obat,
-                'id_lokasi' => $validated['id_lokasi'],
-                'perubahan' => $totalUnitDasar,
-                'stok_sebelum' => $stokSebelumBarang,
-                'stok_sesudah' => $stokSesudahBarang,
-                'tanggal_transaksi' => $validated['tanggal_transaksi'],
-                'jumlah_kemasan' => $jumlahKemasan,
-                'isi_per_kemasan' => $isiPerKemasan,
-                'satuan_kemasan' => $kemasan->nama_kemasan,
-                'kemasan_id' => $kemasan->id,
-                'base_unit' => $barang->satuan_dasar,
-                'expired_at' => $validated['expired_at'] ?? null,
-                'keterangan' => $validated['keterangan'] ?? 'Barang masuk',
-                'user_id' => Auth::id(),
-            ]);
         });
 
         return redirect()
             ->route('barang-masuk.index')
-            ->with('success', 'Data barang masuk berhasil disimpan dan stok diperbarui.');
+            ->with('success', "Data barang masuk berhasil disimpan dengan total " . count($validated['batches']) . " batch.");
     }
 }

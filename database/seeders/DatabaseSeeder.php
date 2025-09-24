@@ -23,13 +23,11 @@ class DatabaseSeeder extends Seeder
             // Seeder untuk mengisi tabel daftar_penyakit dengan data ICD-10 dari file CSV
             DaftarPenyakitSeeder::class,
 
-            // Seeder lain yang mungkin Anda butuhkan
+            // Seeder untuk membuat lokasi klinik dan barang medis (PengadaanSeeder membuat lokasi juga)
             PengadaanSeeder::class,
-            ContohBarangSeeder::class,
-            
-            // Seeder untuk membuat akun user (Dokter, Pengadaan, dll.)
+
+            // Seeder untuk membuat akun user (Dokter, Pengadaan, dll.) - SETELAH lokasi dibuat
             AdminUserSeeder::class,
-            PermintaanBarangSeeder::class,
         ]);
     }
 }

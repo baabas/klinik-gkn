@@ -28,6 +28,6 @@ class LokasiKlinik extends Model
 
     public function permintaanBarang()
     {
-        return $this->hasMany(PermintaanBarang::class, 'lokasi_id', 'id');
+        return $this->hasMany(PermintaanBarang::class, 'id_lokasi_peminta', 'id');
     }
 }

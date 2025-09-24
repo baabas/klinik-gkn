@@ -127,19 +127,19 @@
                                         <div class="col-md-3">
                                             <label class="form-label">Jumlah Kemasan</label>
                                             <div class="input-group">
-                                                <input type="number" name="batches[0][jumlah_kemasan]" class="form-control batch-jumlah"
-                                                       min="1" required placeholder="Jumlah" value="{{ old('batches.0.jumlah_kemasan', 1) }}">
+                                                <input type="number" name="batches[0][jumlah_kemasan]" class="form-control"
+                                                       min="1" required placeholder="Jumlah">
                                                 <span class="input-group-text batch-kemasan-unit">Box</span>
                                             </div>
                                         </div>
                                         <div class="col-md-4">
                                             <label class="form-label">Tanggal Kadaluwarsa</label>
-                                            <input type="date" name="batches[0][expired_at]" class="form-control" value="{{ old('batches.0.expired_at') }}">
+                                            <input type="date" name="batches[0][expired_at]" class="form-control">
                                         </div>
                                         <div class="col-md-4">
                                             <label class="form-label">Keterangan Batch</label>
                                             <input type="text" name="batches[0][keterangan]" class="form-control"
-                                                   placeholder="Contoh: Batch A - Supplier X" value="{{ old('batches.0.keterangan') }}">
+                                                   placeholder="Contoh: Batch A - Supplier X">
                                         </div>
                                         <div class="col-md-1">
                                             <button type="button" class="btn btn-outline-danger btn-sm remove-batch" style="display: none;">
@@ -154,7 +154,7 @@
                             <div class="mt-3 p-2 bg-light rounded">
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <strong>Total Kemasan: <span id="total_kemasan">1</span></strong>
+                                        <strong>Total Kemasan: <span id="total_kemasan">0</span></strong>
                                     </div>
                                     <div class="col-md-6">
                                         <strong>Total Satuan: <span id="total_satuan">0</span></strong>
@@ -267,13 +267,11 @@
                         option.style.display = 'none';
                     }
                 });
-                
+
                 noResults.style.display = hasVisibleOptions ? 'none' : 'block';
                 dropdown.style.display = 'block';
             } else {
                 dropdown.style.display = 'none';
-                hiddenInput.value = '';
-                updateBarangInfo(null);
             }
         });
 
@@ -383,26 +381,6 @@
             return div;
         }
 
-        function updateBarangInfo(selectedOption) {
-            if (selectedOption) {
-                const kemasan = selectedOption.dataset.kemasan || '-';
-                const isiKemasan = selectedOption.dataset.isiKemasan || '-';
-                const satuanKemasan = selectedOption.dataset.satuanKemasan || '-';
-                const isiPerSatuan = selectedOption.dataset.isiPerSatuan || '-';
-                const satuanTerkecil = selectedOption.dataset.satuanTerkecil || '-';
-
-                infoKemasan.value = kemasan;
-                infoIsiKemasan.value = isiKemasan + ' ' + satuanKemasan;
-                infoIsiPerSatuan.value = isiPerSatuan;
-                infoSatuanTerkecil.value = satuanTerkecil;
-            } else {
-                infoKemasan.value = '-';
-                infoIsiKemasan.value = '-';
-                infoIsiPerSatuan.value = '-';
-                infoSatuanTerkecil.value = '-';
-            }
-        }
-
         function updateRemoveButtons() {
             const batchRows = document.querySelectorAll('.batch-row');
             batchRows.forEach((row, index) => {
@@ -431,25 +409,8 @@
         }
 
         // Initial setup
-        const initialBatchInput = document.querySelector('.batch-jumlah');
-        if (initialBatchInput) {
-            initialBatchInput.addEventListener('input', calculateTotals);
-        }
+        document.querySelector('.batch-jumlah').addEventListener('input', calculateTotals);
         updateRemoveButtons();
-
-        // Handle old value restoration
-        const oldBarangId = '{{ old("id_barang") }}';
-        if (oldBarangId) {
-            const oldOption = document.querySelector(`[data-id="${oldBarangId}"]`);
-            if (oldOption) {
-                searchInput.value = oldOption.dataset.text;
-                hiddenInput.value = oldOption.dataset.id;
-                updateBarangInfo(oldOption);
-                
-                // Trigger click to update currentBarang
-                oldOption.click();
-            }
-        }
     });
 </script>
 @endpush

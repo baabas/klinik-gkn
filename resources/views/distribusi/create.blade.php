@@ -36,7 +36,7 @@
         {{-- Kartu Rincian Barang untuk Dikirim --}}
         <div class="card shadow-sm">
             <div class="card-header bg-light">
-                <h5 class="mb-0">Obat untuk Dikirim (Akumulasi dari Permintaan Disetujui)</h5>
+                <h5 class="mb-0">Obat untuk Dikirim (Akumulasi dari Permintaan APPROVED)</h5>
             </div>
             <div class="card-body">
                 @if (session('error'))
@@ -57,21 +57,21 @@
                                 <tr class="align-middle">
                                     <td>
                                         {{-- Hidden input untuk setiap barang --}}
-                                        <input type="hidden" name="barang[{{ $index }}][id_barang]" value="{{ $item->barang_id }}">
+                                        <input type="hidden" name="barang[{{ $index }}][id_barang]" value="{{ $item->id_barang }}">
                                         <strong>{{ $item->barangMedis->nama_obat }}</strong>
-                                        <small class="d-block text-muted">{{ $item->barangMedis->tipe }} • {{ $item->barangMedis->satuan_dasar }}</small>
+                                        <small class="d-block text-muted">{{ $item->barangMedis->kategori_barang }}</small>
                                     </td>
-                                    <td class="text-center fs-5"><strong>{{ number_format($item->total_unit_dasar) }}</strong></td>
-                                    <td class="text-center {{ $item->stok_gudang < $item->total_unit_dasar ? 'text-danger' : '' }}">
-                                        {{ number_format($item->stok_gudang) }}
-                                        @if ($item->stok_gudang < $item->total_unit_dasar)
+                                    <td class="text-center fs-5"><strong>{{ $item->total_disetujui }}</strong></td>
+                                    <td class="text-center {{ $item->stok_gudang < $item->total_disetujui ? 'text-danger' : '' }}">
+                                        {{ $item->stok_gudang }}
+                                        @if ($item->stok_gudang < $item->total_disetujui)
                                             <i class="bi bi-exclamation-triangle-fill" title="Stok tidak mencukupi!"></i>
                                         @endif
                                     </td>
                                     <td class="text-center">
                                         <input type="number" name="barang[{{ $index }}][jumlah_dikirim]"
                                                class="form-control text-center"
-                                               value="{{ min($item->total_unit_dasar, $item->stok_gudang) }}"
+                                               value="{{ min($item->total_disetujui, $item->stok_gudang) }}"
                                                max="{{ $item->stok_gudang }}"
                                                min="0" required>
                                     </td>

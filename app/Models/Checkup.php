@@ -17,6 +17,7 @@ class Checkup extends Model
      */
     protected $fillable = [
         'nip_pasien',
+        'nik_pasien', // Tambahkan untuk non-karyawan
         'id_dokter',
         'tanggal_pemeriksaan',
         'tekanan_darah',
@@ -32,14 +33,22 @@ class Checkup extends Model
     ];
 
     /**
-     * Relasi ke model User.
+     * Relasi ke model User sebagai pasien karyawan.
      */
-       public function pasien(): BelongsTo
+    public function pasien(): BelongsTo
     {
         return $this->belongsTo(User::class, 'nip_pasien', 'nip');
     }
 
-    /**php
+    /**
+     * Relasi ke model User sebagai pasien non-karyawan.
+     */
+    public function pasienNonKaryawan(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'nik_pasien', 'nik');
+    }
+
+    /**
      * Relasi ke model User sebagai dokter.
      */
     public function dokter(): BelongsTo

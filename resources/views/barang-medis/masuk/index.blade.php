@@ -1,21 +1,17 @@
 @extends('layouts.sidebar-layout')
 
 @section('content')
-    <div class="row gy-2 align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <div class="col-12 col-lg">
-            <h1 class="h2 mb-0">Riwayat Obat & Alat Medis Masuk</h1>
-        </div>
-        <div class="col-12 col-lg-auto">
-            <div class="d-flex flex-column flex-sm-row flex-wrap gap-2 justify-content-lg-end">
-                <a href="{{ route('barang-medis.index') }}" class="btn btn-outline-secondary w-100 w-sm-auto">
-                    <i class="bi bi-arrow-left"></i> Kembali ke Daftar Barang
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Riwayat Transaksi Obat & Alat Medis</h1>
+        <div class="btn-group">
+            <a href="{{ route('barang-medis.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Kembali ke Daftar Barang
+            </a>
+            @if(Auth::user()->hasRole('PENGADAAN'))
+                <a href="{{ route('barang-masuk.create') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Input Barang Masuk
                 </a>
-                @if(Auth::user()->hasRole('PENGADAAN'))
-                    <a href="{{ route('barang-masuk.create') }}" class="btn btn-primary w-100 w-sm-auto">
-                        <i class="bi bi-plus-circle"></i> Input Barang Masuk
-                    </a>
-                @endif
-            </div>
+            @endif
         </div>
     </div>
 
@@ -63,8 +59,9 @@
                             <th>Lokasi</th>
                             <th>Jumlah Kemasan</th>
                             <th>Isi per Kemasan</th>
-                            <th>Total Unit Dasar</th>
+                            <th>Total (Satuan)</th>
                             <th>Kedaluwarsa</th>
+                            <th>Petugas</th>
                             <th>Keterangan</th>
                         </tr>
                     </thead>
@@ -78,40 +75,48 @@
                                 <td>
                                     <strong>{{ $entry->barang->nama_obat ?? '-' }}</strong>
                                     <div class="text-muted small">Kode: {{ $entry->barang->kode_obat ?? '-' }}</div>
-                                    <div class="text-muted small">
-                                        Dibuat oleh
-                                        {{
-                                            optional($entry->user)->nama_karyawan
-                                                ?? optional(optional($entry->user)->karyawan)->nama_karyawan
-                                                ?? '-'
-                                        }}
-                                    </div>
                                 </td>
                                 <td>{{ $entry->lokasi->nama_lokasi ?? '-' }}</td>
                                 <td>
-                                    {{ $entry->jumlah_kemasan ? number_format($entry->jumlah_kemasan) : '-' }}
-                                    @if($entry->satuan_kemasan)
-                                        <span class="text-muted small d-block">{{ $entry->satuan_kemasan }}</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($entry->isi_per_kemasan)
-                                        {{ number_format($entry->isi_per_kemasan) }} {{ strtolower($entry->base_unit ?? $entry->barang->satuan_dasar ?? '') }}
+                                    @if($entry->jumlah_kemasan)
+                                        @if($entry->perubahan < 0)
+                                            <span class="text-danger">-{{ number_format($entry->jumlah_kemasan) }}</span>
+                                        @else
+                                            <span class="text-success">{{ number_format($entry->jumlah_kemasan) }}</span>
+                                        @endif
+                                        @if($entry->satuan_kemasan)
+                                            <span class="text-muted small d-block">{{ $entry->satuan_kemasan }}</span>
+                                        @endif
                                     @else
                                         -
                                     @endif
                                 </td>
                                 <td>
-                                    {{ number_format($entry->perubahan) }} {{ strtolower($entry->base_unit ?? $entry->barang->satuan_dasar ?? '') }}
+                                    @if($entry->isi_per_kemasan)
+                                        {{ number_format($entry->isi_per_kemasan) }} {{ strtolower($entry->barang->satuan ?? '') }}
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($entry->perubahan > 0)
+                                        <span class="text-success">+{{ number_format($entry->perubahan) }}</span>
+                                    @elseif($entry->perubahan < 0)
+                                        <span class="text-danger">{{ number_format($entry->perubahan) }}</span>
+                                    @else
+                                        <span class="text-muted">0</span>
+                                    @endif
+                                    {{ strtolower($entry->barang->satuan ?? '') }}
                                 </td>
                                 <td>
                                     {{ optional($entry->expired_at)->format('d/m/Y') ?? '-' }}
                                 </td>
+                                <td>{{ $entry->user->nama_karyawan ?? '-' }}</td>
                                 <td>{{ $entry->keterangan }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-center">Belum ada data barang masuk.</td>
+                                <td colspan="10" class="text-center">Belum ada data barang masuk.</td>
                             </tr>
                         @endforelse
                     </tbody>

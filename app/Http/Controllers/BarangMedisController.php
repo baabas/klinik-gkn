@@ -2,17 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreBarangMedisRequest;
 use App\Models\BarangMedis;
 use App\Models\LokasiKlinik;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Auth;
 use App\Models\StokHistory;
 use App\Models\StokBarang;
-use Illuminate\Support\Str;
 
 class BarangMedisController extends Controller
 {
@@ -27,18 +24,24 @@ class BarangMedisController extends Controller
         $gkn2Id = LokasiKlinik::where('nama_lokasi', 'like', '%GKN 2%')->value('id');
 
         $barang = BarangMedis::query()
-            ->withSum('stokLokasi as stok_sum_jumlah', 'jumlah')
-            ->withSum(['stokLokasi as stok_gkn1' => function ($q) use ($gkn1Id) {
+            ->withSum('stok', 'jumlah')
+            ->withSum(['stok as stok_gkn1' => function ($q) use ($gkn1Id) {
                 $q->where('id_lokasi', $gkn1Id ?? 0);
             }], 'jumlah')
-            ->withSum(['stokLokasi as stok_gkn2' => function ($q) use ($gkn2Id) {
+            ->withSum(['stok as stok_gkn2' => function ($q) use ($gkn2Id) {
                 $q->where('id_lokasi', $gkn2Id ?? 0);
             }], 'jumlah')
             ->withSum('stokMasuk as total_kemasan_masuk', 'jumlah_kemasan')
             ->withSum('stokMasuk as total_unit_masuk', 'perubahan')
             ->withMax('stokMasuk as tanggal_masuk_terakhir', 'tanggal_transaksi')
             ->withMin('stokMasuk as expired_terdekat', 'expired_at')
-            ->with(['stokMasukTerakhir', 'creator', 'defaultKemasan', 'kemasanBarang'])
+            ->with(['stokMasukTerakhir'])
+            ->with(['stokMasukBulanIni' => function ($query) {
+                $query->whereYear('tanggal_transaksi', now()->year)
+                      ->whereMonth('tanggal_transaksi', now()->month)
+                      ->where('perubahan', '>', 0)
+                      ->orderBy('tanggal_transaksi', 'asc');
+            }])
             ->when($search, function ($query, $search) {
                 return $query->where(function ($q) use ($search) {
                     $q->where('nama_obat', 'like', "%{$search}%")
@@ -61,70 +64,52 @@ class BarangMedisController extends Controller
             abort(403, 'Anda tidak memiliki hak akses.');
         }
 
-        $opsiKemasan = ['Box', 'Strip', 'Botol', 'Custom'];
-
-        return view('barang-medis.create', compact('opsiKemasan'));
+        return view('barang-medis.create');
     }
 
     /**
      * Menyimpan barang baru ke database.
      */
-    public function store(StoreBarangMedisRequest $request)
+    public function store(Request $request)
     {
         if (!Auth::user()->hasRole('PENGADAAN')) {
             abort(403, 'Anda tidak memiliki hak akses.');
         }
 
-        $validated = $request->validated();
-        $validated['satuan_dasar'] = Str::lower($validated['satuan_dasar']);
+        $validated = $request->validate([
+            'kategori_barang' => 'required|string|in:Obat,BMHP,Alkes,APD',
+            'nama_obat' => 'required|string|max:255',
+            'kemasan' => 'nullable|string|max:100',
+            'isi_kemasan_jumlah' => 'required|integer|min:1',
+            'isi_kemasan_satuan' => 'required|string|in:strip,kotak,botol,vial,tube',
+            'isi_per_satuan' => 'required|integer|min:1',
+            'satuan_terkecil' => 'required|string|in:Tablet,Botol,Pcs,Vial,Tube,Troches,Kapsul,Sirup',
+        ]);
 
-        $kodeObat = BarangMedis::generateKode($validated['tipe']);
+        // Generate kode otomatis berdasarkan kategori
+        $kodeObat = $this->generateKodeBarang($validated['kategori_barang']);
+        $validated['kode_obat'] = $kodeObat;
+        
+        // Set kemasan ke "Box" secara otomatis
+        $validated['kemasan'] = 'Box';
+        
+        // Set satuan sama dengan satuan_terkecil
+        $validated['satuan'] = $validated['satuan_terkecil'];
 
         DB::beginTransaction();
         try {
-            $barangBaru = BarangMedis::create([
-                'kode_obat' => $kodeObat,
-                'nama_obat' => $validated['nama_obat'],
-                'tipe' => $validated['tipe'],
-                'satuan_dasar' => $validated['satuan_dasar'],
-                'created_by' => Auth::id(),
-                'stok' => 0,
-            ]);
-
-            $kemasanCollection = collect($validated['kemasan']);
-
-            $defaultCount = $kemasanCollection
-                ->filter(fn ($item) => ! empty($item['is_default']))
-                ->count();
-
-            if ($defaultCount !== 1) {
-                throw ValidationException::withMessages([
-                    'kemasan' => 'Tepat satu kemasan harus ditandai sebagai default.',
-                ]);
-            }
-
-            $kemasanData = $kemasanCollection
-                ->map(function ($item) {
-                    return [
-                        'nama_kemasan' => Str::of($item['nama_kemasan'])->trim()->title()->toString(),
-                        'isi_per_kemasan' => (int) $item['isi_per_kemasan'],
-                        'is_default' => ! empty($item['is_default']),
-                    ];
-                })
-                ->all();
-
-            $barangBaru->kemasanBarang()->createMany($kemasanData);
+            $barangBaru = BarangMedis::create($validated);
 
             $lokasi = LokasiKlinik::all();
             foreach ($lokasi as $loc) {
-                $barangBaru->stokLokasi()->create([
+                $barangBaru->stok()->create([
                     'id_lokasi' => $loc->id,
                     'jumlah' => 0
                 ]);
             }
 
             DB::commit();
-            return redirect()->route('barang-medis.index')->with('success', 'Barang baru berhasil ditambahkan.');
+            return redirect()->route('barang-medis.index')->with('success', 'Barang baru berhasil ditambahkan dengan kode: ' . $kodeObat);
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Gagal menambahkan barang baru: ' . $e->getMessage())->withInput();
@@ -132,29 +117,63 @@ class BarangMedisController extends Controller
     }
 
     /**
+     * Generate kode barang otomatis berdasarkan kategori
+     */
+    private function generateKodeBarang($kategori)
+    {
+        // Tentukan prefix berdasarkan kategori
+        $prefix = '';
+        switch ($kategori) {
+            case 'Obat':
+                $prefix = 'OBT';
+                break;
+            case 'BMHP':
+                $prefix = 'BMHP';
+                break;
+            case 'Alkes':
+                $prefix = 'ALK';
+                break;
+            case 'APD':
+                $prefix = 'APD';
+                break;
+            default:
+                $prefix = 'GEN'; // Generic untuk yang tidak dikenal
+        }
+
+        // Ambil nomor terakhir untuk kategori ini
+        $lastBarang = BarangMedis::where('kode_obat', 'LIKE', $prefix . '-%')
+            ->orderBy('kode_obat', 'desc')
+            ->first();
+
+        $nextNumber = 1;
+        if ($lastBarang) {
+            // Extract nomor dari kode terakhir (contoh: OBT-0001 -> 0001)
+            $lastNumber = (int) substr($lastBarang->kode_obat, strlen($prefix) + 1);
+            $nextNumber = $lastNumber + 1;
+        }
+
+        // Format nomor dengan leading zero (4 digit)
+        $formattedNumber = str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        
+        return $prefix . '-' . $formattedNumber;
+    }
+
+    /**
      * Menampilkan detail satu barang.
      */
     public function show(BarangMedis $barangMedi)
     {
-        $barangMedi->load(['stokLokasi.lokasi', 'stokMasukTerakhir', 'creator', 'kemasanBarang', 'defaultKemasan']);
-
-        $stokPerLokasi = $barangMedi->stokLokasi->sortBy(function ($stok) {
-            return $stok->lokasi->nama_lokasi ?? $stok->id_lokasi;
-        });
-
-        $recentHistories = $barangMedi->stokHistories()
-            ->with(['lokasi', 'user.karyawan'])
-            ->orderByDesc('tanggal_transaksi')
-            ->orderByDesc('created_at')
-            ->limit(10)
-            ->get();
-
-        return view('barang-medis.show', [
-            'barang' => $barangMedi,
-            'stokPerLokasi' => $stokPerLokasi,
-            'totalStok' => $barangMedi->stokLokasi->sum('jumlah'),
-            'recentHistories' => $recentHistories,
-        ]);
+        // Load relasi yang diperlukan
+        $barangMedi->load('stok.lokasi');
+        
+        // Ambil riwayat transaksi dari stok_history dengan paginasi dan relasi user
+        $riwayatTransaksi = StokHistory::where('id_barang', $barangMedi->id_obat)
+            ->with(['lokasi', 'user'])
+            ->orderBy('tanggal_transaksi', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+        
+        return view('barang-medis.show', compact('barangMedi', 'riwayatTransaksi'));
     }
 
     /**
@@ -162,13 +181,10 @@ class BarangMedisController extends Controller
      */
     public function edit(BarangMedis $barangMedi)
     {
-        if (!Auth::user()->hasRole('PENGADAAN')) {
-            abort(403, 'Anda tidak memiliki hak akses.');
-        }
-
-        return view('barang-medis.edit', [
-            'barang' => $barangMedi,
-        ]);
+        // Load relasi stok dengan lokasi
+        $barangMedi->load(['stok.lokasi']);
+        
+        return view('barang-medis.edit', compact('barangMedi'));
     }
 
     /**
@@ -176,21 +192,96 @@ class BarangMedisController extends Controller
      */
     public function update(Request $request, BarangMedis $barangMedi)
     {
-        if (!Auth::user()->hasRole('PENGADAAN')) {
-            abort(403, 'Anda tidak memiliki hak akses.');
-        }
-
         $validated = $request->validate([
-            'kode_obat' => ['required', 'string', 'max:50', Rule::unique('barang_medis')->ignore($barangMedi->id_obat, 'id_obat')],
+            'kategori_barang' => 'required|string|in:Obat,BMHP,Alkes,APD',
             'nama_obat' => 'required|string|max:255',
-            'tipe' => ['required', Rule::in(['OBAT', 'ALKES'])],
-            'satuan_dasar' => ['required', Rule::in(['kaplet', 'tablet', 'kapsul', 'pcs'])],
+            'koreksi' => 'nullable|array',
+            'koreksi.*.kemasan' => 'nullable|integer|min:0',
+            'koreksi.*.type' => 'nullable|string|in:tambah,kurang',
+            'koreksi.*.expired_at' => 'nullable|date|after_or_equal:today',
+            'koreksi.*.keterangan' => 'nullable|string|max:255',
         ]);
 
-        $validated['satuan_dasar'] = Str::lower($validated['satuan_dasar']);
+        DB::beginTransaction();
+        try {
+            // Update data barang
+            $barangMedi->update([
+                'kategori_barang' => $validated['kategori_barang'],
+                'nama_obat' => $validated['nama_obat'],
+            ]);
 
-        $barangMedi->update($validated);
-        return redirect()->route('barang-medis.index')->with('success', 'Data barang berhasil diperbarui.');
+            // Proses koreksi stok jika ada
+            if (isset($validated['koreksi'])) {
+                foreach ($validated['koreksi'] as $idLokasi => $koreksi) {
+                    if (!empty($koreksi['kemasan']) && !empty($koreksi['type'])) {
+                        $this->prosesKoreksiStok($barangMedi, $idLokasi, $koreksi);
+                    }
+                }
+            }
+
+            DB::commit();
+            return redirect()->route('barang-medis.index')->with('success', 'Data barang berhasil diperbarui.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal memperbarui data: ' . $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * Proses koreksi stok (tambah/kurang)
+     */
+    private function prosesKoreksiStok($barangMedi, $idLokasi, $koreksi)
+    {
+        $stokBarang = StokBarang::where('id_barang', $barangMedi->id_obat)
+                                ->where('id_lokasi', $idLokasi)
+                                ->first();
+
+        if (!$stokBarang) {
+            throw new \Exception("Stok untuk lokasi tidak ditemukan");
+        }
+
+        $jumlahKemasan = (int) $koreksi['kemasan'];
+        // Hitung total satuan: jumlah kemasan × isi kemasan × isi per satuan
+        // Contoh: 1 Box × 10 strip × 10 kapsul = 100 kapsul
+        $totalSatuan = $jumlahKemasan * $barangMedi->isi_kemasan_jumlah * $barangMedi->isi_per_satuan;
+        
+        // Tentukan perubahan berdasarkan type
+        $perubahan = $koreksi['type'] === 'tambah' ? $totalSatuan : -$totalSatuan;
+        
+        // Cek jika pengurangan tidak melebihi stok yang ada
+        if ($koreksi['type'] === 'kurang' && ($stokBarang->jumlah + $perubahan) < 0) {
+            throw new \Exception("Pengurangan stok melebihi jumlah yang tersedia");
+        }
+
+        // Update stok
+        $stokLama = $stokBarang->jumlah;
+        $stokBarang->jumlah += $perubahan;
+        $stokBarang->save();
+
+        // Buat keterangan
+        $keterangan = $koreksi['keterangan'] ?? '';
+        if ($koreksi['type'] === 'tambah') {
+            $keterangan = "Koreksi: Tambah " . $jumlahKemasan . " " . ($barangMedi->kemasan ?? 'Box') . 
+                         ($keterangan ? " - " . $keterangan : "");
+        } else {
+            $keterangan = "Koreksi: Kurang " . $jumlahKemasan . " " . ($barangMedi->kemasan ?? 'Box') . 
+                         ($keterangan ? " - " . $keterangan : "");
+        }
+
+        // Simpan ke history
+        StokHistory::create([
+            'id_barang' => $barangMedi->id_obat,
+            'id_lokasi' => $idLokasi,
+            'user_id' => Auth::id(),
+            'jumlah_kemasan' => $jumlahKemasan,
+            'isi_per_kemasan' => $barangMedi->isi_kemasan_jumlah * $barangMedi->isi_per_satuan, // Total satuan per kemasan
+            'perubahan' => $perubahan,
+            'stok_sebelum' => $stokLama,
+            'stok_sesudah' => $stokBarang->jumlah,
+            'expired_at' => $koreksi['expired_at'] ?? null,
+            'keterangan' => $keterangan,
+            'tanggal_transaksi' => now(),
+        ]);
     }
 
     /**
@@ -198,10 +289,6 @@ class BarangMedisController extends Controller
      */
     public function destroy(BarangMedis $barangMedi)
     {
-        if (!Auth::user()->hasRole('PENGADAAN')) {
-            abort(403, 'Anda tidak memiliki hak akses.');
-        }
-
         try {
             $barangMedi->delete();
             return redirect()->route('barang-medis.index')->with('success', 'Barang berhasil dihapus.');
@@ -214,16 +301,16 @@ class BarangMedisController extends Controller
     /**
      * Menampilkan riwayat mutasi stok untuk suatu barang.
      */
-    public function history(BarangMedis $barang)
+    public function history(BarangMedis $barangMedi)
     {
-        $histories = $barang->stokHistories()
-            ->with('lokasi', 'user.karyawan')
+        $histories = $barangMedi->stokHistories()
+            ->with('lokasi', 'user')
             ->orderByDesc('tanggal_transaksi')
             ->orderByDesc('created_at')
             ->get();
 
         return view('barang-medis.history', [
-            'barangMedi' => $barang,
+            'barangMedi' => $barangMedi,
             'histories' => $histories,
         ]);
     }
@@ -269,7 +356,7 @@ class BarangMedisController extends Controller
                     'stok_sesudah' => $stokAsal->jumlah, // [FIX] Tambahkan stok sesudah
                     'keterangan' => 'Distribusi ke Lokasi ID ' . $idLokasiTujuan,
                     'tanggal_transaksi' => now()->toDateString(),
-                    'user_id' => Auth::id(),
+                    'user_id' => auth::id(),
                 ]);
 
                 // --- PROSES LOKASI TUJUAN ---
@@ -289,7 +376,7 @@ class BarangMedisController extends Controller
                     'stok_sesudah' => $stokTujuan->jumlah, // [FIX] Tambahkan stok sesudah
                     'keterangan' => 'Distribusi dari Lokasi ID ' . $idLokasiAsal,
                     'tanggal_transaksi' => now()->toDateString(),
-                    'user_id' => Auth::id(),
+                    'user_id' => auth::id(),
                 ]);
             });
         } catch (\Exception $e) {

@@ -19,6 +19,7 @@ class User extends Authenticatable
     protected $fillable = [
         'nama_karyawan',
         'nip',
+        'nik',
         'email',
         'password',
         'akses',
@@ -63,54 +64,85 @@ class User extends Authenticatable
         if (is_string($role)) {
             return $this->roles->contains('name', $role);
         }
-
-        if (is_array($role)) {
-            foreach ($role as $r) {
-                if ($this->hasRole($r)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
+        // Disederhanakan untuk efisiensi, karena hasRole() hanya dipanggil dengan string di kode Anda
         return false;
     }
 
     /**
-     * Relasi ke model Karyawan.
+     * Relasi ke profil Karyawan.
      */
     public function karyawan()
     {
-        return $this->belongsTo(Karyawan::class, 'nip', 'nip');
+        return $this->hasOne(Karyawan::class, 'nip', 'nip');
+    }
+    
+    /**
+     * Relasi ke profil NonKaryawan.
+     */
+    public function nonKaryawan()
+    {
+        return $this->hasOne(NonKaryawan::class, 'nik', 'nik');
     }
 
     /**
-     * Relasi one-to-many ke model RekamMedis.
-     * Menggunakan 'nip_pasien' sebagai foreign key yang sudah diseragamkan.
+     * Relasi ke rekam medis untuk pasien karyawan (berdasarkan NIP).
      */
-    public function rekamMedis()
+    public function rekamMedisKaryawan()
     {
         return $this->hasMany(RekamMedis::class, 'nip_pasien', 'nip');
     }
 
     /**
-     * Relasi one-to-many ke model Checkup.
-     * Menggunakan 'nip_pasien' sebagai foreign key yang sudah diseragamkan.
+     * Relasi ke rekam medis untuk pasien non-karyawan (berdasarkan NIK).
      */
-    public function checkups()
+    public function rekamMedisNonKaryawan()
+    {
+        return $this->hasMany(RekamMedis::class, 'nik_pasien', 'nik');
+    }
+
+    /**
+     * Relasi gabungan untuk mendapatkan semua rekam medis (karyawan + non-karyawan).
+     */
+    public function rekamMedis()
+    {
+        // Gabungkan hasil dari kedua relasi
+        if ($this->nip) {
+            // Jika user memiliki NIP, ambil berdasarkan NIP
+            return $this->rekamMedisKaryawan();
+        } else {
+            // Jika user tidak memiliki NIP, ambil berdasarkan NIK
+            return $this->rekamMedisNonKaryawan();
+        }
+    }
+
+    /**
+     * Relasi ke checkup untuk pasien karyawan (berdasarkan NIP).
+     */
+    public function checkupKaryawan()
     {
         return $this->hasMany(Checkup::class, 'nip_pasien', 'nip');
     }
 
     /**
-     * Nama yang ditampilkan untuk petugas.
+     * Relasi ke checkup untuk pasien non-karyawan (berdasarkan NIK).
      */
-    public function getDisplayNameAttribute(): string
+    public function checkupNonKaryawan()
     {
-        return $this->nama_karyawan
-            ?? optional($this->karyawan)->nama_karyawan
-            ?? $this->email
-            ?? $this->nip
-            ?? '-';
+        return $this->hasMany(Checkup::class, 'nik_pasien', 'nik');
+    }
+
+    /**
+     * Relasi gabungan untuk mendapatkan semua checkup (karyawan + non-karyawan).
+     */
+    public function checkups()
+    {
+        // Gabungkan hasil dari kedua relasi
+        if ($this->nip) {
+            // Jika user memiliki NIP, ambil berdasarkan NIP
+            return $this->checkupKaryawan();
+        } else {
+            // Jika user tidak memiliki NIP, ambil berdasarkan NIK
+            return $this->checkupNonKaryawan();
+        }
     }
 }

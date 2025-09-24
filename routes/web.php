@@ -12,6 +12,7 @@ use App\Http\Controllers\BarangMedisController;
 use App\Http\Controllers\BarangMasukController;
 use App\Http\Controllers\PermintaanBarangController;
 use App\Http\Controllers\CheckupController;
+use App\Http\Controllers\NonKaryawanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -42,9 +43,38 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
-    // Rute logout untuk admin (menggunakan POST untuk keamanan)
     Route::post('/admin/logout', [AdminLoginController::class, 'logout'])->name('admin.logout');
+
+    // Test route untuk debugging
+    Route::get('/test-dashboard', function() {
+        return '<h1>Test route berhasil!</h1><p>Waktu: ' . now() . '</p>';
+    });
+    
+    Route::get('/test-auth', function() {
+        $user = Auth::user();
+        $activeRole = session('active_role');
+        return response()->json([
+            'user' => $user ? $user->only(['id', 'name', 'email']) : null,
+            'active_role' => $activeRole,
+            'user_roles' => $user ? $user->roles->pluck('name') : [],
+            'session_data' => session()->all()
+        ]);
+    });
+    
+    Route::get('/test-simple', function() {
+        return view('dashboard-simple', [
+            'kasus_hari_ini' => 5,
+            'data_penyakit' => collect([
+                (object)['nama_penyakit' => 'Flu', 'jumlah' => 3],
+                (object)['nama_penyakit' => 'Demam', 'jumlah' => 2]
+            ]),
+            'data_obat' => collect([
+                (object)['nama_obat' => 'Paracetamol', 'jumlah' => 10]
+            ]),
+            'total_kasus_penyakit' => 5,
+            'total_pemakaian_obat' => 10
+        ]);
+    });
 
 
     // --- RUTE KHUSUS PASIEN ---
@@ -54,57 +84,49 @@ Route::middleware(['auth'])->group(function () {
 
     // --- RUTE BERSAMA (DOKTER & PENGADAAN) ---
     Route::middleware(['role:DOKTER,PENGADAAN'])->group(function () {
-        Route::get('barang-medis/{barang}/riwayat', [BarangMedisController::class, 'history'])
-            ->name('barang-medis.history');
-
-        // [BARU] Route untuk proses distribusi stok
-        Route::put('barang-medis/{barang}/distribusi', [BarangMedisController::class, 'distribusi'])
-            ->name('barang-medis.distribusi');
-
+        Route::get('barang-medis/{barang}/riwayat', [BarangMedisController::class, 'history'])->name('barang-medis.history');
+        Route::put('barang-medis/{barang}/distribusi', [BarangMedisController::class, 'distribusi'])->name('barang-medis.distribusi');
         Route::get('barang-masuk', [BarangMasukController::class, 'index'])->name('barang-masuk.index');
-
         Route::resource('barang-medis', BarangMedisController::class);
-        Route::get('permintaan/barang/search', [PermintaanBarangController::class, 'searchBarang'])->name('permintaan.barang.search');
-        Route::get('permintaan/barang/{barang}/kemasan', [PermintaanBarangController::class, 'kemasan'])->name('permintaan.barang.kemasan');
-        Route::post('permintaan/{permintaan}/submit', [PermintaanBarangController::class, 'submit'])->name('permintaan.submit');
-        Route::post('permintaan/{permintaan}/approve', [PermintaanBarangController::class, 'approve'])->name('permintaan.approve');
-        Route::post('permintaan/{permintaan}/reject', [PermintaanBarangController::class, 'reject'])->name('permintaan.reject');
-        Route::post('permintaan/{permintaan}/fulfill', [PermintaanBarangController::class, 'fulfill'])->name('permintaan.fulfill');
         Route::resource('permintaan', PermintaanBarangController::class);
     });
 
     // --- RUTE KHUSUS DOKTER ---
     Route::middleware(['role:DOKTER'])->group(function () {
-        // [BARU] API untuk autocomplete pencarian penyakit
+
+        // Pendaftaran pasien non-karyawan oleh dokter
+        Route::get('/pasien-non-karyawan/create', [NonKaryawanController::class, 'create'])->name('non_karyawan.create');
+        Route::post('/pasien-non-karyawan', [NonKaryawanController::class, 'store'])->name('non_karyawan.store');
+
         Route::get('/api/penyakit/{icd10}', [RekamMedisController::class, 'findPenyakit'])->name('api.penyakit.find');
 
-        // Rute untuk menampilkan daftar dan detail pasien
+        // Daftar dan Detail Pasien (parameter disamakan menjadi 'pasien')
         Route::get('/pasien', [PasienController::class, 'index'])->name('pasien.index');
-        Route::get('/pasien/{user:nip}', [PasienController::class, 'show'])->name('pasien.show');
+        Route::get('/pasien/{pasien:nip}', [PasienController::class, 'show'])->name('pasien.show');
+        Route::get('/pasien-non-karyawan/{pasien:nik}', [PasienController::class, 'showNonKaryawan'])->name('pasien.show_non_karyawan');
 
-        // Rute untuk mendaftarkan pasien baru
-        Route::get('/pasien/create', [PasienController::class, 'create'])->name('pasien.create');
-        Route::post('/pasien', [PasienController::class, 'store'])->name('pasien.store');
+        // Rekam Medis (parameter disamakan menjadi 'pasien')
+        Route::get('/pasien/{pasien:nip}/rekam-medis/create', [RekamMedisController::class, 'create'])->name('rekam-medis.create');
+        Route::post('/pasien/{pasien:nip}/rekam-medis', [RekamMedisController::class, 'store'])->name('rekam-medis.store');
+        Route::get('/pasien-non-karyawan/{pasien:nik}/rekam-medis/create', [RekamMedisController::class, 'create'])->name('rekam-medis.create.non_karyawan');
+        Route::post('/pasien-non-karyawan/{pasien:nik}/rekam-medis', [RekamMedisController::class, 'store'])->name('rekam-medis.store.non_karyawan');
 
-        // Rute Rekam Medis
-        Route::get('/pasien/{user:nip}/rekam-medis/create', [RekamMedisController::class, 'create'])->name('rekam-medis.create');
-        Route::post('/pasien/{user:nip}/rekam-medis', [RekamMedisController::class, 'store'])->name('rekam-medis.store');
+        // Check-up (parameter disamakan menjadi 'pasien')
+        Route::get('/pasien/{pasien:nip}/checkup/create', [CheckupController::class, 'create'])->name('checkup.create');
+        Route::post('/pasien/{pasien:nip}/checkup', [CheckupController::class, 'store'])->name('checkup.store');
+        Route::get('/pasien-non-karyawan/{pasien:nik}/checkup/create', [CheckupController::class, 'create'])->name('checkup.create.non_karyawan');
+        Route::post('/pasien-non-karyawan/{pasien:nik}/checkup', [CheckupController::class, 'store'])->name('checkup.store.non_karyawan');
 
-        // Rute Check-up
-        Route::get('/pasien/{user:nip}/checkup/create', [CheckupController::class, 'create'])->name('checkup.create');
-        Route::post('/pasien/{user:nip}/checkup', [CheckupController::class, 'store'])->name('checkup.store');
-
-        // Laporan View
+        // Laporan
         Route::get('/laporan/harian', [LaporanViewController::class, 'laporanHarian'])->name('laporan.harian');
         Route::get('/laporan/pemakaian-obat', [LaporanViewController::class, 'pemakaianObat'])->name('laporan.pemakaian_obat');
         Route::get('/laporan/penyakit', [LaporanViewController::class, 'daftarPenyakit'])->name('laporan.penyakit');
         Route::get('/laporan/kunjungan', [LaporanViewController::class, 'daftarKunjungan'])->name('laporan.kunjungan');
-
-        // Laporan PDF
         Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
         Route::get('/laporan/obat', [LaporanController::class, 'cetakLaporanObat'])->name('laporan.obat');
         Route::get('/laporan/penyakit-kunjungan', [LaporanController::class, 'cetakLaporanPenyakitKunjungan'])->name('laporan.penyakit-kunjungan');
 
+        Route::put('/permintaan/{permintaan}/terima', [PermintaanBarangController::class, 'konfirmasiPenerimaan'])->name('permintaan.terima');
     });
 
     // --- RUTE KHUSUS PENGADAAN ---
@@ -115,5 +137,5 @@ Route::middleware(['auth'])->group(function () {
 
 });
 
-// Ini adalah rute bawaan Laravel untuk otentikasi pasien (login, register, forgot password)
+// Rute bawaan Laravel untuk otentikasi pasien
 require __DIR__.'/auth.php';

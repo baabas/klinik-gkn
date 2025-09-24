@@ -16,7 +16,13 @@
     <h1 class="h2">Rekam Medis Baru</h1>
 </div>
 
-<form action="{{ route('rekam-medis.store', $user->nip) }}" method="POST" id="rekamMedisForm">
+@php
+    $actionRoute = $user->nip 
+        ? route('rekam-medis.store', $user->nip) 
+        : route('rekam-medis.store.non_karyawan', $user->nik);
+@endphp
+
+<form action="{{ $actionRoute }}" method="POST" id="rekamMedisForm">
     @csrf
     <div class="row">
         <div class="col-lg-8">
@@ -33,7 +39,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="anamnesa" class="form-label fw-bold">Keluhan & Riwayat Sakit</label>
-                        <textarea class="form-control" id="anamnesa" name="anamnesa" rows="4" placeholder="Contoh: Pasien datang dengan keluhan demam selama 3 hari, batuk, dan sakit tenggorokan.">{{ old('riwayat_sakit') }}</textarea>
+                        <textarea class="form-control" id="anamnesa" name="anamnesa" rows="4" placeholder="Contoh: Pasien datang dengan keluhan demam selama 3 hari, batuk, dan sakit tenggorokan.">{{ old('anamnesa') }}</textarea>
                     </div>
                 </div>
             </div>
@@ -41,12 +47,11 @@
             <div class="card shadow-sm mb-4">
                 <div class="card-header"><h5 class="mb-0 form-section-title">2. Diagnosa</h5></div>
                 <div class="card-body">
-                    {{-- [DIPERBARUI] Menggunakan input dinamis untuk ICD-10 --}}
-                    <label class="form-label fw-bold">Diagnosa Penyakit <span class="text-danger">*</span></label>
+                    <label class="form-label fw-bold">Diagnosa Penyakit</label>
                     <div id="diagnosa-container">
                         <div class="row g-2 mb-2 align-items-center diagnosa-entry">
                             <div class="col-sm-3">
-                                <input type="text" name="diagnosa[0][kode_penyakit]" class="form-control icd10-input" placeholder="Ketik Kode ICD-10" required>
+                                <input type="text" name="diagnosa[0][kode_penyakit]" class="form-control icd10-input" placeholder="Ketik Kode ICD-10">
                             </div>
                             <div class="col-sm-8">
                                 <input type="text" class="form-control nama-penyakit-output" placeholder="Nama Penyakit (otomatis)" readonly style="background-color: #e9ecef;">
@@ -63,15 +68,17 @@
             </div>
 
             <div class="card shadow-sm mb-4">
-                <div class="card-header"><h5 class="mb-0 form-section-title">3. Resep Obat</h5></div>
+                <div class="card-header"><h5 class="mb-0 form-section-title">3. Resep Obat & Terapi</h5></div>
                 <div class="card-body">
                     <label class="form-label fw-bold">Resep Obat</label>
-                    <div id="resep-obat-container"></div>
+                    <div id="resep-obat-container">
+                        {{-- Akan diisi oleh JavaScript --}}
+                    </div>
                     <button type="button" id="add-resep" class="btn btn-sm btn-outline-primary mt-2"><i class="bi bi-plus-circle"></i> Tambah Obat</button>
                     <hr class="my-3">
                     <div class="mb-3">
                         <label for="terapi" class="form-label fw-bold">Catatan Pengobatan / Lainnya</label>
-                        <textarea class="form-control" id="terapi" name="terapi" rows="3" placeholder="Contoh: Istirahat yang cukup, perbanyak minum air putih.">{{ old('pengobatan') }}</textarea>
+                        <textarea class="form-control" id="terapi" name="terapi" rows="3" placeholder="Contoh: Istirahat yang cukup, perbanyak minum air putih.">{{ old('terapi') }}</textarea>
                     </div>
                 </div>
             </div>
@@ -83,7 +90,13 @@
                  <div class="card-header d-flex justify-content-between align-items-center"><h5 class="mb-0">Informasi Pasien</h5><i class="bi bi-person-circle fs-4 text-primary"></i></div>
                 <div class="card-body">
                     <h5 class="card-title fw-bold">{{ $user->nama_karyawan }}</h5>
-                    <p class="card-text text-muted mb-0">NIP: {{ $user->nip }}</p>
+                    <p class="card-text text-muted mb-0">
+                        @if($user->nip)
+                            NIP: {{ $user->nip }}
+                        @elseif($user->nik)
+                            NIK: {{ $user->nik }}
+                        @endif
+                    </p>
                 </div>
             </div>
 
@@ -108,7 +121,12 @@
 
             <div class="d-grid gap-2">
                  <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-save"></i> Simpan Rekam Medis</button>
-                <a href="{{ route('pasien.show', $user->nip) }}" class="btn btn-outline-secondary">Batal</a>
+                 @php
+                    $cancelRoute = $user->nip 
+                        ? route('pasien.show', $user->nip) 
+                        : route('pasien.show_non_karyawan', $user->nik);
+                 @endphp
+                <a href="{{ $cancelRoute }}" class="btn btn-outline-secondary">Batal</a>
             </div>
              @if(session('error'))<div class="alert alert-danger mt-3" role="alert">{{ session('error') }}</div>@endif
         </div>
@@ -127,14 +145,13 @@
                 let namaPenyakitOutput = icd10Input.closest('.diagnosa-entry').find('.nama-penyakit-output');
                 let query = icd10Input.val();
 
-                if (query.length >= 3) {
+                if (query.length >= 2) {
                     $.ajax({
-                        url: `/api/penyakit/${query}`, // Panggil API route
+                        url: `{{ url('/api/penyakit') }}/${query}`,
                         type: 'GET',
                         success: function(data) {
                             if (data.success) {
                                 namaPenyakitOutput.val(data.nama_penyakit);
-                                // Optional: isi kembali input dengan kode yang valid jika ada typo
                                 icd10Input.val(data.kode_penyakit);
                             } else {
                                 namaPenyakitOutput.val('Kode tidak ditemukan');
@@ -155,7 +172,7 @@
                 const newDiagnosa = `
                     <div class="row g-2 mb-2 align-items-center diagnosa-entry">
                         <div class="col-sm-3">
-                            <input type="text" name="diagnosa[${diagnosaIndex}][kode_penyakit]" class="form-control icd10-input" placeholder="Ketik Kode ICD-10" required>
+                            <input type="text" name="diagnosa[${diagnosaIndex}][kode_penyakit]" class="form-control icd10-input" placeholder="Ketik Kode ICD-10">
                         </div>
                         <div class="col-sm-8">
                             <input type="text" class="form-control nama-penyakit-output" placeholder="Nama Penyakit (otomatis)" readonly style="background-color: #e9ecef;">
@@ -171,55 +188,48 @@
                 $(this).closest('.diagnosa-entry').remove();
             });
 
-
-            // --- FUNGSI TAMBAH RESEP OBAT (KODE LAMA ANDA) ---
+            // --- FUNGSI TAMBAH RESEP OBAT ---
             let resepIndex = 0;
-            @php
-                $obatList = $obat->load(['stokLokasi' => function ($q) {
-                    $q->where('id_lokasi', auth()->user()->id_lokasi);
-                }])->filter(function ($item) {
-                    return $item->stokLokasi->isNotEmpty() && $item->stokLokasi[0]->jumlah > 0;
-                })->values();
-            @endphp
-            const obatList = @json($obatList);
+            const obatList = @json($obat);
 
             function addResepRow() {
-                resepIndex++;
-                const options = obatList.length
-                    ? obatList.map(o => `<option value="${o.id_obat}">${o.nama_obat} (stok: ${o.stok_lokasi[0].jumlah})</option>`).join('')
+                const options = obatList.length > 0
+                    ? obatList.map(o => `<option value="${o.id_obat}">${o.nama_obat} (stok: ${o.stok[0] ? o.stok[0].jumlah : 0})</option>`).join('')
                     : '<option value="">Tidak ada obat tersedia</option>';
-                const selectAttr = obatList.length ? 'required' : 'disabled';
+                
+                // [PERBAIKAN] Input 'aturan_pakai' dihapus
                 const newResep = `
                     <div class="row g-2 mb-2 align-items-center resep-entry" id="resep-entry-${resepIndex}">
                         <div class="col-sm-8">
-                            <select name="obat[${resepIndex}][id_obat]" class="form-select select-obat" data-placeholder="Pilih Obat..." ${selectAttr}><option></option>
+                            <select name="obat[${resepIndex}][id_obat]" class="form-select select-obat" data-placeholder="Pilih Obat..." required>
+                                <option></option>
                                 ${options}
                             </select>
                         </div>
-                        <div class="col-sm-2">
+                        <div class="col-sm-3">
                             <input type="number" name="obat[${resepIndex}][jumlah]" class="form-control" placeholder="Qty" min="1" required>
                         </div>
-                        <div class="col-sm-2 text-end">
+                        <div class="col-sm-1 text-end">
                             <button type="button" class="btn btn-sm btn-outline-danger remove-resep"><i class="bi bi-x-lg"></i></button>
                         </div>
                     </div>
                 `;
                 $('#resep-obat-container').append(newResep);
                 $(`#resep-entry-${resepIndex} .select-obat`).select2({ theme: 'bootstrap-5' });
+                resepIndex++;
             }
 
             if (obatList.length === 0) {
-                $('#resep-obat-container').html('<div class="alert alert-warning">Tidak ada obat tersedia di lokasi ini</div>');
-            }
-
-            if (obatList.length === 0) {
-                alert('Tidak ada stok obat di lokasi ini');
+                $('#resep-obat-container').html('<div class="alert alert-warning">Tidak ada obat yang tersedia di lokasi Anda.</div>');
                 $('#add-resep').prop('disabled', true);
             } else {
                 addResepRow();
                 $('#add-resep').on('click', addResepRow);
             }
-            $('#resep-obat-container').on('click', '.remove-resep', function() { $(this).closest('.resep-entry').remove(); });
+            
+            $('#resep-obat-container').on('click', '.remove-resep', function() {
+                $(this).closest('.resep-entry').remove();
+            });
         });
     </script>
-@endpush
+@endpush    

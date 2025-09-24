@@ -12,30 +12,51 @@ class PasienController extends Controller
     {
         $search = $request->input('search');
 
-        $pasien = User::whereHas('roles', function ($query) {
-            $query->where('name', 'PASIEN');
-        })
-        ->when($search, function ($query, $search) {
-            return $query->where('nama_karyawan', 'like', "%{$search}%")
-                         ->orWhere('nip', 'like', "%{$search}%");
-        })
-        ->with('karyawan')
-        ->latest()
-        ->paginate(10);
+        $pasien = User::whereHas('roles', fn($q) => $q->where('name', 'PASIEN'))
+            ->when($search, function ($query, $search) {
+                return $query->where('nama_karyawan', 'like', "%{$search}%")
+                             ->orWhere('nip', 'like', "%{$search}%")
+                             ->orWhere('nik', 'like', "%{$search}%");
+            })
+            ->with('karyawan', 'nonKaryawan')
+            ->latest()
+            ->paginate(10);
 
         return view('pasien.index', compact('pasien'));
     }
 
-    // --- PERBAIKAN UTAMA DI SINI ---
-    public function show(User $user)
+    /**
+     * Menampilkan detail pasien karyawan dengan riwayat medis.
+     */
+    public function show(User $pasien)
     {
-        // 1. Ambil data detail karyawan melalui relasi yang ada di model User
-        $karyawan = $user->karyawan;
-        
-        // 2. Kirim kedua variabel ('user' dan 'karyawan') ke view
-        return view('pasien.show', compact('user', 'karyawan'));
+        // Load data yang diperlukan untuk karyawan
+        $pasien->load([
+            'karyawan',
+            'rekamMedisKaryawan.detailDiagnosa.penyakit',
+            'rekamMedisKaryawan.resepObat.obat',
+            'checkupKaryawan'
+        ]);
+
+        // Kirim dengan nama 'user' untuk kompatibilitas view
+        return view('pasien.show', ['user' => $pasien]);
     }
-    // --------------------------------
+
+    /**
+     * Menampilkan detail pasien non-karyawan dengan riwayat medis.
+     */
+    public function showNonKaryawan(User $pasien)
+    {
+        // Load data yang diperlukan untuk non-karyawan
+        $pasien->load([
+            'nonKaryawan',
+            'rekamMedisNonKaryawan.detailDiagnosa.penyakit',
+            'rekamMedisNonKaryawan.resepObat.obat',
+            'checkupNonKaryawan'
+        ]);
+
+        return view('pasien.show-non-karyawan', compact('pasien'));
+    }
 
     public function myCard()
     {
