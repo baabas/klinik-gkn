@@ -17,7 +17,8 @@ Adalah aplikasi manajemen klinik dan pengadaan barang medis berbasis **Laravel**
 Hak akses meliputi:
 1. Dokter
 2. Pengadaan
-![Login Dokter](https://raw.githubusercontent.com/baabas/klinik-gkn/main/public/images/logindokter.png)
+<img src="https://raw.githubusercontent.com/baabas/klinik-gkn/main/public/images/logindokter.png" width="100">
+
 3. Pasien (hanya bisa melihat kartu pasien digital)
 ![Login Pasien](https://raw.githubusercontent.com/baabas/klinik-gkn/main/public/images/loginpasien.png)
 
