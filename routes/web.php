@@ -50,7 +50,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/test-dashboard', function() {
         return '<h1>Test route berhasil!</h1><p>Waktu: ' . now() . '</p>';
     });
-    
+
     Route::get('/test-auth', function() {
         $user = Auth::user();
         $activeRole = session('active_role');
@@ -61,7 +61,7 @@ Route::middleware(['auth'])->group(function () {
             'session_data' => session()->all()
         ]);
     });
-    
+
     Route::get('/test-simple', function() {
         return view('dashboard-simple', [
             'kasus_hari_ini' => 5,
@@ -89,6 +89,9 @@ Route::middleware(['auth'])->group(function () {
         Route::put('barang-medis/{barang}/distribusi', [BarangMedisController::class, 'distribusi'])->name('barang-medis.distribusi');
         Route::get('barang-masuk', [BarangMasukController::class, 'index'])->name('barang-masuk.index');
         Route::get('/api/barang-medis/search', [BarangMedisController::class, 'search'])->name('api.barang-medis.search');
+        Route::get('/barang-medis/print-pdf', [BarangMedisController::class, 'printPdf'])
+            ->name('barang-medis.printPdf')
+            ->middleware('role:PENGADAAN');
         Route::resource('barang-medis', BarangMedisController::class);
         Route::resource('permintaan', PermintaanBarangController::class);
         Route::get('/permintaan/{permintaan}/print-pdf', [PermintaanBarangController::class, 'printPdf'])->name('permintaan.print-pdf');
