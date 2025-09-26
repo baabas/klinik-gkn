@@ -190,7 +190,7 @@ class BarangMedisController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Error in BarangMedisController@search: ' . $e->getMessage());
-            
+
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
@@ -259,21 +259,21 @@ class BarangMedisController extends Controller
         if ($validated['isi_kemasan_satuan'] === 'lainnya') {
             $validated['isi_kemasan_satuan'] = $validated['isi_kemasan_satuan_custom'];
         }
-        
+
         if ($validated['satuan_terkecil'] === 'lainnya') {
             $validated['satuan_terkecil'] = $validated['satuan_terkecil_custom'];
         }
-        
+
         // Remove custom fields from validated data as they're not needed in database
         unset($validated['isi_kemasan_satuan_custom'], $validated['satuan_terkecil_custom']);
 
         // Generate kode otomatis berdasarkan kategori
         $kodeObat = $this->generateKodeBarang($validated['kategori_barang']);
         $validated['kode_obat'] = $kodeObat;
-        
+
         // Set kemasan ke "Box" secara otomatis
         $validated['kemasan'] = 'Box';
-        
+
         // Set satuan sama dengan satuan_terkecil
         $validated['satuan'] = $validated['satuan_terkecil'];
 
@@ -319,7 +319,7 @@ class BarangMedisController extends Controller
         ];
 
         $prefix = $prefixMap[$kategori] ?? 'OBT';
-        
+
         // Ambil nomor urut terakhir untuk kategori ini
         $lastCode = BarangMedis::where('kode_obat', 'like', $prefix . '%')
                                ->orderBy('kode_obat', 'desc')
@@ -388,17 +388,17 @@ class BarangMedisController extends Controller
         if ($validated['isi_kemasan_satuan'] === 'lainnya') {
             $validated['isi_kemasan_satuan'] = $validated['isi_kemasan_satuan_custom'];
         }
-        
+
         if ($validated['satuan_terkecil'] === 'lainnya') {
             $validated['satuan_terkecil'] = $validated['satuan_terkecil_custom'];
         }
-        
+
         // Remove custom fields from validated data as they're not needed in database
         unset($validated['isi_kemasan_satuan_custom'], $validated['satuan_terkecil_custom']);
 
         // Set kemasan ke "Box" secara otomatis
         $validated['kemasan'] = 'Box';
-        
+
         // Set satuan sama dengan satuan_terkecil
         $validated['satuan'] = $validated['satuan_terkecil'];
 
@@ -424,18 +424,18 @@ class BarangMedisController extends Controller
                 DB::table('detail_permintaan_barang')
                     ->where('id_barang', $barangMedi->id_obat)
                     ->update(['id_barang' => null]);
-                
+
                 // Hapus semua data stok terkait
                 $barangMedi->stok()->delete();
-                
+
                 // Hapus semua riwayat stok
                 $barangMedi->stokHistories()->delete();
-                
+
                 // Hapus barang itu sendiri
                 $barangMedi->delete();
             });
 
-            return redirect()->route('barang-medis.index')->with('success', 
+            return redirect()->route('barang-medis.index')->with('success',
                 'Barang "' . $namaBarang . '" berhasil dihapus beserta semua data terkait.'
             );
 
@@ -446,7 +446,7 @@ class BarangMedisController extends Controller
                 'user_id' => Auth::id()
             ]);
 
-            return redirect()->back()->with('error', 
+            return redirect()->back()->with('error',
                 'Gagal menghapus barang "' . $namaBarang . '": ' . $e->getMessage()
             );
         }
@@ -478,7 +478,7 @@ class BarangMedisController extends Controller
     public function distribusi(Request $request, BarangMedis $barang)
     {
         $user = Auth::user();
-        
+
         // Izinkan PENGADAAN dan DOKTER untuk melakukan distribusi
         if (!$user->hasRole('PENGADAAN') && !$user->hasRole('DOKTER')) {
             abort(403, 'Anda tidak memiliki hak akses.');
@@ -499,7 +499,7 @@ class BarangMedisController extends Controller
         // Validasi khusus untuk role DOKTER - hanya bisa distribusi dari/ke lokasi mereka
         if ($user->hasRole('DOKTER')) {
             $userLokasiId = $user->id_lokasi;
-            
+
             if ($idLokasiAsal != $userLokasiId && $idLokasiTujuan != $userLokasiId) {
                 abort(403, 'Dokter hanya dapat melakukan distribusi dari atau ke lokasi klinik mereka sendiri.');
             }
@@ -559,7 +559,7 @@ class BarangMedisController extends Controller
             $lokasiAsal = LokasiKlinik::find($idLokasiAsal)->nama_lokasi;
             $lokasiTujuan = LokasiKlinik::find($idLokasiTujuan)->nama_lokasi;
 
-            return redirect()->back()->with('success', 
+            return redirect()->back()->with('success',
                 "Berhasil mendistribusikan {$jumlahDistribusi} unit {$barang->nama_obat} dari {$lokasiAsal} ke {$lokasiTujuan}."
             );
 
@@ -571,38 +571,67 @@ class BarangMedisController extends Controller
     public function printPdf()
     {
         try {
-            // Check user role
-            if (!Auth::user()->hasRole('PENGADAAN')) {
+            $user = Auth::user();
+
+            if (!$user->hasRole('PENGADAAN')) {
                 abort(403, 'Anda tidak memiliki hak akses.');
             }
 
-            // Get all barang medis with their stock information
-            $barangMedis = BarangMedis::with(['stok.lokasiKlinik'])
+            $idLokasi = $user->id_lokasi;
+            $gkn1Id = LokasiKlinik::where('nama_lokasi', 'like', '%GKN 1%')->value('id');
+            $gkn2Id = LokasiKlinik::where('nama_lokasi', 'like', '%GKN 2%')->value('id');
+
+            $barangMedis = BarangMedis::query()
+                ->when($idLokasi, function ($query) use ($idLokasi) {
+                    $query->whereHas('stok', function ($stokQuery) use ($idLokasi) {
+                        $stokQuery->where('id_lokasi', $idLokasi);
+                    });
+                })
+                ->with(['stok' => function ($query) {
+                    $query->with('lokasi');
+                }])
+                ->withSum(['stok' => function ($query) use ($idLokasi) {
+                    if ($idLokasi) {
+                        $query->where('id_lokasi', $idLokasi);
+                    }
+                }], 'jumlah')
+                ->withSum(['stok as stok_gkn1' => function ($query) use ($gkn1Id) {
+                    if ($gkn1Id) {
+                        $query->where('id_lokasi', $gkn1Id);
+                    }
+                }], 'jumlah')
+                ->withSum(['stok as stok_gkn2' => function ($query) use ($gkn2Id) {
+                    if ($gkn2Id) {
+                        $query->where('id_lokasi', $gkn2Id);
+                    }
+                }], 'jumlah')
+                ->withMax(['stokMasuk as tanggal_masuk_terakhir' => function ($query) use ($idLokasi) {
+                    if ($idLokasi) {
+                        $query->where('id_lokasi', $idLokasi);
+                    }
+                }], 'tanggal_transaksi')
+                ->withMin(['stokMasuk as expired_terdekat' => function ($query) use ($idLokasi) {
+                    if ($idLokasi) {
+                        $query->where('id_lokasi', $idLokasi);
+                    }
+                }], 'expired_at')
                 ->orderBy('nama_obat')
                 ->get();
 
-            // Debug: Check if we have data
-            if ($barangMedis->isEmpty()) {
-                return response('No data found', 404);
-            }
-
-            // Prepare data for PDF
             $data = [
                 'barangMedis' => $barangMedis,
                 'tanggal_cetak' => now()->format('d/m/Y H:i:s'),
-                'nama_user' => Auth::check() ? Auth::user()->name : 'Guest'
+                'nama_user' => $user->nama_karyawan ?? $user->name ?? 'Pengguna Sistem',
             ];
 
-            // Generate PDF
-            $pdf = Pdf::loadView('barang-medis.pdf', $data);
-            $pdf->setPaper('A4', 'landscape');
-            
+            $pdf = Pdf::loadView('barang-medis.pdf', $data)->setPaper('A4', 'landscape');
+
             return $pdf->download('Daftar_Obat_Alat_Medis_' . now()->format('Y-m-d_H-i-s') . '.pdf');
-            
+
         } catch (\Exception $e) {
             Log::error('PDF Generation Error: ' . $e->getMessage());
             Log::error('PDF Generation Stack Trace: ' . $e->getTraceAsString());
-            
+
             return response('Error generating PDF: ' . $e->getMessage(), 500);
         }
     }

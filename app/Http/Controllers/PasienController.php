@@ -12,11 +12,23 @@ class PasienController extends Controller
     {
         $search = $request->input('search');
 
-        $pasien = User::where('akses', 'PASIEN')
+        $pasien = User::query()
+            ->where(function ($query) {
+                $query->where('akses', 'PASIEN')
+                    ->orWhere(function ($subQuery) {
+                        $subQuery->where('akses', 'PENGADAAN')
+                            ->where(function ($inner) {
+                                $inner->whereHas('karyawan')
+                                    ->orWhereHas('nonKaryawan');
+                            });
+                    });
+            })
             ->when($search, function ($query, $search) {
-                return $query->where('nama_karyawan', 'like', "%{$search}%")
-                             ->orWhere('nip', 'like', "%{$search}%")
-                             ->orWhere('nik', 'like', "%{$search}%");
+                $query->where(function ($filter) use ($search) {
+                    $filter->where('nama_karyawan', 'like', "%{$search}%")
+                        ->orWhere('nip', 'like', "%{$search}%")
+                        ->orWhere('nik', 'like', "%{$search}%");
+                });
             })
             ->with('karyawan', 'nonKaryawan')
             ->latest()
@@ -33,11 +45,21 @@ class PasienController extends Controller
             return response()->json(['success' => false, 'data' => []]);
         }
 
-        $pasien = User::where('akses', 'PASIEN')
-            ->where(function($q) use ($query) {
+        $pasien = User::query()
+            ->where(function ($builder) {
+                $builder->where('akses', 'PASIEN')
+                    ->orWhere(function ($subQuery) {
+                        $subQuery->where('akses', 'PENGADAAN')
+                            ->where(function ($inner) {
+                                $inner->whereHas('karyawan')
+                                    ->orWhereHas('nonKaryawan');
+                            });
+                    });
+            })
+            ->where(function ($q) use ($query) {
                 $q->where('nama_karyawan', 'like', "%{$query}%")
-                  ->orWhere('nip', 'like', "%{$query}%")
-                  ->orWhere('nik', 'like', "%{$query}%");
+                    ->orWhere('nip', 'like', "%{$query}%")
+                    ->orWhere('nik', 'like', "%{$query}%");
             })
             ->with('karyawan', 'nonKaryawan')
             ->limit(10)
