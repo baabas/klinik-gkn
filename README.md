@@ -17,10 +17,10 @@ Adalah aplikasi manajemen klinik dan pengadaan barang medis berbasis **Laravel**
 Hak akses meliputi:
 1. Dokter
 2. Pengadaan
-<img src="https://raw.githubusercontent.com/baabas/klinik-gkn/main/public/images/logindokter.png" width="800">
-
+![Login Dokter](https://raw.githubusercontent.com/baabas/klinik-gkn/main/public/images/logindokter.png)
 3. Pasien (hanya bisa melihat kartu pasien digital)
-<img src="https://raw.githubusercontent.com/baabas/klinik-gkn/main/public/images/loginpasien.png" width="800">
+![Login Dokter](https://raw.githubusercontent.com/baabas/klinik-gkn/main/public/images/loginpasien.png)
+
 
 ---
 
@@ -32,6 +32,7 @@ Hak akses meliputi:
       <th>Email</th>
       <th>Password</th>
       <th>Akses</th>
+      <th>URL</th>
     </tr>
   </thead>
   <tbody>
@@ -40,18 +41,21 @@ Hak akses meliputi:
       <td>admin@example.com</td>
       <td>12345678</td>
       <td>DOKTER</td>
+      <td>http://127.0.0.1:8000/admin/login</td>
     </tr>
     <tr>
       <td>222222222222222222</td>
       <td>admin2@example.com</td>
       <td>12345678</td>
       <td>DOKTER</td>
+      <td><td>http://127.0.0.1:8000/admin/login</td></td>
     </tr>
     <tr>
       <td>333333333333333333</td>
       <td>admin3@example.com</td>
       <td>12345678</td>
       <td>PENGADAAN</td>
+      <td><td>http://127.0.0.1:8000/admin/login</td></td>
     </tr>
   </tbody>
 </table>
