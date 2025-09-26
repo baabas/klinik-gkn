@@ -48,14 +48,14 @@ Hak akses meliputi:
       <td>admin2@example.com</td>
       <td>12345678</td>
       <td>DOKTER</td>
-      <td><td>http://127.0.0.1:8000/admin/login</td></td>
+      <td>http://127.0.0.1:8000/admin/login<td>
     </tr>
     <tr>
       <td>333333333333333333</td>
       <td>admin3@example.com</td>
       <td>12345678</td>
       <td>PENGADAAN</td>
-      <td><td>http://127.0.0.1:8000/admin/login</td></td>
+      <td>http://127.0.0.1:8000/admin/login</td>
     </tr>
   </tbody>
 </table>
