@@ -53,17 +53,14 @@
                                     </td>
                                     <td class="text-center">{{ $item->jumlah_diminta }}</td>
                                     <td class="text-center">
-                                        @if($item->nama_barang_baru)
-                                            <small class="text-muted fst-italic">Tambahkan ke master terlebih dahulu</small>
-                                        @else
-                                            <input type="number" name="detail[{{ $index }}][jumlah_disetujui]" class="form-control form-control-sm text-center" value="{{ old('detail.'.$index.'.jumlah_disetujui', $item->jumlah_diminta) }}" min="0">
-                                        @endif
+                                        <input type="number" name="detail[{{ $index }}][jumlah_disetujui]" class="form-control form-control-sm text-center" value="{{ old('detail.'.$index.'.jumlah_disetujui', $item->jumlah_diminta) }}" min="0">
                                     </td>
                                     <td class="text-center">
                                         @if ($item->barangMedis)
                                             <span class="badge bg-primary">Obat Terdaftar</span>
                                         @else
                                             <span class="badge bg-success">Request Baru</span>
+                                            <br><small class="text-muted fst-italic">Tambahkan ke master terlebih dahulu</small>
                                         @endif
                                     </td>
                                 </tr>

@@ -38,6 +38,18 @@
                     </div>
 
                     <div class="mb-3">
+                        <label for="lokasi_gedung" class="form-label fw-bold">Lokasi Gedung <span class="text-danger">*</span></label>
+                        <select class="form-select @error('lokasi_gedung') is-invalid @enderror" id="lokasi_gedung" name="lokasi_gedung" required>
+                            <option value="">Pilih Lokasi Gedung</option>
+                            <option value="GKN 1" {{ old('lokasi_gedung') == 'GKN 1' ? 'selected' : '' }}>GKN 1</option>
+                            <option value="GKN 2" {{ old('lokasi_gedung') == 'GKN 2' ? 'selected' : '' }}>GKN 2</option>
+                        </select>
+                        @error('lokasi_gedung')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3">
                         <label for="tanggal_lahir" class="form-label fw-bold">Tanggal Lahir <span class="text-danger">*</span></label>
                         <input type="date" class="form-control @error('tanggal_lahir') is-invalid @enderror" id="tanggal_lahir" name="tanggal_lahir" value="{{ old('tanggal_lahir') }}" required>
                         @error('tanggal_lahir')

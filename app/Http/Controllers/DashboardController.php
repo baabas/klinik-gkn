@@ -76,22 +76,73 @@ class DashboardController extends Controller
      */
     private function dashboardPengadaan(): \Illuminate\View\View
     {
-        $permintaanPending = PermintaanBarang::where('status', 'DIAJUKAN')->count();
+        // Statistik permintaan berdasarkan status
+        $permintaanPending = PermintaanBarang::where('status', 'PENDING')->count();
+        $permintaanApproved = PermintaanBarang::where('status', 'APPROVED')->count();
+        $permintaanCompleted = PermintaanBarang::where('status', 'COMPLETED')->count();
+        $permintaanRejected = PermintaanBarang::where('status', 'REJECTED')->count();
+        
+        // Statistik stok
         $stokMenipis = BarangMedis::withSum('stok as stok_sum_jumlah', 'jumlah')
             ->get()->where('stok_sum_jumlah', '<', 50)->count();
         $totalMasterBarang = BarangMedis::count();
-        $permintaanTerbaru = PermintaanBarang::with(['lokasiPeminta'])
-            ->where('status', 'DIAJUKAN')
+        
+        // Permintaan terbaru yang masih pending
+        $permintaanTerbaru = PermintaanBarang::with(['lokasiPeminta', 'userPeminta'])
+            ->where('status', 'PENDING')
             ->latest('tanggal_permintaan')
             ->limit(5)
             ->get();
-       $stokTerendah = BarangMedis::withSum('stok as stok_sum_jumlah', 'jumlah')
+            
+        // Stok terendah dengan informasi kemasan
+        $stokTerendah = BarangMedis::withSum('stok as stok_sum_jumlah', 'jumlah')
             ->get()
             ->sortBy('stok_sum_jumlah')
             ->take(5);
 
+        // Trending barang yang paling sering diminta (bulan ini)
+        $trendingBarang = DB::table('detail_permintaan_barang as dpb')
+            ->join('permintaan_barang as pb', 'dpb.id_permintaan', '=', 'pb.id')
+            ->join('barang_medis as bm', 'dpb.id_barang', '=', 'bm.id_obat')
+            ->whereMonth('pb.tanggal_permintaan', now()->month)
+            ->whereYear('pb.tanggal_permintaan', now()->year)
+            ->whereNotNull('dpb.id_barang')
+            ->select('bm.nama_obat', 'bm.kemasan', DB::raw('SUM(dpb.jumlah_diminta) as total_diminta'))
+            ->groupBy('bm.id_obat', 'bm.nama_obat', 'bm.kemasan')
+            ->orderBy('total_diminta', 'desc')
+            ->limit(5)
+            ->get();
+
+        // Distribusi permintaan per lokasi
+        $distribusiLokasi = DB::table('permintaan_barang as pb')
+            ->join('lokasi_klinik as lk', 'pb.id_lokasi_peminta', '=', 'lk.id')
+            ->select('lk.nama_lokasi', DB::raw('COUNT(pb.id) as jumlah_permintaan'))
+            ->whereMonth('pb.tanggal_permintaan', now()->month)
+            ->whereYear('pb.tanggal_permintaan', now()->year)
+            ->groupBy('lk.id', 'lk.nama_lokasi')
+            ->orderBy('jumlah_permintaan', 'desc')
+            ->get();
+
+        // Statistik permintaan barang baru vs terdaftar
+        $barangTerdaftar = DB::table('detail_permintaan_barang as dpb')
+            ->join('permintaan_barang as pb', 'dpb.id_permintaan', '=', 'pb.id')
+            ->whereNotNull('dpb.id_barang')
+            ->whereMonth('pb.tanggal_permintaan', now()->month)
+            ->whereYear('pb.tanggal_permintaan', now()->year)
+            ->count();
+            
+        $barangBaru = DB::table('detail_permintaan_barang as dpb')
+            ->join('permintaan_barang as pb', 'dpb.id_permintaan', '=', 'pb.id')
+            ->whereNull('dpb.id_barang')
+            ->whereNotNull('dpb.nama_barang_baru')
+            ->whereMonth('pb.tanggal_permintaan', now()->month)
+            ->whereYear('pb.tanggal_permintaan', now()->year)
+            ->count();
+
         return view('dashboard-pengadaan', compact(
-            'permintaanPending', 'stokMenipis', 'totalMasterBarang', 'permintaanTerbaru', 'stokTerendah'
+            'permintaanPending', 'permintaanApproved', 'permintaanCompleted', 'permintaanRejected',
+            'stokMenipis', 'totalMasterBarang', 'permintaanTerbaru', 'stokTerendah',
+            'trendingBarang', 'distribusiLokasi', 'barangTerdaftar', 'barangBaru'
         ));
     }
 
@@ -100,33 +151,56 @@ class DashboardController extends Controller
      */
     private function dashboardDokter(): \Illuminate\View\View
     {
+        $user = Auth::user();
         $bulanIni = now()->month;
         $tahunIni = now()->year;
+        $idLokasi = $user->id_lokasi; // Filter berdasarkan lokasi dokter
 
-        // [DIPERBAIKI] Kueri diubah untuk menggunakan kolom ICD10
+        // [DIPERBAIKI] Kueri diubah untuk menggunakan kolom ICD10 dan filter lokasi melalui dokter
         $data_penyakit = DB::table('detail_diagnosa as dd')
             ->join('daftar_penyakit as dp', 'dd.ICD10', '=', 'dp.ICD10') // Join menggunakan ICD10
             ->join('rekam_medis as rm', 'dd.id_rekam_medis', '=', 'rm.id_rekam_medis')
+            ->join('users as u', 'rm.id_dokter', '=', 'u.id') // Join dengan tabel users untuk filter lokasi
+            ->when($idLokasi, function ($query) use ($idLokasi) {
+                return $query->where('u.id_lokasi', $idLokasi);
+            })
             ->whereMonth('rm.tanggal_kunjungan', $bulanIni)->whereYear('rm.tanggal_kunjungan', $tahunIni)
             ->select('dp.nama_penyakit', DB::raw('COUNT(dd.ICD10) as jumlah')) // Count menggunakan ICD10
             ->groupBy('dp.nama_penyakit')->orderBy('jumlah', 'desc')->limit(5)->get();
 
         $total_kasus_penyakit = DB::table('detail_diagnosa as dd')
             ->join('rekam_medis as rm', 'dd.id_rekam_medis', '=', 'rm.id_rekam_medis')
+            ->join('users as u', 'rm.id_dokter', '=', 'u.id') // Join dengan tabel users untuk filter lokasi
+            ->when($idLokasi, function ($query) use ($idLokasi) {
+                return $query->where('u.id_lokasi', $idLokasi);
+            })
             ->whereMonth('rm.tanggal_kunjungan', $bulanIni)->whereYear('rm.tanggal_kunjungan', $tahunIni)->count();
 
         $data_obat = DB::table('resep_obat as ro')
             ->join('barang_medis as bm', 'ro.id_obat', '=', 'bm.id_obat')
             ->join('rekam_medis as rm', 'ro.id_rekam_medis', '=', 'rm.id_rekam_medis')
+            ->join('users as u', 'rm.id_dokter', '=', 'u.id') // Join dengan tabel users untuk filter lokasi
+            ->when($idLokasi, function ($query) use ($idLokasi) {
+                return $query->where('u.id_lokasi', $idLokasi);
+            })
             ->whereMonth('rm.tanggal_kunjungan', $bulanIni)->whereYear('rm.tanggal_kunjungan', $tahunIni)
             ->select('bm.nama_obat', DB::raw('SUM(ro.jumlah) as jumlah')) // Menggunakan `jumlah` sesuai migrasi resep_obat
             ->groupBy('bm.nama_obat')->orderBy('jumlah', 'desc')->limit(5)->get();
 
         $total_pemakaian_obat = DB::table('resep_obat as ro')
             ->join('rekam_medis as rm', 'ro.id_rekam_medis', '=', 'rm.id_rekam_medis')
+            ->join('users as u', 'rm.id_dokter', '=', 'u.id') // Join dengan tabel users untuk filter lokasi
+            ->when($idLokasi, function ($query) use ($idLokasi) {
+                return $query->where('u.id_lokasi', $idLokasi);
+            })
             ->whereMonth('rm.tanggal_kunjungan', $bulanIni)->whereYear('rm.tanggal_kunjungan', $tahunIni)->sum('ro.jumlah'); // Menggunakan `jumlah`
 
-        $kasus_hari_ini = DB::table('rekam_medis')->whereDate('tanggal_kunjungan', today())->count();
+        $kasus_hari_ini = DB::table('rekam_medis as rm')
+            ->join('users as u', 'rm.id_dokter', '=', 'u.id') // Join dengan tabel users untuk filter lokasi
+            ->when($idLokasi, function ($query) use ($idLokasi) {
+                return $query->where('u.id_lokasi', $idLokasi);
+            })
+            ->whereDate('tanggal_kunjungan', today())->count();
 
         return view('dashboard', compact(
             'data_penyakit', 'total_kasus_penyakit', 'data_obat', 'total_pemakaian_obat', 'kasus_hari_ini'

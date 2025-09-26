@@ -10,8 +10,19 @@ class DaftarPenyakit extends Model
     use HasFactory;
 
     protected $table = 'daftar_penyakit';
-    protected $primaryKey = 'kode_penyakit';
+    protected $primaryKey = 'ICD10';
     public $incrementing = false;
     protected $keyType = 'string';
-    public $timestamps = false;
+    public $timestamps = true;
+
+    protected $fillable = [
+        'ICD10',
+        'nama_penyakit'
+    ];
+
+    // Relationship with DetailDiagnosa
+    public function detailDiagnosa()
+    {
+        return $this->hasMany(DetailDiagnosa::class, 'ICD10', 'ICD10');
+    }
 }

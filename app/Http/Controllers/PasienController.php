@@ -12,7 +12,7 @@ class PasienController extends Controller
     {
         $search = $request->input('search');
 
-        $pasien = User::whereHas('roles', fn($q) => $q->where('name', 'PASIEN'))
+        $pasien = User::where('akses', 'PASIEN')
             ->when($search, function ($query, $search) {
                 return $query->where('nama_karyawan', 'like', "%{$search}%")
                              ->orWhere('nip', 'like', "%{$search}%")
@@ -23,6 +23,42 @@ class PasienController extends Controller
             ->paginate(10);
 
         return view('pasien.index', compact('pasien'));
+    }
+
+    public function searchPasien(Request $request)
+    {
+        $query = $request->get('q');
+        
+        if (strlen($query) < 2) {
+            return response()->json(['success' => false, 'data' => []]);
+        }
+
+        $pasien = User::where('akses', 'PASIEN')
+            ->where(function($q) use ($query) {
+                $q->where('nama_karyawan', 'like', "%{$query}%")
+                  ->orWhere('nip', 'like', "%{$query}%")
+                  ->orWhere('nik', 'like', "%{$query}%");
+            })
+            ->with('karyawan', 'nonKaryawan')
+            ->limit(10)
+            ->get()
+            ->map(function($item) {
+                return [
+                    'id' => $item->nip ?? $item->nik,
+                    'nama' => $item->nama_karyawan,
+                    'identifier' => $item->nip ?? $item->nik,
+                    'type' => $item->karyawan ? 'karyawan' : 'non-karyawan',
+                    'tanggal_lahir' => $item->karyawan?->tanggal_lahir ?? $item->nonKaryawan?->tanggal_lahir,
+                    'url' => $item->karyawan 
+                        ? route('pasien.show', $item->nip) 
+                        : route('pasien.show_non_karyawan', $item->nik)
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $pasien
+        ]);
     }
 
     /**

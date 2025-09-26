@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\BarangMedis;
 use App\Models\PermintaanBarang;
+use App\Models\PendingStokMasuk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use App\Models\StokBarang;      // [BARU] Tambahkan model ini
-use App\Models\StokHistory;     // [BARU] Tambahkan model ini
+use App\Models\StokBarang;
+use App\Models\StokHistory;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PermintaanBarangController extends Controller
 {
@@ -56,16 +58,10 @@ class PermintaanBarangController extends Controller
             'barang' => 'nullable|array',
             'barang.*.id' => 'required_with:barang|exists:barang_medis,id_obat',
             'barang.*.jumlah' => 'required_with:barang|integer|min:1',
-            'barang.*.satuan' => 'required_with:barang|string|max:100',
-            'barang.*.kemasan' => 'nullable|string|max:150',
-            'barang.*.catatan' => 'nullable|string|max:255',
             // Validasi untuk request barang baru yang belum ada di database
             'barang_baru' => 'nullable|array',
             'barang_baru.*.nama' => 'required_with:barang_baru|string|max:255',
             'barang_baru.*.jumlah' => 'required_with:barang_baru|integer|min:1',
-            'barang_baru.*.satuan' => 'required_with:barang_baru|string|max:100',
-            'barang_baru.*.kemasan' => 'nullable|string|max:150',
-            'barang_baru.*.catatan' => 'nullable|string|max:255',
         ]);
 
         // Pastikan setidaknya ada satu item yang diminta
@@ -90,16 +86,11 @@ class PermintaanBarangController extends Controller
             if ($request->has('barang')) {
                 foreach ($request->barang as $item) {
                     if(!empty($item['id']) && !empty($item['jumlah'])) {
-                        $satuanDiminta = isset($item['satuan']) ? trim($item['satuan']) : null;
-                        $kemasanDiminta = isset($item['kemasan']) && $item['kemasan'] !== '' ? trim($item['kemasan']) : null;
-                        $catatanBarang = isset($item['catatan']) && $item['catatan'] !== '' ? trim($item['catatan']) : null;
-
                         $permintaan->detail()->create([
                             'id_barang' => $item['id'],
                             'jumlah_diminta' => $item['jumlah'],
-                            'satuan_diminta' => $satuanDiminta,
-                            'kemasan_diminta' => $kemasanDiminta,
-                            'catatan' => $catatanBarang,
+                            'kemasan_diminta' => 'Box', // Fixed kemasan as Box
+                            'catatan' => null, // Catatan dikosongkan untuk barang terdaftar
                         ]);
                     }
                 }
@@ -109,17 +100,13 @@ class PermintaanBarangController extends Controller
             if ($request->has('barang_baru')) {
                 foreach ($request->barang_baru as $item) {
                      if(!empty($item['nama']) && !empty($item['jumlah'])) {
-                        $satuanBaru = isset($item['satuan']) ? trim($item['satuan']) : null;
-                        $kemasanBaru = isset($item['kemasan']) && $item['kemasan'] !== '' ? trim($item['kemasan']) : null;
-                        $catatanBaru = isset($item['catatan']) && $item['catatan'] !== '' ? trim($item['catatan']) : null;
                         $permintaan->detail()->create([
                             'id_barang' => null, // ID barang dikosongkan karena barang baru
                             'jumlah_diminta' => $item['jumlah'],
                             'nama_barang_baru' => $item['nama'],
-                            'tipe_barang_baru' => $item['tipe'] ?? null,
-                            'satuan_barang_baru' => $satuanBaru,
-                            'kemasan_barang_baru' => $kemasanBaru,
-                            'catatan_barang_baru' => $catatanBaru,
+                            'tipe_barang_baru' => null,
+                            'kemasan_barang_baru' => 'Box', // Fixed kemasan as Box
+                            'catatan_barang_baru' => null, // Catatan dikosongkan
                         ]);
                     }
                 }
@@ -218,46 +205,55 @@ class PermintaanBarangController extends Controller
      */
     public function konfirmasiPenerimaan(PermintaanBarang $permintaan)
     {
-        // Validasi: hanya permintaan yang disetujui ('APPROVED') yang bisa diproses
-        if ($permintaan->status !== 'APPROVED') {
-            return redirect()->back()->with('error', 'Hanya permintaan yang berstatus DISETUJUI yang dapat dikonfirmasi.');
+        // Validasi: hanya permintaan yang sedang diproses ('PROCESSING') yang bisa dikonfirmasi
+        if ($permintaan->status !== 'PROCESSING') {
+            return redirect()->back()->with('error', 'Hanya permintaan yang berstatus SEDANG DIPROSES yang dapat dikonfirmasi.');
         }
 
         try {
             DB::transaction(function () use ($permintaan) {
                 $lokasiTujuan = $permintaan->id_lokasi_peminta;
 
-                // Loop melalui setiap item dalam detail permintaan
-                foreach ($permintaan->detail as $detail) {
-                    // Hanya proses item yang memiliki id_barang dan jumlah disetujui > 0
-                    if ($detail->id_barang && $detail->jumlah_disetujui > 0) {
-                        $barangId = $detail->id_barang;
-                        $jumlahDiterima = $detail->jumlah_disetujui;
+                // Ambil semua pending stok masuk untuk permintaan ini
+                $pendingStoks = PendingStokMasuk::where('id_permintaan', $permintaan->id)->get();
 
-                        // 1. Tambah stok di lokasi tujuan (lokasi dokter)
-                        $stokTujuan = StokBarang::firstOrCreate(
-                            ['id_barang' => $barangId, 'id_lokasi' => $lokasiTujuan],
-                            ['jumlah' => 0]
-                        );
-
-                        $stokSebelum = $stokTujuan->jumlah;
-                        $stokTujuan->increment('jumlah', $jumlahDiterima);
-
-                        // 2. Catat riwayat penambahan stok
-                        StokHistory::create([
-                            'id_barang' => $barangId,
-                            'id_lokasi' => $lokasiTujuan,
-                            'perubahan' => $jumlahDiterima,
-                            'stok_sebelum' => $stokSebelum,
-                            'stok_sesudah' => $stokTujuan->jumlah,
-                            'keterangan' => 'Penerimaan barang dari permintaan ' . $permintaan->kode_permintaan,
-                            'tanggal_transaksi' => now()->toDateString(),
-                            'user_id' => Auth::id(),
-                        ]);
-                    }
+                if ($pendingStoks->isEmpty()) {
+                    throw new \Exception('Tidak ada data barang masuk yang dapat dikonfirmasi.');
                 }
 
-                // 3. Update status permintaan menjadi 'COMPLETED' (DITERIMA/SELESAI)
+                // Loop melalui setiap pending stok masuk
+                foreach ($pendingStoks as $pending) {
+                    // 1. Tambah stok di lokasi tujuan (lokasi dokter)
+                    $stokTujuan = StokBarang::firstOrCreate(
+                        ['id_barang' => $pending->id_barang, 'id_lokasi' => $lokasiTujuan],
+                        ['jumlah' => 0]
+                    );
+
+                    $stokSebelum = $stokTujuan->jumlah;
+                    $jumlahSatuanTerkecil = $pending->total_satuan_terkecil;
+                    $stokTujuan->increment('jumlah', $jumlahSatuanTerkecil);
+
+                    // 2. Catat riwayat penambahan stok
+                    StokHistory::create([
+                        'id_barang' => $pending->id_barang,
+                        'id_lokasi' => $lokasiTujuan,
+                        'perubahan' => $jumlahSatuanTerkecil,
+                        'stok_sebelum' => $stokSebelum,
+                        'stok_sesudah' => $stokTujuan->jumlah,
+                        'keterangan' => 'Penerimaan barang dari permintaan ' . $permintaan->kode_permintaan,
+                        'tanggal_transaksi' => $pending->tanggal_masuk,
+                        'expired_at' => $pending->expired_at,
+                        'jumlah_kemasan' => $pending->jumlah_kemasan,
+                        'isi_per_kemasan' => $pending->isi_per_kemasan,
+                        'satuan_kemasan' => $pending->satuan_kemasan,
+                        'user_id' => Auth::id(),
+                    ]);
+
+                    // 3. Hapus data pending setelah diproses
+                    $pending->delete();
+                }
+
+                // 4. Update status permintaan menjadi 'COMPLETED' (DITERIMA/SELESAI)
                 $permintaan->update(['status' => 'COMPLETED']);
             });
         } catch (\Exception $e) {
@@ -265,5 +261,33 @@ class PermintaanBarangController extends Controller
         }
 
         return redirect()->route('permintaan.show', $permintaan->id)->with('success', 'Permintaan barang telah berhasil diselesaikan.');
+    }
+
+    /**
+     * Generate PDF untuk rincian obat yang diminta
+     */
+    public function printPdf(PermintaanBarang $permintaan)
+    {
+        // Pastikan permintaan sudah berstatus COMPLETED (DITERIMA)
+        if ($permintaan->status !== 'COMPLETED') {
+            return redirect()->back()->with('error', 'PDF hanya dapat dicetak untuk permintaan yang sudah DITERIMA.');
+        }
+
+        // Load relasi yang diperlukan beserta stok histories untuk mendapatkan tanggal masuk dan expired
+        $permintaan->load([
+            'detail.barangMedis.stokHistories' => function($query) use ($permintaan) {
+                $query->where('id_lokasi', $permintaan->id_lokasi_peminta)
+                      ->where('perubahan', '>', 0) // Hanya transaksi masuk
+                      ->orderBy('tanggal_transaksi', 'desc');
+            },
+            'userPeminta', 
+            'lokasiPeminta'
+        ]);
+
+        $pdf = Pdf::loadView('permintaan.pdf-rincian', compact('permintaan'));
+        
+        $filename = 'Rincian_Permintaan_' . $permintaan->kode_permintaan . '.pdf';
+        
+        return $pdf->download($filename);
     }
 }

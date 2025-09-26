@@ -16,12 +16,10 @@ class DetailPermintaanBarang extends Model
         'id_barang',
         'jumlah_diminta',
         'jumlah_disetujui',
-        'satuan_diminta',
         'kemasan_diminta',
         'catatan',
         'nama_barang_baru',
         'tipe_barang_baru',
-        'satuan_barang_baru',
         'kemasan_barang_baru',
         'catatan_barang_baru',
     ];

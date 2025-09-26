@@ -8,6 +8,16 @@
     <style>
         .card-header { background-color: #f8f9fa; }
         .form-section-title { font-weight: 600; color: var(--bs-primary); }
+        .dropdown-results, .obat-dropdown-results {
+            border-radius: 0 0 0.375rem 0.375rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .dropdown-item-custom:hover, .obat-dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+        .dropdown-item-custom:last-child, .obat-dropdown-item:last-child {
+            border-bottom: none !important;
+        }
     </style>
 @endpush
 
@@ -53,8 +63,9 @@
                             <div class="col-sm-3">
                                 <input type="text" name="diagnosa[0][kode_penyakit]" class="form-control icd10-input" placeholder="Ketik Kode ICD-10">
                             </div>
-                            <div class="col-sm-8">
-                                <input type="text" class="form-control nama-penyakit-output" placeholder="Nama Penyakit (otomatis)" readonly style="background-color: #e9ecef;">
+                            <div class="col-sm-8 position-relative">
+                                <input type="text" class="form-control nama-penyakit-search" placeholder="Nama Penyakit (otomatis)">
+                                <div class="dropdown-results position-absolute w-100" style="z-index: 1050; max-height: 200px; overflow-y: auto; background: white; border: 1px solid #ddd; border-top: none; display: none;"></div>
                             </div>
                             <div class="col-sm-1 text-end">
                                 </div>
@@ -63,6 +74,10 @@
                     <button type="button" id="add-diagnosa" class="btn btn-sm btn-outline-success mt-2">
                         <i class="bi bi-plus-circle"></i> Tambah Diagnosa
                     </button>
+                    <div class="small text-muted mt-2">
+                        <i class="bi bi-info-circle"></i> 
+                        Anda dapat mengetik kode ICD-10 untuk mendapatkan nama penyakit otomatis, atau mencari berdasarkan nama penyakit di kolom sebelah kanan.
+                    </div>
                     @error('diagnosa.*.kode_penyakit') <div class="text-danger small mt-2">{{ $message }}</div> @enderror
                 </div>
             </div>
@@ -139,30 +154,105 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
-            // --- FUNGSI AUTOCOMPLETE ICD-10 ---
+            let searchTimeout;
+            
+            // --- FUNGSI AUTOCOMPLETE ICD-10 (Code lookup with debounce) ---
+            let icd10SearchTimeout;
             $('#diagnosa-container').on('keyup', '.icd10-input', function() {
                 let icd10Input = $(this);
-                let namaPenyakitOutput = icd10Input.closest('.diagnosa-entry').find('.nama-penyakit-output');
+                let namaPenyakitSearch = icd10Input.closest('.diagnosa-entry').find('.nama-penyakit-search');
                 let query = icd10Input.val();
 
-                if (query.length >= 2) {
-                    $.ajax({
-                        url: `{{ url('/api/penyakit') }}/${query}`,
-                        type: 'GET',
-                        success: function(data) {
-                            if (data.success) {
-                                namaPenyakitOutput.val(data.nama_penyakit);
-                                icd10Input.val(data.kode_penyakit);
-                            } else {
-                                namaPenyakitOutput.val('Kode tidak ditemukan');
+                // Clear previous timeout
+                clearTimeout(icd10SearchTimeout);
+
+                if (query.length >= 3) { // Changed from 2 to 3 characters to be less aggressive
+                    // Debounce: wait 500ms before searching to allow user to complete typing
+                    icd10SearchTimeout = setTimeout(function() {
+                        $.ajax({
+                            url: `{{ url('/api/penyakit') }}/${query}`,
+                            type: 'GET',
+                            success: function(data) {
+                                if (data.success) {
+                                    // Only auto-fill if the returned code exactly matches what user typed
+                                    // This prevents J9 from being auto-filled to J90
+                                    if (data.kode_penyakit.toLowerCase().startsWith(query.toLowerCase())) {
+                                        namaPenyakitSearch.val(data.nama_penyakit);
+                                        // Don't auto-change the user's input, just show the disease name
+                                    }
+                                } else {
+                                    namaPenyakitSearch.val('');
+                                }
+                            },
+                            error: function() {
+                                namaPenyakitSearch.val('');
                             }
-                        },
-                        error: function() {
-                            namaPenyakitOutput.val('Gagal memuat data');
-                        }
-                    });
+                        });
+                    }, 500); // Increased debounce time to 500ms
                 } else {
-                    namaPenyakitOutput.val('');
+                    namaPenyakitSearch.val('');
+                }
+            });
+
+            // --- FUNGSI SEARCH BY NAME (Name search with debounce) ---
+            $('#diagnosa-container').on('keyup', '.nama-penyakit-search', function() {
+                let namaPenyakitSearch = $(this);
+                let icd10Input = namaPenyakitSearch.closest('.diagnosa-entry').find('.icd10-input');
+                let dropdownResults = namaPenyakitSearch.closest('.col-sm-8').find('.dropdown-results');
+                let query = namaPenyakitSearch.val();
+
+                // Clear previous timeout
+                clearTimeout(searchTimeout);
+                
+                if (query.length >= 2) {
+                    // Debounce: wait 300ms before searching
+                    searchTimeout = setTimeout(function() {
+                        $.ajax({
+                            url: `{{ url('/api/penyakit-search') }}`,
+                            type: 'GET',
+                            data: { q: query },
+                            success: function(data) {
+                                if (data.success && data.data.length > 0) {
+                                    let resultsHtml = '';
+                                    data.data.forEach(function(penyakit) {
+                                        resultsHtml += `
+                                            <div class="dropdown-item-custom p-2 border-bottom" style="cursor: pointer;" 
+                                                 data-code="${penyakit.kode_penyakit}" data-name="${penyakit.nama_penyakit}">
+                                                <strong>${penyakit.kode_penyakit}</strong> - ${penyakit.nama_penyakit}
+                                            </div>
+                                        `;
+                                    });
+                                    dropdownResults.html(resultsHtml).show();
+                                } else {
+                                    dropdownResults.html('<div class="p-2 text-muted">Tidak ditemukan</div>').show();
+                                }
+                            },
+                            error: function() {
+                                dropdownResults.html('<div class="p-2 text-danger">Gagal memuat data</div>').show();
+                            }
+                        });
+                    }, 300);
+                } else {
+                    dropdownResults.hide();
+                }
+            });
+
+            // --- HANDLE DROPDOWN SELECTION ---
+            $('#diagnosa-container').on('click', '.dropdown-item-custom', function() {
+                let selectedItem = $(this);
+                let code = selectedItem.data('code');
+                let name = selectedItem.data('name');
+                
+                let entry = selectedItem.closest('.diagnosa-entry');
+                entry.find('.icd10-input').val(code);
+                entry.find('.nama-penyakit-search').val(name);
+                entry.find('.dropdown-results').hide();
+            });
+
+            // --- HIDE DROPDOWN ON OUTSIDE CLICK ---
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('.nama-penyakit-search, .dropdown-results').length) {
+                    $('.dropdown-results').hide();
                 }
             });
 
@@ -174,8 +264,9 @@
                         <div class="col-sm-3">
                             <input type="text" name="diagnosa[${diagnosaIndex}][kode_penyakit]" class="form-control icd10-input" placeholder="Ketik Kode ICD-10">
                         </div>
-                        <div class="col-sm-8">
-                            <input type="text" class="form-control nama-penyakit-output" placeholder="Nama Penyakit (otomatis)" readonly style="background-color: #e9ecef;">
+                        <div class="col-sm-8 position-relative">
+                            <input type="text" class="form-control nama-penyakit-search" placeholder="Nama Penyakit (otomatis)">
+                            <div class="dropdown-results position-absolute w-100" style="z-index: 1050; max-height: 200px; overflow-y: auto; background: white; border: 1px solid #ddd; border-top: none; display: none;"></div>
                         </div>
                         <div class="col-sm-1 text-end">
                             <button type="button" class="btn btn-sm btn-outline-danger remove-diagnosa"><i class="bi bi-x-lg"></i></button>
@@ -190,21 +281,15 @@
 
             // --- FUNGSI TAMBAH RESEP OBAT ---
             let resepIndex = 0;
-            const obatList = @json($obat);
+            let obatSearchTimeout;
 
             function addResepRow() {
-                const options = obatList.length > 0
-                    ? obatList.map(o => `<option value="${o.id_obat}">${o.nama_obat} (stok: ${o.stok[0] ? o.stok[0].jumlah : 0})</option>`).join('')
-                    : '<option value="">Tidak ada obat tersedia</option>';
-                
-                // [PERBAIKAN] Input 'aturan_pakai' dihapus
                 const newResep = `
                     <div class="row g-2 mb-2 align-items-center resep-entry" id="resep-entry-${resepIndex}">
-                        <div class="col-sm-8">
-                            <select name="obat[${resepIndex}][id_obat]" class="form-select select-obat" data-placeholder="Pilih Obat..." required>
-                                <option></option>
-                                ${options}
-                            </select>
+                        <div class="col-sm-8 position-relative">
+                            <input type="hidden" name="obat[${resepIndex}][id_obat]" class="obat-id-input" required>
+                            <input type="text" class="form-control obat-search-input" placeholder="Cari nama atau kode obat..." autocomplete="off">
+                            <div class="obat-dropdown-results position-absolute w-100" style="z-index: 1050; max-height: 200px; overflow-y: auto; background: white; border: 1px solid #ddd; border-top: none; display: none;"></div>
                         </div>
                         <div class="col-sm-3">
                             <input type="number" name="obat[${resepIndex}][jumlah]" class="form-control" placeholder="Qty" min="1" required>
@@ -215,17 +300,78 @@
                     </div>
                 `;
                 $('#resep-obat-container').append(newResep);
-                $(`#resep-entry-${resepIndex} .select-obat`).select2({ theme: 'bootstrap-5' });
                 resepIndex++;
             }
 
-            if (obatList.length === 0) {
-                $('#resep-obat-container').html('<div class="alert alert-warning">Tidak ada obat yang tersedia di lokasi Anda.</div>');
-                $('#add-resep').prop('disabled', true);
-            } else {
-                addResepRow();
-                $('#add-resep').on('click', addResepRow);
-            }
+            // Initialize first medicine row
+            addResepRow();
+            $('#add-resep').on('click', addResepRow);
+            
+            // --- FUNGSI SEARCH OBAT DENGAN DEBOUNCE ---
+            $('#resep-obat-container').on('keyup', '.obat-search-input', function() {
+                let obatSearchInput = $(this);
+                let obatIdInput = obatSearchInput.closest('.resep-entry').find('.obat-id-input');
+                let dropdownResults = obatSearchInput.closest('.col-sm-8').find('.obat-dropdown-results');
+                let query = obatSearchInput.val();
+
+                // Clear previous timeout
+                clearTimeout(obatSearchTimeout);
+                
+                if (query.length >= 2) {
+                    // Debounce: wait 300ms before searching
+                    obatSearchTimeout = setTimeout(function() {
+                        $.ajax({
+                            url: `{{ url('/api/obat-search') }}`,
+                            type: 'GET',
+                            data: { q: query },
+                            success: function(data) {
+                                if (data.success && data.data.length > 0) {
+                                    let resultsHtml = '';
+                                    data.data.forEach(function(obat) {
+                                        resultsHtml += `
+                                            <div class="obat-dropdown-item p-2 border-bottom" style="cursor: pointer;" 
+                                                 data-id="${obat.id_obat}" data-name="${obat.nama_obat}" data-code="${obat.kode_obat}" data-stok="${obat.stok}">
+                                                <strong>${obat.nama_obat}</strong> 
+                                                <div class="text-muted small">Kode: ${obat.kode_obat} | Stok: ${obat.stok}</div>
+                                            </div>
+                                        `;
+                                    });
+                                    dropdownResults.html(resultsHtml).show();
+                                } else {
+                                    dropdownResults.html('<div class="p-2 text-muted">Tidak ditemukan obat</div>').show();
+                                }
+                            },
+                            error: function() {
+                                dropdownResults.html('<div class="p-2 text-danger">Gagal memuat data</div>').show();
+                            }
+                        });
+                    }, 300);
+                } else {
+                    dropdownResults.hide();
+                    obatIdInput.val('');
+                }
+            });
+
+            // --- HANDLE MEDICINE DROPDOWN SELECTION ---
+            $('#resep-obat-container').on('click', '.obat-dropdown-item', function() {
+                let selectedItem = $(this);
+                let id = selectedItem.data('id');
+                let name = selectedItem.data('name');
+                let code = selectedItem.data('code');
+                let stok = selectedItem.data('stok');
+                
+                let entry = selectedItem.closest('.resep-entry');
+                entry.find('.obat-id-input').val(id);
+                entry.find('.obat-search-input').val(name + ' (Stok: ' + stok + ')');
+                entry.find('.obat-dropdown-results').hide();
+            });
+
+            // --- HIDE MEDICINE DROPDOWN ON OUTSIDE CLICK ---
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('.obat-search-input, .obat-dropdown-results').length) {
+                    $('.obat-dropdown-results').hide();
+                }
+            });
             
             $('#resep-obat-container').on('click', '.remove-resep', function() {
                 $(this).closest('.resep-entry').remove();

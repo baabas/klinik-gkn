@@ -1,7 +1,7 @@
 @extends('layouts.sidebar-layout')
 
 @section('content')
-    <h1 class="h2 mb-4">Buat Permintaan Obat Baru</h1>
+    <h1 class="h2 mb-4">Buat Permintaan Barang Baru</h1>
 
     <div class="card shadow-sm">
         <div class="card-body">
@@ -36,33 +36,33 @@
                 <hr>
 
                 {{-- Bagian Detail Barang --}}
-                <h5 class="mb-3">Detail Obat</h5>
+                <h5 class="mb-3">Detail Barang</h5>
 
                 {{-- 1. Barang yang Sudah Terdaftar --}}
                 <div class="card mb-4">
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                        Obat Terdaftar
+                        Barang Terdaftar
                         <button type="button" class="btn btn-sm btn-outline-primary" id="add-barang-btn">
                             <i class="bi bi-plus-circle"></i> Tambah
                         </button>
                     </div>
                     <div class="card-body" id="barang-terdaftar-wrapper">
                         {{-- Baris akan ditambahkan oleh JavaScript --}}
-                        <p class="text-muted mb-0" id="barang-terdaftar-placeholder">Belum ada Obat terdaftar yang ditambahkan.</p>
+                        <p class="text-muted mb-0" id="barang-terdaftar-placeholder">Belum ada Barang terdaftar yang ditambahkan.</p>
                     </div>
                 </div>
 
                 {{-- 2. Request Barang Baru --}}
                 <div class="card">
                      <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                        Request Obat Baru
+                        Request Barang Baru
                         <button type="button" class="btn btn-sm btn-outline-success" id="add-barang-baru-btn">
                             <i class="bi bi-plus-circle"></i> Tambah
                         </button>
                     </div>
                     <div class="card-body" id="barang-baru-wrapper">
                         {{-- Baris akan ditambahkan oleh JavaScript --}}
-                        <p class="text-muted mb-0" id="barang-baru-placeholder">Belum ada request Obat baru.</p>
+                        <p class="text-muted mb-0" id="barang-baru-placeholder">Belum ada request Barang baru.</p>
                     </div>
                 </div>
 
@@ -76,7 +76,17 @@
     </div>
 @endsection
 
+@push('styles')
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+@endpush
+
 @push('scripts')
+<!-- jQuery (required for Select2) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     let barangIndex = 0;
@@ -95,26 +105,35 @@ document.addEventListener('DOMContentLoaded', function () {
         const newRow = document.createElement('div');
         newRow.classList.add('row', 'g-2', 'align-items-center', 'mb-3', 'barang-row');
         newRow.innerHTML = `
-            <div class="col-md-3">
-                <select class="form-select barang-select" name="barang[${barangIndex}][id]" required>
+            <div class="col-md-6">
+                <label class="form-label">Nama Barang</label>
+                <select class="form-select barang-select select2-dropdown" name="barang[${barangIndex}][id]" required>
                     ${selectOptions}
                 </select>
             </div>
-            <div class="col-md-2">
-                <input type="number" class="form-control" name="barang[${barangIndex}][jumlah]" placeholder="Jumlah" min="1" required>
+            <div class="col-md-5">
+                <label class="form-label">Jumlah Kemasan</label>
+                <div class="input-group">
+                    <input type="number" class="form-control" name="barang[${barangIndex}][jumlah]" placeholder="Jumlah" min="1" required>
+                    <span class="input-group-text">Box</span>
+                </div>
             </div>
-            <div class="col-md-2">
-                <input type="text" class="form-control satuan-input" name="barang[${barangIndex}][satuan]" placeholder="Satuan" required>
+            <div class="col-md-1 text-end">
+                <label class="form-label">&nbsp;</label>
+                <button type="button" class="btn btn-danger btn-sm remove-row-btn d-block"><i class="bi bi-trash"></i></button>
             </div>
-            <div class="col-md-2">
-                <input type="text" class="form-control kemasan-input" name="barang[${barangIndex}][kemasan]" placeholder="Kemasan (opsional)">
-            </div>
-            <div class="col-md-2">
-                <input type="text" class="form-control catatan-input" name="barang[${barangIndex}][catatan]" placeholder="Keterangan (opsional)">
-            </div>
-            <div class="col-md-1 text-end"><button type="button" class="btn btn-danger btn-sm remove-row-btn"><i class="bi bi-trash"></i></button></div>
         `;
         barangWrapper.appendChild(newRow);
+        
+        // Initialize Select2 on the new dropdown
+        const newSelect = newRow.querySelector('.select2-dropdown');
+        $(newSelect).select2({
+            theme: 'bootstrap-5',
+            placeholder: '-- Pilih Barang --',
+            allowClear: true,
+            width: '100%'
+        });
+        
         barangIndex++;
     });
 
@@ -124,12 +143,21 @@ document.addEventListener('DOMContentLoaded', function () {
         const newRow = document.createElement('div');
         newRow.classList.add('row', 'g-2', 'align-items-center', 'mb-3', 'barang-row');
         newRow.innerHTML = `
-            <div class="col-md-3"><input type="text" class="form-control" name="barang_baru[${barangBaruIndex}][nama]" placeholder="Nama Barang Baru" required></div>
-            <div class="col-md-2"><input type="number" class="form-control" name="barang_baru[${barangBaruIndex}][jumlah]" placeholder="Jumlah" min="1" required></div>
-            <div class="col-md-2"><input type="text" class="form-control" name="barang_baru[${barangBaruIndex}][satuan]" placeholder="Satuan" required></div>
-            <div class="col-md-2"><input type="text" class="form-control" name="barang_baru[${barangBaruIndex}][kemasan]" placeholder="Kemasan (opsional)"></div>
-            <div class="col-md-2"><input type="text" class="form-control" name="barang_baru[${barangBaruIndex}][catatan]" placeholder="Keterangan (opsional)"></div>
-            <div class="col-md-1 text-end"><button type="button" class="btn btn-danger btn-sm remove-row-btn"><i class="bi bi-trash"></i></button></div>
+            <div class="col-md-6">
+                <label class="form-label">Nama Barang Baru</label>
+                <input type="text" class="form-control" name="barang_baru[${barangBaruIndex}][nama]" placeholder="Nama Barang Baru" required>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Jumlah Kemasan</label>
+                <div class="input-group">
+                    <input type="number" class="form-control" name="barang_baru[${barangBaruIndex}][jumlah]" placeholder="Jumlah" min="1" required>
+                    <span class="input-group-text">Box</span>
+                </div>
+            </div>
+            <div class="col-md-1 text-end">
+                <label class="form-label">&nbsp;</label>
+                <button type="button" class="btn btn-danger btn-sm remove-row-btn d-block"><i class="bi bi-trash"></i></button>
+            </div>
         `;
         barangBaruWrapper.appendChild(newRow);
         barangBaruIndex++;
@@ -137,7 +165,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.addEventListener('click', function(e) {
         if (e.target && e.target.closest('.remove-row-btn')) {
-            e.target.closest('.barang-row').remove();
+            const row = e.target.closest('.barang-row');
+            
+            // Destroy Select2 instance before removing the row
+            const select2Element = row.querySelector('.select2-dropdown');
+            if (select2Element && $(select2Element).hasClass('select2-hidden-accessible')) {
+                $(select2Element).select2('destroy');
+            }
+            
+            row.remove();
 
             if (barangWrapper.querySelectorAll('.barang-row').length === 0 && barangPlaceholder) {
                 barangPlaceholder.style.display = 'block';
@@ -148,38 +184,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    function isiDataBarang(selectElement) {
-        if (!selectElement) {
-            return;
-        }
 
-        const selectedOption = selectElement.options[selectElement.selectedIndex];
-        if (!selectedOption) {
-            return;
-        }
-
-        const row = selectElement.closest('.barang-row');
-        if (!row) {
-            return;
-        }
-
-        const satuanInput = row.querySelector('.satuan-input');
-        const kemasanInput = row.querySelector('.kemasan-input');
-
-        if (satuanInput && selectedOption.dataset.satuan !== undefined) {
-            satuanInput.value = selectedOption.dataset.satuan || '';
-        }
-
-        if (kemasanInput && selectedOption.dataset.kemasan !== undefined) {
-            kemasanInput.value = selectedOption.dataset.kemasan || '';
-        }
-    }
-
-    document.addEventListener('change', function(e) {
-        if (e.target && e.target.classList.contains('barang-select')) {
-            isiDataBarang(e.target);
-        }
-    });
 });
 </script>
 @endpush

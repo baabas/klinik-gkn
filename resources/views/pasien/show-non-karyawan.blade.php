@@ -53,7 +53,8 @@
                     </p>
                 </div>
                 <div class="col-md-6">
-                    <p class="mb-0"><strong>Alamat:</strong><br> {{ $pasien->nonKaryawan->alamat ?? '-' }}</p>
+                    <p><strong>Alamat:</strong><br> {{ $pasien->nonKaryawan->alamat ?? '-' }}</p>
+                    <p class="mb-0"><strong>Lokasi Gedung:</strong><br> {{ $pasien->nonKaryawan->lokasi_gedung ?? '-' }}</p>
                 </div>
             </div>
         @else

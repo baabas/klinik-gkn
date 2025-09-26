@@ -17,33 +17,33 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        
+
         $dokterRole = Role::where('name', 'DOKTER')->first();
         $pengadaanRole = Role::where('name', 'PENGADAAN')->first();
 
         $users = [
             [
-                'nip' => '199205202016072002',
-                'nama_karyawan' => 'Ani Lestari',
-                'email' => 'ani.lestari@example.com',
+                'nip' => '111111111111111111',
+                'nama_karyawan' => 'admin',
+                'email' => 'admin@example.com',
                 'password' => Hash::make('12345678'),
                 'akses' => 'DOKTER',
                 'id_lokasi' => 1, // <-- id_lokasi diisi untuk DOKTER
                 'role_id' => $dokterRole->id ?? null,
             ],
             [
-                'nip' => '199901202022032001',
-                'nama_karyawan' => 'Putri Amelia',
-                'email' => 'putri.a@example.com',
+                'nip' => '222222222222222222',
+                'nama_karyawan' => 'admin2',
+                'email' => 'admin2@example.com',
                 'password' => Hash::make('12345678'),
                 'akses' => 'DOKTER',
-                'id_lokasi' => 2, 
+                'id_lokasi' => 2,
                 'role_id' => $dokterRole->id ?? null,
             ],
             [
-                'nip' => '198703152010121001',
-                'nama_karyawan' => 'Budi Santoso',
-                'email' => 'budi.santoso@example.com',
+                'nip' => '333333333333333333',
+                'nama_karyawan' => 'admin3',
+                'email' => 'admin3@example.com',
                 'password' => Hash::make('12345678'),
                 'akses' => 'PENGADAAN',
                 'id_lokasi' => null, // <-- id_lokasi diatur menjadi null untuk PENGADAAN
@@ -63,7 +63,7 @@ class AdminUserSeeder extends Seeder
                     'id_lokasi' => $userData['id_lokasi'], // Menyimpan id_lokasi (bisa null)
                 ]
             );
-            
+
             // Cek jika role ditemukan sebelum menyinkronkan
             if ($userData['role_id']) {
                 $user->roles()->syncWithoutDetaching([$userData['role_id']]);

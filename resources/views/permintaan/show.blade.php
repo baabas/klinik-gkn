@@ -43,6 +43,9 @@
                                 @case('APPROVED')
                                     <span class="badge bg-info">DISETUJUI</span>
                                     @break
+                                @case('PROCESSING')
+                                    <span class="badge bg-primary">SEDANG DIPROSES</span>
+                                    @break
                                 @case('COMPLETED')
                                     <span class="badge bg-success">DITERIMA</span>
                                     @break
@@ -60,7 +63,7 @@
             </div>
 
             {{-- [BARU] Tombol Aksi Konfirmasi Penerimaan untuk Dokter --}}
-            @if(Auth::user()->hasRole('DOKTER') && $permintaan->status == 'APPROVED')
+            @if(Auth::user()->hasRole('DOKTER') && $permintaan->status == 'PROCESSING')
                 <hr>
                 <div class="mt-3 text-center">
                     <p class="mb-2">Barang sudah diterima di lokasi Anda? Klik tombol di bawah untuk menyelesaikan permintaan ini.</p>
@@ -74,13 +77,29 @@
                 </div>
             @endif
 
+            {{-- Tombol untuk PENGADAAN: Input Barang Masuk berdasarkan permintaan ini --}}
+            @if(Auth::user()->hasRole('PENGADAAN') && $permintaan->status == 'APPROVED')
+                <hr>  
+                <div class="mt-3 text-center">
+                    <p class="mb-2">Siap untuk input barang masuk berdasarkan permintaan ini?</p>
+                    <a href="{{ route('barang-masuk.create', ['request_id' => $permintaan->id]) }}" class="btn btn-success">
+                        <i class="bi bi-box-arrow-in-down me-2"></i> Input Barang Masuk
+                    </a>
+                </div>
+            @endif
+
         </div>
     </div>
 
     {{-- CARD 2: DAFTAR BARANG YANG DIMINTA --}}
     <div class="card shadow-sm">
-        <div class="card-header bg-light">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Rincian Obat Diminta</h5>
+            @if($permintaan->status == 'COMPLETED')
+            <a href="{{ route('permintaan.print-pdf', $permintaan->id) }}" class="btn btn-outline-primary btn-sm" target="_blank">
+                <i class="bi bi-printer me-2"></i>Print PDF
+            </a>
+            @endif
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -90,7 +109,6 @@
                             <th>No</th>
                             <th>Kode Obat</th>
                             <th>Nama Obat</th>
-                            <th>Satuan</th>
                             <th>Kemasan</th>
                             <th>Keterangan</th>
                             <th class="text-center">Jumlah Diminta</th>
@@ -119,16 +137,9 @@
                                 </td>
                                 <td>
                                     @if ($item->id_barang)
-                                        {{ $item->satuan_diminta ?? $item->barangMedis->satuan }}
+                                        {{ $item->kemasan_diminta ?? 'Box' }}
                                     @else
-                                        {{ $item->satuan_barang_baru }}
-                                    @endif
-                                </td>
-                                <td>
-                                    @if ($item->id_barang)
-                                        {{ $item->kemasan_diminta ?? $item->barangMedis->kemasan ?? '-' }}
-                                    @else
-                                        {{ $item->kemasan_barang_baru ?? '-' }}
+                                        {{ $item->kemasan_barang_baru ?? 'Box' }}
                                     @endif
                                 </td>
                                 <td>
@@ -145,7 +156,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center text-muted">Tidak ada item obat dalam permintaan ini.</td>
+                                <td colspan="7" class="text-center text-muted">Tidak ada item obat dalam permintaan ini.</td>
                             </tr>
                         @endforelse
                     </tbody>

@@ -23,6 +23,7 @@ class User extends Authenticatable
         'email',
         'password',
         'akses',
+        'id_lokasi',
     ];
 
     /**
@@ -62,10 +63,18 @@ class User extends Authenticatable
     public function hasRole($role)
     {
         if (is_string($role)) {
-            return $this->roles->contains('name', $role);
+            return $this->akses === $role;
         }
         // Disederhanakan untuk efisiensi, karena hasRole() hanya dipanggil dengan string di kode Anda
         return false;
+    }
+
+    /**
+     * Relasi ke lokasi klinik.
+     */
+    public function lokasi()
+    {
+        return $this->belongsTo(LokasiKlinik::class, 'id_lokasi');
     }
 
     /**

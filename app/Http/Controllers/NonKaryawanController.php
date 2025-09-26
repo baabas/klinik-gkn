@@ -27,12 +27,14 @@ class NonKaryawanController extends Controller
             'nik' => 'required|string|digits:16|unique:users,nik',
             'nama' => 'required|string|max:255',
             'alamat' => 'nullable|string',
+            'lokasi_gedung' => 'required|string|max:100',
             'tanggal_lahir' => 'required|date|before_or_equal:today',
         ], [
             // [DITAMBAHKAN] Pesan validasi kustom
             'nik.unique' => 'NIK ini sudah terdaftar sebagai pasien.',
             'nik.digits' => 'NIK harus terdiri dari 16 digit.',
             'tanggal_lahir.before_or_equal' => 'Tanggal lahir tidak boleh melebihi hari ini.',
+            'lokasi_gedung.required' => 'Lokasi gedung wajib dipilih.',
         ]);
 
         // Gunakan transaction untuk memastikan kedua tabel berhasil diisi
@@ -54,6 +56,7 @@ class NonKaryawanController extends Controller
             NonKaryawan::create([
                 'nik' => $validatedData['nik'],
                 'alamat' => $validatedData['alamat'],
+                'lokasi_gedung' => $validatedData['lokasi_gedung'],
                 'tanggal_lahir' => $validatedData['tanggal_lahir'],
             ]);
 

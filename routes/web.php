@@ -13,6 +13,7 @@ use App\Http\Controllers\BarangMasukController;
 use App\Http\Controllers\PermintaanBarangController;
 use App\Http\Controllers\CheckupController;
 use App\Http\Controllers\NonKaryawanController;
+use App\Http\Controllers\DaftarPenyakitController;
 
 /*
 |--------------------------------------------------------------------------
@@ -87,8 +88,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('barang-medis/{barang}/riwayat', [BarangMedisController::class, 'history'])->name('barang-medis.history');
         Route::put('barang-medis/{barang}/distribusi', [BarangMedisController::class, 'distribusi'])->name('barang-medis.distribusi');
         Route::get('barang-masuk', [BarangMasukController::class, 'index'])->name('barang-masuk.index');
+        Route::get('/api/barang-medis/search', [BarangMedisController::class, 'search'])->name('api.barang-medis.search');
         Route::resource('barang-medis', BarangMedisController::class);
         Route::resource('permintaan', PermintaanBarangController::class);
+        Route::get('/permintaan/{permintaan}/print-pdf', [PermintaanBarangController::class, 'printPdf'])->name('permintaan.print-pdf');
+
+        // Rute untuk Laporan
     });
 
     // --- RUTE KHUSUS DOKTER ---
@@ -98,7 +103,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/pasien-non-karyawan/create', [NonKaryawanController::class, 'create'])->name('non_karyawan.create');
         Route::post('/pasien-non-karyawan', [NonKaryawanController::class, 'store'])->name('non_karyawan.store');
 
+        // Daftar Penyakit CRUD
+        Route::resource('daftar-penyakit', DaftarPenyakitController::class);
+        Route::get('/api/daftar-penyakit/search', [DaftarPenyakitController::class, 'search'])->name('api.daftar-penyakit.search');
+
         Route::get('/api/penyakit/{icd10}', [RekamMedisController::class, 'findPenyakit'])->name('api.penyakit.find');
+        Route::get('/api/penyakit-search', [RekamMedisController::class, 'searchPenyakit'])->name('api.penyakit.search');
+        Route::get('/api/obat-search', [RekamMedisController::class, 'searchObat'])->name('api.obat.search');
+        Route::get('/api/pasien-search', [PasienController::class, 'searchPasien'])->name('api.pasien.search');
 
         // Daftar dan Detail Pasien (parameter disamakan menjadi 'pasien')
         Route::get('/pasien', [PasienController::class, 'index'])->name('pasien.index');
@@ -133,6 +145,9 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:PENGADAAN'])->group(function () {
         Route::get('barang-masuk/create', [BarangMasukController::class, 'create'])->name('barang-masuk.create');
         Route::post('barang-masuk', [BarangMasukController::class, 'store'])->name('barang-masuk.store');
+        Route::post('barang-masuk/store-multiple', [BarangMasukController::class, 'storeMultiple'])->name('barang-masuk.store-multiple');
+        Route::get('barang-masuk/check-completion/{requestId}', [BarangMasukController::class, 'checkCompletion'])->name('barang-masuk.check-completion');
+        Route::get('/barang-medis/print-pdf', [BarangMedisController::class, 'printPdf'])->name('barang-medis.printPdf');
     });
 
 });

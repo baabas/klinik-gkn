@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\View;
+use App\View\Composers\PengadaanNotificationComposer;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,6 +22,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Paginator::useBootstrapFive();//
+        Paginator::useBootstrapFive();
+
+        // Register view composer for pengadaan notifications
+        View::composer([
+            'layouts.navigation-top',
+            'permintaan.*',
+            'barang-medis.*',
+            'barang-masuk.*'
+        ], PengadaanNotificationComposer::class);
     }
 }

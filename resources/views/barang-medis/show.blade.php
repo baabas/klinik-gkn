@@ -207,7 +207,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($riwayatTransaksi as $transaksi)
+                                @forelse($riwayatTerakhir as $transaksi)
                                 <tr>
                                     <td>{{ $transaksi->tanggal_transaksi ? \Carbon\Carbon::parse($transaksi->tanggal_transaksi)->format('d/m/Y') : \Carbon\Carbon::parse($transaksi->created_at)->format('d/m/Y') }}</td>
                                     <td class="text-center">{{ $transaksi->jumlah_kemasan ?? '-' }}</td>
@@ -289,11 +289,7 @@
                         </table>
                     </div>
 
-                    @if($riwayatTransaksi->hasPages())
-                    <div class="mt-3">
-                        {{ $riwayatTransaksi->links() }}
-                    </div>
-                    @endif
+                    {{-- Pagination removed since riwayatTerakhir is limited to 10 records in controller --}}
                 </div>
             </div>
         </div>

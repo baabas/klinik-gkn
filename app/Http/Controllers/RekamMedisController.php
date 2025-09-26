@@ -104,4 +104,63 @@ class RekamMedisController extends Controller
         }
         return response()->json(['success' => false, 'nama_penyakit' => 'Kode ICD-10 tidak ditemukan.'], 404);
     }
+
+    public function searchPenyakit(Request $request)
+    {
+        $query = $request->get('q');
+        
+        if (strlen($query) < 2) {
+            return response()->json(['success' => false, 'data' => []]);
+        }
+
+        // Search by name or ICD10 code, limit to 3 results
+        $penyakit = DaftarPenyakit::where(function($q) use ($query) {
+                $q->where('nama_penyakit', 'LIKE', "%{$query}%")
+                  ->orWhere('ICD10', 'LIKE', "%{$query}%");
+            })
+            ->limit(3)
+            ->get(['ICD10 as kode_penyakit', 'nama_penyakit']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $penyakit
+        ]);
+    }
+
+    public function searchObat(Request $request)
+    {
+        $query = $request->get('q');
+        $lokasiId = Auth::user()->id_lokasi;
+        
+        if (strlen($query) < 2) {
+            return response()->json(['success' => false, 'data' => []]);
+        }
+
+        // Search medicines by name or code, limit to 3 results, only with stock
+        $obat = BarangMedis::whereHas('stok', function($q) use ($lokasiId) {
+                $q->where('id_lokasi', $lokasiId)->where('jumlah', '>', 0);
+            })
+            ->where(function($q) use ($query) {
+                $q->where('nama_obat', 'LIKE', "%{$query}%")
+                  ->orWhere('kode_obat', 'LIKE', "%{$query}%");
+            })
+            ->with(['stok' => function($q) use ($lokasiId) {
+                $q->where('id_lokasi', $lokasiId);
+            }])
+            ->limit(3)
+            ->get(['id_obat', 'nama_obat', 'kode_obat'])
+            ->map(function($item) {
+                return [
+                    'id_obat' => $item->id_obat,
+                    'nama_obat' => $item->nama_obat,
+                    'kode_obat' => $item->kode_obat,
+                    'stok' => $item->stok->first()->jumlah ?? 0
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $obat
+        ]);
+    }
 }

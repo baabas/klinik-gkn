@@ -80,6 +80,14 @@ class BarangMedis extends Model
     }
 
     /**
+     * Relasi ke stok barang berdasarkan lokasi tertentu.
+     */
+    public function stokByLokasi($idLokasi): HasMany
+    {
+        return $this->stok()->where('id_lokasi', $idLokasi);
+    }
+
+    /**
      * Riwayat stok masuk untuk bulan ini.
      */
     public function stokMasukBulanIni(): HasMany
@@ -88,5 +96,13 @@ class BarangMedis extends Model
             ->where('perubahan', '>', 0)
             ->whereYear('tanggal_transaksi', now()->year)
             ->whereMonth('tanggal_transaksi', now()->month);
+    }
+
+    /**
+     * Relasi ke detail permintaan barang.
+     */
+    public function detailPermintaans(): HasMany
+    {
+        return $this->hasMany(DetailPermintaanBarang::class, 'id_barang', 'id_obat');
     }
 }
