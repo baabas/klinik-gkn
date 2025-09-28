@@ -24,8 +24,8 @@ return new class extends Migration
     {
         Schema::table('detail_permintaan_barang', function (Blueprint $table) {
             // Restore satuan columns if needed
-            $table->string('satuan_diminta', 100)->nullable()->after('jumlah_diminta');
-            $table->string('satuan_barang_baru', 100)->nullable()->after('tipe_barang_baru');
+            $table->string('satuan_diminta', 100)->nullable();
+            $table->string('satuan_barang_baru', 100)->nullable();
         });
     }
 };

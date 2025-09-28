@@ -46,7 +46,7 @@ class LaporanController extends Controller
             ->where('sb.id_lokasi', $lokasiId)
             ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])
             ->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
-            ->select('o.nama_obat', DB::raw("CASE WHEN DAY(rm.tanggal_kunjungan) BETWEEN 1 AND 7 THEN 1 WHEN DAY(rm.tanggal_kunjungan) BETWEEN 8 AND 14 THEN 2 WHEN DAY(rm.tanggal_kunjungan) BETWEEN 15 AND 21 THEN 3 WHEN DAY(rm.tanggal_kunjungan) BETWEEN 22 AND 28 THEN 4 ELSE 5 END as minggu_ke"), DB::raw('SUM(ro.jumlah) as jumlah'))
+            ->select('o.nama_obat', DB::raw("CASE WHEN EXTRACT(DAY FROM rm.tanggal_kunjungan) BETWEEN 1 AND 7 THEN 1 WHEN EXTRACT(DAY FROM rm.tanggal_kunjungan) BETWEEN 8 AND 14 THEN 2 WHEN EXTRACT(DAY FROM rm.tanggal_kunjungan) BETWEEN 15 AND 21 THEN 3 WHEN EXTRACT(DAY FROM rm.tanggal_kunjungan) BETWEEN 22 AND 28 THEN 4 ELSE 5 END as minggu_ke"), DB::raw('SUM(ro.jumlah) as jumlah'))
             ->groupBy('o.nama_obat', 'minggu_ke', 'sb.id_lokasi')->get()->groupBy('nama_obat');
 
         $data_pemakaian_harian = DB::table('resep_obat as ro')
@@ -56,7 +56,7 @@ class LaporanController extends Controller
             ->where('sb.id_lokasi', $lokasiId)
             ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])
             ->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
-            ->select('o.nama_obat', DB::raw('DAY(rm.tanggal_kunjungan) as hari'), DB::raw('SUM(ro.jumlah) as jumlah'))
+            ->select('o.nama_obat', DB::raw('EXTRACT(DAY FROM rm.tanggal_kunjungan) as hari'), DB::raw('SUM(ro.jumlah) as jumlah'))
             ->groupBy('o.nama_obat', 'hari')
             ->get()
             ->groupBy('nama_obat');
@@ -97,7 +97,7 @@ class LaporanController extends Controller
                 return $query->where('u.id_lokasi', $idLokasi);
             })
             ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
-            ->select('dp.nama_penyakit', DB::raw('DAY(rm.tanggal_kunjungan) as hari'), DB::raw('COUNT(dd.id_detail_diagnosa) as jumlah'))
+            ->select('dp.nama_penyakit', DB::raw('EXTRACT(DAY FROM rm.tanggal_kunjungan) as hari'), DB::raw('COUNT(dd.id_detail_diagnosa) as jumlah'))
             ->groupBy('dp.nama_penyakit', 'hari')->get()->groupBy('nama_penyakit');
 
         // [DIPERBAIKI] Gabungkan daftar kantor dari karyawan dan lokasi gedung dari non-karyawan
@@ -120,7 +120,7 @@ class LaporanController extends Controller
                 return $query->where('dokter.id_lokasi', $idLokasi);
             })
             ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
-            ->select('k.kantor', DB::raw('DAY(rm.tanggal_kunjungan) as hari'), DB::raw('COUNT(rm.id_rekam_medis) as jumlah'))
+            ->select('k.kantor', DB::raw('EXTRACT(DAY FROM rm.tanggal_kunjungan) as hari'), DB::raw('COUNT(rm.id_rekam_medis) as jumlah'))
             ->groupBy('k.kantor', 'hari')->get();
 
         $data_kunjungan_non_karyawan = DB::table('rekam_medis as rm')
@@ -132,7 +132,7 @@ class LaporanController extends Controller
             })
             ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
             ->whereNotNull('nk.lokasi_gedung')->where('nk.lokasi_gedung', '!=', '')
-            ->select('nk.lokasi_gedung as kantor', DB::raw('DAY(rm.tanggal_kunjungan) as hari'), DB::raw('COUNT(rm.id_rekam_medis) as jumlah'))
+            ->select('nk.lokasi_gedung as kantor', DB::raw('EXTRACT(DAY FROM rm.tanggal_kunjungan) as hari'), DB::raw('COUNT(rm.id_rekam_medis) as jumlah'))
             ->groupBy('nk.lokasi_gedung', 'hari')->get();
 
         // Gabungkan data kunjungan

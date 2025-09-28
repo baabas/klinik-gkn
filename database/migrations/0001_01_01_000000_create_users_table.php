@@ -27,7 +27,8 @@ return new class extends Migration
             $table->string('email')->nullable()->unique();
             $table->string('password')->nullable();
 
-            $table->enum('akses', ['DOKTER', 'PENGADAAN', 'PASIEN']);
+            $table->string('akses');
+            $table->check("akses IN ('DOKTER', 'PENGADAAN', 'PASIEN')", 'users_akses_check');
             $table->rememberToken();
             $table->timestamps();
         });

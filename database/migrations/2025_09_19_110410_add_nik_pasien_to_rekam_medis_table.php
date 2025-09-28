@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('nip_pasien', 30)->nullable()->change();
 
             // 2. Tambahkan kolom nik_pasien yang juga nullable
-            $table->string('nik_pasien', 16)->nullable()->after('nip_pasien');
+            $table->string('nik_pasien', 16)->nullable();
 
             // 3. Tambahkan foreign key constraint ke tabel non_karyawan
             $table->foreign('nik_pasien')->references('nik')->on('non_karyawan')->onDelete('cascade');

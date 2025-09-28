@@ -1,0 +1,29 @@
+# Dependencies
+vendor/
+node_modules/
+
+# Build artifacts
+/public/build
+/public/hot
+/storage/framework/cache
+/storage/framework/sessions
+/storage/framework/views
+/bootstrap/cache
+
+# Logs and temp files
+storage/logs/
+*.log
+*.cache
+
+# Environment and secrets
+.env
+.env.*
+*.key
+
+# Misc
+.git
+.gitignore
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store

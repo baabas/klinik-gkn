@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use App\Models\LokasiKlinik;
 
 class PengadaanSeeder extends Seeder
@@ -14,13 +14,13 @@ class PengadaanSeeder extends Seeder
     public function run(): void
     {
         // Menonaktifkan pengecekan foreign key untuk truncate
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        
+        Schema::disableForeignKeyConstraints();
+
         // Kosongkan tabel lokasi sebelum diisi
         LokasiKlinik::truncate();
-        
+
         // Mengaktifkan kembali pengecekan foreign key
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        Schema::enableForeignKeyConstraints();
 
         // 1. Buat Lokasi Klinik
         $gkn1 = LokasiKlinik::create(['nama_lokasi' => 'Klinik GKN 1']);

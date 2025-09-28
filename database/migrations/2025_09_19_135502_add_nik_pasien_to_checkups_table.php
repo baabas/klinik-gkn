@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('nip_pasien', 30)->nullable()->change();
 
             // 2. Tambahkan kolom baru nik_pasien yang juga nullable
-            $table->string('nik_pasien', 16)->nullable()->after('nip_pasien');
+            $table->string('nik_pasien', 16)->nullable();
 
             // 3. Tambahkan foreign key ke tabel users untuk NIK
             $table->foreign('nik_pasien')->references('nik')->on('users')->onDelete('cascade');
