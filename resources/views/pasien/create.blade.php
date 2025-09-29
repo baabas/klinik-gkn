@@ -38,7 +38,8 @@
                         <p class="text-muted">Masukkan NIP dan Email yang terdaftar untuk membuat akun pasien.</p>
                         <div class="mb-3">
                             <label for="nip" class="form-label">NIP <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control @error('nip') is-invalid @enderror" id="nip" name="nip" value="{{ old('nip') }}">
+                            <input type="text" class="form-control @error('nip') is-invalid @enderror" id="nip" name="nip" value="{{ old('nip') }}" inputmode="numeric" minlength="18" maxlength="18" pattern="\d{18}">
+                            <div class="form-text">NIP harus terdiri dari 18 digit.</div>
                             @error('nip') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div class="mb-3">
@@ -71,7 +72,7 @@
                             @error('tanggal_lahir') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
-                    
+
                     <div class="mt-4 d-flex justify-content-end">
                         <a href="{{ route('pasien.index') }}" class="btn btn-outline-secondary me-2">Batal</a>
                         <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Simpan Data</button>
@@ -88,7 +89,7 @@
     document.addEventListener('DOMContentLoaded', function () {
         const formKaryawan = document.getElementById('form-karyawan');
         const formNonKaryawan = document.getElementById('form-non-karyawan');
-        
+
         const radioKaryawan = document.getElementById('tipe_karyawan');
         const radioNonKaryawan = document.getElementById('tipe_non_karyawan');
 

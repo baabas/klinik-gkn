@@ -32,12 +32,12 @@
         .form-col {
             flex: 1;
         }
-        
+
         /* Custom dropdown styling */
         .custom-dropdown {
             position: relative;
         }
-        
+
         .custom-dropdown select {
             appearance: none;
             -webkit-appearance: none;
@@ -49,31 +49,31 @@
             background-size: 16px;
             padding-right: 2.5rem;
         }
-        
+
         .custom-dropdown select[size] {
             max-height: 150px; /* Tinggi untuk menampilkan 4-5 opsi */
             overflow-y: auto;
             background-image: none;
             padding-right: 0.75rem;
         }
-        
+
         .custom-dropdown select::-webkit-scrollbar {
             width: 6px;
         }
-        
+
         .custom-dropdown select::-webkit-scrollbar-track {
             background: #f1f1f1;
         }
-        
+
         .custom-dropdown select::-webkit-scrollbar-thumb {
             background: #888;
             border-radius: 3px;
         }
-        
+
         .custom-dropdown select::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
-        
+
         @media (max-width: 768px) {
             .form-row {
                 flex-direction: column;
@@ -109,7 +109,8 @@
                 <div class="form-row mb-3">
                     <div class="form-col">
                         <label for="nip" class="form-label" style="display: block !important;">{{ __('NIP') }}</label>
-                        <input id="nip" class="form-control" type="text" name="nip" value="{{ old('nip') }}" required autofocus autocomplete="nip" style="display: block !important; visibility: visible !important;" />
+                        <input id="nip" class="form-control" type="text" name="nip" value="{{ old('nip') }}" required autofocus autocomplete="nip" inputmode="numeric" minlength="18" maxlength="18" pattern="\d{18}" style="display: block !important; visibility: visible !important;" />
+                        <small class="text-muted">Masukkan 18 digit NIP tanpa spasi atau tanda baca.</small>
                         @error('nip')
                             <div class="text-danger">{{ $message }}</div>
                         @enderror
@@ -230,7 +231,7 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <script>
         function toggleDropdown(selectElement) {
             if (selectElement.size === 1 || selectElement.size === 0) {
@@ -239,7 +240,7 @@
                 selectElement.style.height = 'auto';
             }
         }
-        
+
         // Close dropdown when clicking outside or when selection is made
         document.addEventListener('click', function(event) {
             const selects = document.querySelectorAll('select[size]');
@@ -249,12 +250,12 @@
                 }
             });
         });
-        
+
         // Close dropdown when option is selected
         document.getElementById('kantor').addEventListener('change', function() {
             this.size = 1;
         });
-        
+
         // Prevent dropdown from closing when scrolling inside it
         document.getElementById('kantor').addEventListener('mousedown', function(e) {
             e.stopPropagation();

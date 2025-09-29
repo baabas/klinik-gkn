@@ -41,11 +41,16 @@
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('barang-medis.*') ? 'active' : '' }}" href="{{ route('barang-medis.index') }}">Obat & Alat Medis</a>
                         </li>
-                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                Laporan
-                            </a>
-                            <ul class="dropdown-menu">
+                        <li class="nav-item dropdown" id="laporan-nav-item">
+                            <div class="d-flex align-items-center" id="laporan-nav">
+                                <a class="nav-link {{ request()->routeIs('laporan.*') ? 'active' : '' }}" href="{{ route('laporan.harian') }}">
+                                    Laporan
+                                </a>
+                                <button class="btn btn-sm text-white p-1 ms-1" type="button" id="laporan-dropdown-toggle" aria-expanded="false" aria-haspopup="true" style="background: none; border: none;">
+                                    <i class="bi bi-chevron-down"></i>
+                                </button>
+                            </div>
+                            <ul class="dropdown-menu" id="laporan-dropdown-menu" style="display: none;">
                                 <li><a class="dropdown-item" href="{{ route('laporan.harian') }}">Laporan Harian</a></li>
                                 <li><a class="dropdown-item" href="{{ route('laporan.pemakaian_obat') }}">Pemakaian Obat</a></li>
                                 <li><hr class="dropdown-divider"></li>
@@ -103,27 +108,90 @@
                 });
                 
                 // Debug dropdown functionality
-                const dropdown = document.getElementById('navbarDropdown');
-                if (dropdown) {
-                    dropdown.addEventListener('click', function(e) {
-                        console.log('Dropdown clicked');
+                const profileDropdownToggle = document.getElementById('navbarDropdown');
+                const profileDropdownMenu = profileDropdownToggle ? profileDropdownToggle.nextElementSibling : null;
+                const laporanToggle = document.getElementById('laporan-dropdown-toggle');
+                const laporanMenu = document.getElementById('laporan-dropdown-menu');
+
+                const closeProfileDropdown = () => {
+                    if (profileDropdownMenu) {
+                        profileDropdownMenu.classList.remove('show');
+                    }
+                    if (profileDropdownToggle) {
+                        profileDropdownToggle.setAttribute('aria-expanded', 'false');
+                    }
+                };
+
+                const closeLaporanMenu = () => {
+                    if (laporanMenu) {
+                        laporanMenu.style.display = 'none';
+                        laporanMenu.classList.remove('show');
+                    }
+                    if (laporanToggle) {
+                        laporanToggle.setAttribute('aria-expanded', 'false');
+                    }
+                };
+
+                if (profileDropdownToggle && profileDropdownMenu) {
+                    profileDropdownToggle.addEventListener('click', function(e) {
                         e.preventDefault();
-                        
-                        // Toggle dropdown manually if needed
-                        const dropdownMenu = this.nextElementSibling;
-                        if (dropdownMenu.classList.contains('show')) {
-                            dropdownMenu.classList.remove('show');
+
+                        const isOpen = profileDropdownMenu.classList.contains('show');
+                        closeLaporanMenu();
+
+                        if (isOpen) {
+                            closeProfileDropdown();
                         } else {
-                            dropdownMenu.classList.add('show');
+                            profileDropdownMenu.style.position = 'absolute';
+                            profileDropdownMenu.style.top = '100%';
+                            profileDropdownMenu.style.right = '0';
+                            profileDropdownMenu.style.left = 'auto';
+                            profileDropdownMenu.style.zIndex = '10000';
+                            profileDropdownMenu.classList.add('show');
+                            profileDropdownToggle.setAttribute('aria-expanded', 'true');
                         }
                     });
-                    
-                    // Close dropdown when clicking outside
+
                     document.addEventListener('click', function(e) {
-                        if (!dropdown.contains(e.target)) {
-                            const dropdownMenu = dropdown.nextElementSibling;
-                            dropdownMenu.classList.remove('show');
+                        if (!profileDropdownToggle.contains(e.target) && !profileDropdownMenu.contains(e.target)) {
+                            closeProfileDropdown();
                         }
+                    });
+
+                    profileDropdownMenu.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                    });
+                }
+
+                if (laporanToggle && laporanMenu) {
+                    laporanToggle.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        const isOpen = laporanMenu.style.display === 'block';
+                        closeProfileDropdown();
+
+                        if (isOpen) {
+                            closeLaporanMenu();
+                        } else {
+                            laporanMenu.style.display = 'block';
+                            laporanMenu.style.position = 'absolute';
+                            laporanMenu.style.top = '100%';
+                            laporanMenu.style.left = '0';
+                            laporanMenu.style.zIndex = '9999';
+                            laporanMenu.classList.add('show');
+                            laporanToggle.setAttribute('aria-expanded', 'true');
+                        }
+                    });
+
+                    document.addEventListener('click', function(e) {
+                        if (!laporanToggle.contains(e.target) && !laporanMenu.contains(e.target)) {
+                            closeLaporanMenu();
+                        }
+                    });
+
+                    laporanMenu.addEventListener('click', function(e) {
+                        e.stopPropagation();
                     });
                 }
             });

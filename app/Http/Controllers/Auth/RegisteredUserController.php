@@ -37,7 +37,7 @@ class RegisteredUserController extends Controller
         // 1. Validasi input
         try {
             $request->validate([
-                'nip' => ['required', 'string', 'max:30', 'unique:users,nip', 'unique:karyawan,nip'],
+                'nip' => ['required', 'digits:18', 'unique:users,nip', 'unique:karyawan,nip'],
                 'name' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email', 'unique:karyawan,email'],
                 'password' => ['required', 'confirmed', Rules\Password::defaults()],
@@ -45,6 +45,8 @@ class RegisteredUserController extends Controller
                 'alamat' => ['required', 'string'],
                 'agama' => ['required', 'string', 'max:50'],
                 'tanggal_lahir' => ['required', 'date'],
+                ], [
+                'nip.digits' => 'NIP harus terdiri dari 18 digit.',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('Validation failed', $e->errors());
@@ -94,7 +96,7 @@ class RegisteredUserController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return back()->withErrors([
                 'error' => 'Terjadi kesalahan saat registrasi. Silakan coba lagi.'
             ])->withInput();

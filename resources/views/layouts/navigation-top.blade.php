@@ -26,17 +26,17 @@
                 <ul class="navbar-nav flex-row align-items-center gap-1 ms-4">
                     {{-- Dashboard Menu --}}
                     <li class="nav-item">
-                        <a class="nav-link text-white px-3 py-2 rounded {{ request()->routeIs('dashboard') ? 'bg-primary' : '' }}" 
+                        <a class="nav-link text-white px-3 py-2 rounded {{ request()->routeIs('dashboard') ? 'bg-primary' : '' }}"
                            href="{{ route('dashboard') }}"
                            style="transition: all 0.3s ease; font-weight: 500; text-decoration: none;">
                             <i class="bi bi-speedometer2 me-2"></i>Dashboard Pengadaan
                         </a>
                     </li>
-                    
+
                     {{-- Obat & Alat Medis Dropdown Menu --}}
                     <li class="nav-item dropdown">
                         <div class="d-flex align-items-center" id="obat-medis-nav">
-                            <a class="nav-link text-white px-2 py-2 rounded {{ request()->routeIs('barang-medis.*') || request()->routeIs('barang-masuk.*') || request()->routeIs('permintaan.*') ? 'bg-primary' : '' }}" 
+                            <a class="nav-link text-white px-2 py-2 rounded {{ request()->routeIs('barang-medis.*') || request()->routeIs('barang-masuk.*') || request()->routeIs('permintaan.*') ? 'bg-primary' : '' }}"
                                href="{{ route('barang-medis.index') }}"
                                style="transition: all 0.3s ease; font-weight: 500; text-decoration: none;">
                                 <i class="bi bi-archive-fill me-2"></i>Obat & Alat Medis
@@ -51,7 +51,7 @@
                         </div>
                         <ul class="dropdown-menu shadow-lg border-0" id="obat-medis-menu" style="min-width: 220px; display: none;">
                             <li>
-                                <a class="dropdown-item d-flex align-items-center {{ request()->routeIs('barang-medis.index') ? 'active' : '' }}" 
+                                <a class="dropdown-item d-flex align-items-center {{ request()->routeIs('barang-medis.index') ? 'active' : '' }}"
                                    href="{{ route('barang-medis.index') }}">
                                     <i class="bi bi-grid-fill me-2 text-primary"></i>
                                     Daftar Obat & Alat Medis
@@ -59,7 +59,7 @@
                             </li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                                <a class="dropdown-item d-flex align-items-center justify-content-between {{ request()->routeIs('permintaan.index') ? 'active' : '' }}" 
+                                <a class="dropdown-item d-flex align-items-center justify-content-between {{ request()->routeIs('permintaan.index') ? 'active' : '' }}"
                                    href="{{ route('permintaan.index') }}">
                                     <span>
                                         <i class="bi bi-list-check me-2 text-success"></i>
@@ -71,7 +71,7 @@
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item d-flex align-items-center {{ request()->routeIs('barang-masuk.index') ? 'active' : '' }}" 
+                                <a class="dropdown-item d-flex align-items-center {{ request()->routeIs('barang-masuk.index') ? 'active' : '' }}"
                                    href="{{ route('barang-masuk.index') }}">
                                     <i class="bi bi-clock-history me-2 text-info"></i>
                                     Riwayat Barang Masuk
@@ -79,7 +79,7 @@
                             </li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                                <a class="dropdown-item d-flex align-items-center justify-content-between {{ request()->routeIs('barang-masuk.create') ? 'active' : '' }}" 
+                                <a class="dropdown-item d-flex align-items-center justify-content-between {{ request()->routeIs('barang-masuk.create') ? 'active' : '' }}"
                                    href="{{ route('barang-masuk.create') }}">
                                     <span>
                                         <i class="bi bi-plus-circle-fill me-2 text-warning"></i>
@@ -91,7 +91,7 @@
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item d-flex align-items-center justify-content-between {{ request()->routeIs('barang-medis.create') ? 'active' : '' }}" 
+                                <a class="dropdown-item d-flex align-items-center justify-content-between {{ request()->routeIs('barang-medis.create') ? 'active' : '' }}"
                                    href="{{ route('barang-medis.create') }}">
                                     <span>
                                         <i class="bi bi-plus-square-fill me-2 text-danger"></i>
@@ -159,10 +159,10 @@
                     {{ date('d M Y, H:i') }}
                 </small>
             </div>
-            
+
             @if(Auth::check())
                 <span class="d-none d-sm-inline me-3">Hallo, {{ Auth::user()->nama_karyawan }}</span>
-                
+
                 {{-- Profile Dropdown (tanpa logout) --}}
                 <div class="nav-item dropdown me-2" style="position: relative;">
                     <a class="nav-link dropdown-toggle text-white p-1 rounded-circle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown"
@@ -200,7 +200,7 @@
                 {{-- Tombol Logout Terpisah --}}
                 <form method="POST" action="{{ route('logout') }}" class="d-inline">
                     @csrf
-                    <button type="submit" class="btn btn-outline-light btn-sm d-flex align-items-center" 
+                    <button type="submit" class="btn btn-outline-light btn-sm d-flex align-items-center"
                             style="border-color: rgba(255,255,255,0.3); transition: all 0.3s ease;"
                             onmouseover="this.style.backgroundColor='rgba(220,53,69,0.1)'; this.style.borderColor='#dc3545'; this.style.color='#dc3545';"
                             onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255,255,255,0.3)'; this.style.color='white';"
@@ -236,23 +236,23 @@
         color: #fff !important;
         opacity: 0.8;
     }
-    
+
     /* Top Navigation Dropdown Styles */
     .navbar-nav .nav-link {
         font-size: 0.9rem;
         font-weight: 500;
         border-radius: 6px;
     }
-    
+
     .navbar-nav .nav-link:hover {
         background-color: rgba(255,255,255,0.1) !important;
         transform: translateY(-1px);
     }
-    
+
     .navbar-nav .nav-link.bg-primary {
         background-color: #0d6efd !important;
     }
-    
+
     .navbar-nav .dropdown-menu {
         border: none;
         border-radius: 10px;
@@ -264,7 +264,7 @@
         backdrop-filter: blur(10px);
         min-width: 220px;
     }
-    
+
     /* Differentiate between navigation dropdown and user profile dropdown */
     .navbar-nav .dropdown-menu::before {
         content: '';
@@ -278,7 +278,7 @@
         border-bottom: 6px solid rgba(255,255,255,0.98);
         z-index: 9999;
     }
-    
+
     .navbar-nav .dropdown-item {
         padding: 0.6rem 1rem;
         font-size: 0.85rem;
@@ -286,18 +286,18 @@
         border-radius: 6px;
         margin: 0 0.5rem;
     }
-    
+
     .navbar-nav .dropdown-item:hover {
         background-color: rgba(13, 110, 253, 0.1);
         transform: translateX(3px);
     }
-    
+
     .navbar-nav .dropdown-item.active {
         background-color: rgba(13, 110, 253, 0.15);
         color: #0d6efd;
         font-weight: 600;
     }
-    
+
     /* Split navigation button styles */
     .navbar-nav .nav-item .d-flex {
         border-radius: 6px;
@@ -305,26 +305,26 @@
         background-color: rgba(255,255,255,0.05);
         transition: all 0.3s ease;
     }
-    
+
     .navbar-nav .nav-item .d-flex:hover {
         background-color: rgba(255,255,255,0.1);
         transform: translateY(-1px);
     }
-    
+
     .navbar-nav .nav-item .d-flex .btn:hover {
         background-color: rgba(255,255,255,0.1) !important;
     }
-    
+
     .navbar-nav .nav-item .d-flex .btn:focus {
         box-shadow: none !important;
         outline: none !important;
     }
-    
+
     /* Specific styling for Obat & Alat Medis dropdown */
     #obat-medis-nav {
         position: relative;
     }
-    
+
     #obat-medis-menu {
         position: absolute !important;
         top: 100% !important;
@@ -338,7 +338,7 @@
         padding: 0.5rem 0;
         margin-top: 0.5rem;
     }
-    
+
     #obat-medis-menu::before {
         content: '';
         position: absolute;
@@ -356,7 +356,7 @@
         font-size: 0.8rem;
         line-height: 1.2;
     }
-    
+
     /* Enhanced dropdown styles */
     .dropdown-menu {
         border-radius: 10px;
@@ -371,41 +371,41 @@
         backdrop-filter: blur(10px);
         background-color: rgba(255,255,255,0.98) !important;
     }
-    
+
     .dropdown-item {
         padding: 0.5rem 1rem;
         transition: all 0.2s ease;
         border-radius: 6px;
         margin: 0 0.5rem;
     }
-    
+
     .dropdown-item:hover {
         background-color: rgba(13, 110, 253, 0.1);
         transform: translateX(2px);
     }
-    
+
     .dropdown-header {
         padding: 0.75rem 1rem;
         background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
         margin: -0.5rem 0 0.5rem 0;
         border-radius: 10px 10px 0 0;
     }
-    
+
     /* Profile icon hover effect */
     .nav-item.dropdown > a:hover {
         background-color: rgba(255,255,255,0.2) !important;
         transform: scale(1.05);
     }
-    
+
     /* Fix dropdown positioning and z-index issues */
     .navbar {
         z-index: 1050 !important;
     }
-    
+
     .nav-item.dropdown {
         position: relative !important;
     }
-    
+
     .dropdown-menu.show {
         z-index: 10000 !important;
         position: absolute !important;
@@ -415,7 +415,7 @@
         transform: none !important;
         margin-top: 0.125rem !important;
     }
-    
+
     /* Ensure dropdown appears above all content */
     .dropdown-menu::before {
         content: '';
@@ -429,7 +429,7 @@
         border-bottom: 6px solid rgba(255,255,255,0.98);
         z-index: 10001;
     }
-    
+
     @keyframes fadeInDown {
         from {
             opacity: 0;
@@ -440,19 +440,19 @@
             transform: translateY(0);
         }
     }
-    
+
     /* Responsive improvements */
     /* Fix any container overflow issues */
     .container-fluid {
         overflow: visible !important;
         position: relative;
     }
-    
+
     body {
         overflow-x: hidden;
         overflow-y: auto;
     }
-    
+
     /* Responsive improvements */
     @media (max-width: 768px) {
         .navbar-text {
@@ -473,11 +473,11 @@
 <script>
     function updateDateTime() {
         const now = new Date();
-        const options = { 
-            day: '2-digit', 
-            month: 'short', 
-            year: 'numeric', 
-            hour: '2-digit', 
+        const options = {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
             minute: '2-digit',
             second: '2-digit'
         };
@@ -487,21 +487,21 @@
             element.textContent = dateTimeString;
         }
     }
-    
+
     // Update immediately and then every second
     updateDateTime();
     setInterval(updateDateTime, 1000);
-    
+
     // Fix dropdown positioning issues
     document.addEventListener('DOMContentLoaded', function() {
         const dropdownToggle = document.querySelector('.nav-item.dropdown .dropdown-toggle');
         const dropdownMenu = document.querySelector('.nav-item.dropdown .dropdown-menu');
-        
+
         if (dropdownToggle && dropdownMenu) {
             dropdownToggle.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                
+
                 // Close obat medis dropdown if open
                 const obatMedisMenu = document.getElementById('obat-medis-menu');
                 const obatMedisButton = document.getElementById('obat-medis-dropdown');
@@ -511,10 +511,10 @@
                         obatMedisButton.setAttribute('aria-expanded', 'false');
                     }
                 }
-                
+
                 // Toggle dropdown manually with proper positioning
                 const isOpen = dropdownMenu.classList.contains('show');
-                
+
                 if (isOpen) {
                     dropdownMenu.classList.remove('show');
                 } else {
@@ -525,42 +525,42 @@
                     dropdownMenu.style.left = 'auto';
                     dropdownMenu.style.zIndex = '10000';
                     dropdownMenu.style.marginTop = '0.125rem';
-                    
+
                     dropdownMenu.classList.add('show');
                 }
             });
-            
+
             // Close dropdown when clicking outside
             document.addEventListener('click', function(e) {
                 if (!dropdownToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
                     dropdownMenu.classList.remove('show');
                 }
             });
-            
+
             // Prevent dropdown from closing when clicking inside it
             dropdownMenu.addEventListener('click', function(e) {
                 e.stopPropagation();
             });
         }
-        
+
         // Handle Obat & Alat Medis dropdown separately
         const obatMedisButton = document.getElementById('obat-medis-dropdown');
         const obatMedisMenu = document.getElementById('obat-medis-menu');
-        
+
         if (obatMedisButton && obatMedisMenu) {
             obatMedisButton.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                
+
                 // Close user profile dropdown if open
                 const userDropdown = document.querySelector('.nav-item.dropdown .dropdown-menu');
                 if (userDropdown) {
                     userDropdown.classList.remove('show');
                 }
-                
+
                 // Toggle obat medis dropdown
                 const isOpen = obatMedisMenu.style.display === 'block';
-                
+
                 if (isOpen) {
                     obatMedisMenu.style.display = 'none';
                     obatMedisButton.setAttribute('aria-expanded', 'false');
@@ -573,7 +573,7 @@
                     obatMedisButton.setAttribute('aria-expanded', 'true');
                 }
             });
-            
+
             // Close obat medis dropdown when clicking outside
             document.addEventListener('click', function(e) {
                 if (!obatMedisButton.contains(e.target) && !obatMedisMenu.contains(e.target)) {
@@ -581,7 +581,7 @@
                     obatMedisButton.setAttribute('aria-expanded', 'false');
                 }
             });
-            
+
             // Prevent dropdown from closing when clicking inside it
             obatMedisMenu.addEventListener('click', function(e) {
                 e.stopPropagation();
