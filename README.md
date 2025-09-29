@@ -125,7 +125,7 @@ php artisan key:generate
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=klinik_gkn
+DB_DATABASE=klinik_db
 DB_USERNAME=root
 DB_PASSWORD=
 ```
