@@ -17,10 +17,7 @@ class PasienController extends Controller
                 $query->where('akses', 'PASIEN')
                     ->orWhere(function ($subQuery) {
                         $subQuery->where('akses', 'PENGADAAN')
-                            ->where(function ($inner) {
-                                $inner->whereHas('karyawan')
-                                    ->orWhereHas('nonKaryawan');
-                            });
+                            ->whereHas('karyawan');
                     });
             })
             ->when($search, function ($query, $search) {
@@ -40,7 +37,7 @@ class PasienController extends Controller
     public function searchPasien(Request $request)
     {
         $query = $request->get('q');
-        
+
         if (strlen($query) < 2) {
             return response()->json(['success' => false, 'data' => []]);
         }
@@ -50,10 +47,7 @@ class PasienController extends Controller
                 $builder->where('akses', 'PASIEN')
                     ->orWhere(function ($subQuery) {
                         $subQuery->where('akses', 'PENGADAAN')
-                            ->where(function ($inner) {
-                                $inner->whereHas('karyawan')
-                                    ->orWhereHas('nonKaryawan');
-                            });
+                            ->whereHas('karyawan');
                     });
             })
             ->where(function ($q) use ($query) {
@@ -71,8 +65,8 @@ class PasienController extends Controller
                     'identifier' => $item->nip ?? $item->nik,
                     'type' => $item->karyawan ? 'karyawan' : 'non-karyawan',
                     'tanggal_lahir' => $item->karyawan?->tanggal_lahir ?? $item->nonKaryawan?->tanggal_lahir,
-                    'url' => $item->karyawan 
-                        ? route('pasien.show', $item->nip) 
+                    'url' => $item->karyawan
+                        ? route('pasien.show', $item->nip)
                         : route('pasien.show_non_karyawan', $item->nik)
                 ];
             });
