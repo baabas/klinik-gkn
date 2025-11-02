@@ -1,3 +1,11 @@
+@php
+    $activeRole = $activeRole ?? session('active_role');
+
+    if (!isset($activeRole) && Auth::check()) {
+        $activeRole = Auth::user()->roles()->pluck('name')->first();
+    }
+@endphp
+
 <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-white sidebar collapse shadow-sm">
     <div class="position-sticky pt-3">
         <ul class="nav flex-column">
@@ -5,7 +13,7 @@
             {{-- ============================================= --}}
             {{-- MENU UNTUK ROLE DOKTER --}}
             {{-- ============================================= --}}
-            @if(Auth::user()->hasRole('DOKTER'))
+            @if($activeRole === 'DOKTER' && Auth::user()->hasRole('DOKTER'))
                 <li class="nav-item">
                     <a class="nav-link d-flex align-items-center gap-2 {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
                         <i class="bi bi-speedometer2"></i> Dashboard
@@ -64,7 +72,7 @@
             {{-- ============================================= --}}
             {{-- MENU UNTUK ROLE PENGADAAN --}}
             {{-- ============================================= --}}
-            @if(Auth::user()->hasRole('PENGADAAN'))
+            @if($activeRole === 'PENGADAAN' && Auth::user()->hasRole('PENGADAAN'))
                  <li class="nav-item">
                     <a class="nav-link d-flex align-items-center gap-2 {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
                         <i class="bi bi-speedometer2"></i> Dashboard
@@ -156,7 +164,7 @@
             {{-- ============================================= --}}
             {{-- MENU UNTUK ROLE PASIEN --}}
             {{-- ============================================= --}}
-            @if(Auth::user()->hasRole('PASIEN'))
+            @if($activeRole === 'PASIEN' && Auth::user()->hasRole('PASIEN'))
                  <li class="nav-item">
                     <a class="nav-link d-flex align-items-center gap-2 {{ request()->routeIs('pasien.my_card') ? 'active' : '' }}" href="{{ route('pasien.my_card') }}">
                         <i class="bi bi-person-vcard-fill"></i>

@@ -16,6 +16,14 @@
         @stack('styles')
     </head>
     <body class="bg-light">
+        @php
+            $activeRole = session('active_role');
+
+            if (!isset($activeRole) && Auth::check()) {
+                $activeRole = Auth::user()->roles()->pluck('name')->first();
+            }
+        @endphp
+
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top">
           <div class="container-fluid">
             <a class="navbar-brand fw-bold d-flex align-items-center" href="#">
@@ -26,7 +34,7 @@
               <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="main-nav">
-                @if(Auth::user()->roles()->where('name', 'DOKTER')->exists())
+                @if($activeRole === 'DOKTER' && Auth::user()->roles()->where('name', 'DOKTER')->exists())
                     {{-- MENU UNTUK DOKTER --}}
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                         <li class="nav-item">
@@ -58,9 +66,9 @@
                             </ul>
                         </li>
                     </ul>
-                @else
+                @elseif($activeRole === 'PASIEN' && Auth::user()->roles()->where('name', 'PASIEN')->exists())
                     {{-- MENU UNTUK PASIEN --}}
-                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('pasien.my_card') ? 'active' : '' }}" href="{{ route('pasien.my_card') }}">Kartu Pasien Saya</a>
                         </li>

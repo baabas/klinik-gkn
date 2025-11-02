@@ -1,6 +1,12 @@
 @php
     $showNavigation = $showNavigation ?? true;
     $showSidebarToggle = $showSidebarToggle ?? false;
+    $showPengadaanNavigation = $showPengadaanNavigation ?? true;
+    $activeRole = $activeRole ?? session('active_role');
+
+    if (!isset($activeRole) && Auth::check()) {
+        $activeRole = Auth::user()->roles()->pluck('name')->first();
+    }
 @endphp
 
 <nav class="navbar navbar-dark bg-dark fixed-top shadow-sm" style="z-index: 1050;">
@@ -21,7 +27,7 @@
         </div>
 
         {{-- Navigation Menu for PENGADAAN role --}}
-        @if($showNavigation && Auth::check() && Auth::user()->hasRole('PENGADAAN'))
+        @if($showNavigation && $showPengadaanNavigation && ($activeRole === 'PENGADAAN') && Auth::check() && Auth::user()->hasRole('PENGADAAN'))
             <div class="d-flex align-items-center">
                 <ul class="navbar-nav flex-row align-items-center gap-1 ms-4">
                     {{-- Dashboard Menu --}}
@@ -109,15 +115,13 @@
         @endif
 
         {{-- Page Title/Breadcrumb Section - Only for roles without top navigation --}}
-        @if($showNavigation && Auth::check() && !Auth::user()->hasRole('PENGADAAN'))
+        @if($showNavigation && Auth::check() && $activeRole === 'DOKTER' && Auth::user()->hasRole('DOKTER'))
             <div class="d-flex align-items-center text-white flex-grow-1">
                 <div class="ms-4">
                     @if(request()->routeIs('dashboard'))
                         <span class="navbar-text text-light">
                             <i class="bi bi-speedometer2 me-2"></i>Dashboard
-                            @if(Auth::user()->hasRole('DOKTER'))
-                                Dokter
-                            @endif
+                            Dokter
                         </span>
                     @elseif(request()->routeIs('barang-medis.*'))
                         <span class="navbar-text text-light">
@@ -176,13 +180,17 @@
                                 <div>
                                     <div class="fw-semibold">{{ Auth::user()->nama_karyawan }}</div>
                                     <small class="text-muted">
-                                        @if(Auth::user()->hasRole('PENGADAAN'))
-                                            Staff Pengadaan
-                                        @elseif(Auth::user()->hasRole('DOKTER'))
-                                            Dokter
-                                        @elseif(Auth::user()->hasRole('PASIEN'))
-                                            Pasien
-                                        @endif
+                                        @switch($activeRole)
+                                            @case('PENGADAAN')
+                                                Staff Pengadaan
+                                                @break
+                                            @case('DOKTER')
+                                                Dokter
+                                                @break
+                                            @case('PASIEN')
+                                                Pasien
+                                                @break
+                                        @endswitch
                                     </small>
                                 </div>
                             </div>

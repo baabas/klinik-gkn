@@ -13,8 +13,10 @@
     @stack('styles')
 </head>
 <body class="bg-light">
-    {{-- Memanggil komponen navigasi atas --}}
-    @include('layouts.navigation-top')
+    {{-- Memanggil komponen navigasi atas tanpa menu khusus pengadaan --}}
+    @include('layouts.navigation-top', [
+        'showPengadaanNavigation' => false,
+    ])
 
     {{-- Container utama untuk konten halaman pasien --}}
     <div class="container-fluid" style="margin-top: 70px;">
