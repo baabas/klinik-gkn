@@ -18,6 +18,7 @@ return new class extends Migration
             // Kolom 'nama' dihapus karena akan diambil dari tabel 'users'
             
             $table->text('alamat')->nullable();
+            $table->string('agama', 50)->nullable();
             $table->date('tanggal_lahir');
             $table->timestamps();
 

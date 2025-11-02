@@ -63,12 +63,18 @@
                             <input type="text" class="form-control" id="tinggi_badan" name="tinggi_badan" value="{{ old('tinggi_badan') }}" placeholder="Contoh: 170">
                         </div>
                         <div class="col-md-3 mb-3">
-                            <label for="indeks_massa_tubuh" class="form-label">IMT (kg/m²)</label>
-                            <input type="text" class="form-control" id="indeks_massa_tubuh" name="indeks_massa_tubuh" value="{{ old('indeks_massa_tubuh') }}" placeholder="Otomatis jika BB/TB diisi" readonly>
+                            <label for="suhu_badan" class="form-label">Suhu (°C)</label>
+                            <input type="number" class="form-control" id="suhu_badan" name="suhu_badan" value="{{ old('suhu_badan') }}" placeholder="36.5" step="0.1" min="35" max="42">
                         </div>
                         <div class="col-md-3 mb-3">
                             <label for="lingkar_perut" class="form-label">Lingkar Perut (cm)</label>
                             <input type="text" class="form-control" id="lingkar_perut" name="lingkar_perut" value="{{ old('lingkar_perut') }}" placeholder="Contoh: 85">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="indeks_massa_tubuh" class="form-label">IMT (kg/m²)</label>
+                            <input type="text" class="form-control" id="indeks_massa_tubuh" name="indeks_massa_tubuh" value="{{ old('indeks_massa_tubuh') }}" placeholder="Otomatis jika BB/TB diisi" readonly>
                         </div>
                     </div>
                 </div>

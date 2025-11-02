@@ -26,6 +26,7 @@ class Checkup extends Model
         'asam_urat',
         'berat_badan',
         'tinggi_badan',
+        'suhu_badan', // [BARU] Tambahan untuk suhu badan
         'indeks_massa_tubuh',
         'lingkar_perut',
         'nama_sa',

@@ -15,6 +15,11 @@ use App\Http\Controllers\PermintaanBarangController;
 use App\Http\Controllers\CheckupController;
 use App\Http\Controllers\NonKaryawanController;
 use App\Http\Controllers\DaftarPenyakitController;
+use App\Http\Controllers\FeedbackController; // [BARU] Import FeedbackController
+use App\Http\Controllers\MasterKantorController; // [BARU] Import MasterKantorController
+use App\Http\Controllers\MasterIsiKemasanController; // [BARU] Import MasterIsiKemasanController
+use App\Http\Controllers\MasterSatuanController; // [BARU] Import MasterSatuanController
+use App\Http\Controllers\DistribusiBarangController; // [BARU] Import DistribusiBarangController
 
 /*
 |--------------------------------------------------------------------------
@@ -126,6 +131,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/pasien/{pasien:nip}/rekam-medis', [RekamMedisController::class, 'store'])->name('rekam-medis.store');
         Route::get('/pasien-non-karyawan/{pasien:nik}/rekam-medis/create', [RekamMedisController::class, 'create'])->name('rekam-medis.create.non_karyawan');
         Route::post('/pasien-non-karyawan/{pasien:nik}/rekam-medis', [RekamMedisController::class, 'store'])->name('rekam-medis.store.non_karyawan');
+        
+        // [BARU] Print Resep Obat
+        Route::get('/rekam-medis/{id}/print-resep', [RekamMedisController::class, 'printResep'])->name('rekam-medis.print-resep');
 
         // Check-up (parameter disamakan menjadi 'pasien')
         Route::get('/pasien/{pasien:nip}/checkup/create', [CheckupController::class, 'create'])->name('checkup.create');
@@ -152,9 +160,27 @@ Route::middleware(['auth'])->group(function () {
         Route::post('barang-masuk/store-multiple', [BarangMasukController::class, 'storeMultiple'])->name('barang-masuk.store-multiple');
         Route::get('barang-masuk/check-completion/{requestId}', [BarangMasukController::class, 'checkCompletion'])->name('barang-masuk.check-completion');
         Route::get('/barang-medis/print-pdf', [BarangMedisController::class, 'printPdf'])->name('barang-medis.printPdf');
+        
+        // [BARU] Laporan Feedback untuk Pengadaan
+        Route::get('/feedback', [FeedbackController::class, 'index'])->name('feedback.index');
+        
+        // [BARU] Master Data (Role: PENGADAAN)
+        Route::resource('master-kantor', MasterKantorController::class);
+        Route::resource('master-isi-kemasan', MasterIsiKemasanController::class);
+        Route::resource('master-satuan', MasterSatuanController::class);
+        
+        // Log Distribusi Barang - Read Only untuk Audit Trail (PENGADAAN Only)
+        Route::get('/distribusi-barang', [DistribusiBarangController::class, 'index'])->name('distribusi-barang.index');
+        Route::get('/distribusi-barang/{id}', [DistribusiBarangController::class, 'show'])->name('distribusi-barang.show');
     });
 
 });
+
+// [BARU] Rute Feedback Pasien (Tablet Perawat - Tanpa Auth)
+Route::get('/feedback/form', [FeedbackController::class, 'showFeedbackForm'])->name('feedback.form');
+Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.store');
+Route::get('/api/feedback/check-pending', [FeedbackController::class, 'checkPendingFeedback'])->name('api.feedback.check-pending');
+
 
 // Rute bawaan Laravel untuk otentikasi pasien
 require __DIR__.'/auth.php';

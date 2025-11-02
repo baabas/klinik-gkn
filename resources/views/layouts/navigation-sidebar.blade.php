@@ -32,13 +32,13 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center gap-2 {{ request()->routeIs('laporan.*') ? 'active' : '' }}" 
-                       href="#" data-bs-toggle="collapse" data-bs-target="#laporanSubmenu" 
+                    <button class="nav-link d-flex align-items-center gap-2 w-100 border-0 text-start {{ request()->routeIs('laporan.*') ? 'active' : '' }}" 
+                       type="button" data-bs-toggle="collapse" data-bs-target="#laporanSubmenu" 
                        aria-expanded="{{ request()->routeIs('laporan.*') ? 'true' : 'false' }}" aria-controls="laporanSubmenu">
                         <i class="bi bi-printer-fill"></i> 
                         Laporan
                         <i class="bi bi-chevron-down ms-auto"></i>
-                    </a>
+                    </button>
                     <div class="collapse {{ request()->routeIs('laporan.*') ? 'show' : '' }}" id="laporanSubmenu">
                         <ul class="nav flex-column ms-3">
                             <li class="nav-item">
@@ -71,13 +71,13 @@
                     </a>
                 </li>
                  <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center gap-2 {{ request()->routeIs('barang-medis.*') || request()->routeIs('barang-masuk.*') || request()->routeIs('permintaan.*') ? 'active' : '' }}" 
-                       href="#" data-bs-toggle="collapse" data-bs-target="#obatAlatMedisSubmenu" 
+                    <button class="nav-link d-flex align-items-center gap-2 w-100 border-0 text-start {{ request()->routeIs('barang-medis.*') || request()->routeIs('barang-masuk.*') || request()->routeIs('permintaan.*') ? 'active' : '' }}" 
+                       type="button" data-bs-toggle="collapse" data-bs-target="#obatAlatMedisSubmenu" 
                        aria-expanded="{{ request()->routeIs('barang-medis.*') || request()->routeIs('barang-masuk.*') || request()->routeIs('permintaan.*') ? 'true' : 'false' }}" aria-controls="obatAlatMedisSubmenu">
                         <i class="bi bi-archive-fill"></i> 
                         Obat &amp; Alat Medis
                         <i class="bi bi-chevron-down ms-auto"></i>
-                    </a>
+                    </button>
                     <div class="collapse {{ request()->routeIs('barang-medis.*') || request()->routeIs('barang-masuk.*') || request()->routeIs('permintaan.*') ? 'show' : '' }}" id="obatAlatMedisSubmenu">
                         <ul class="nav flex-column ms-3">
                             <li class="nav-item">
@@ -107,6 +107,46 @@
                             </li>
                         </ul>
                     </div>
+                </li>
+
+                {{-- [BARU] Menu Master Data (Grouped) untuk PENGADAAN --}}
+                @if(Auth::user()->hasRole('PENGADAAN'))
+                <li class="nav-item">
+                    <button class="nav-link d-flex align-items-center gap-2 w-100 border-0 text-start {{ request()->routeIs('master-kantor.*') || request()->routeIs('master-isi-kemasan.*') || request()->routeIs('master-satuan.*') ? 'active' : '' }}" 
+                       type="button" data-bs-toggle="collapse" data-bs-target="#masterDataSubmenu" 
+                       aria-expanded="{{ request()->routeIs('master-kantor.*') || request()->routeIs('master-isi-kemasan.*') || request()->routeIs('master-satuan.*') ? 'true' : 'false' }}" 
+                       aria-controls="masterDataSubmenu">
+                        <i class="bi bi-database-fill"></i> 
+                        Master Data
+                        <i class="bi bi-chevron-down ms-auto"></i>
+                    </button>
+                    <div class="collapse {{ request()->routeIs('master-kantor.*') || request()->routeIs('master-isi-kemasan.*') || request()->routeIs('master-satuan.*') ? 'show' : '' }}" id="masterDataSubmenu">
+                        <ul class="nav flex-column ms-3">
+                            <li class="nav-item">
+                                <a class="nav-link py-2 {{ request()->routeIs('master-kantor.*') ? 'active' : '' }}" href="{{ route('master-kantor.index') }}">
+                                    <i class="bi bi-building"></i> Master Kantor
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link py-2 {{ request()->routeIs('master-isi-kemasan.*') ? 'active' : '' }}" href="{{ route('master-isi-kemasan.index') }}">
+                                    <i class="bi bi-box-seam"></i> Master Isi Kemasan
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link py-2 {{ request()->routeIs('master-satuan.*') ? 'active' : '' }}" href="{{ route('master-satuan.index') }}">
+                                    <i class="bi bi-rulers"></i> Master Satuan Terkecil
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                @endif
+
+                {{-- Log Distribusi Barang --}}
+                <li class="nav-item">
+                    <a class="nav-link d-flex align-items-center gap-2 {{ request()->routeIs('distribusi-barang.*') ? 'active' : '' }}" href="{{ route('distribusi-barang.index') }}">
+                        <i class="bi bi-arrow-left-right"></i> Log Distribusi
+                    </a>
                 </li>
 
                 {{-- ITEM MENU 'DISTRIBUSI BARANG' YANG MENYEBABKAN ERROR TELAH DIHAPUS DARI SINI --}}

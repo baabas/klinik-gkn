@@ -138,19 +138,11 @@
                         <div class="custom-dropdown">
                             <select id="kantor" name="kantor" class="form-select" required onclick="toggleDropdown(this)">
                                 <option value="">Pilih Kantor</option>
-                                <option value="Kanwil" {{ old('kantor') == 'Kanwil' ? 'selected' : '' }}>Kanwil</option>
-                                <option value="KPP Gayam Sari" {{ old('kantor') == 'KPP Gayam Sari' ? 'selected' : '' }}>KPP Gayam Sari</option>
-                                <option value="KPP Madya SMG" {{ old('kantor') == 'KPP Madya SMG' ? 'selected' : '' }}>KPP Madya SMG</option>
-                                <option value="KPP SMG Selatan" {{ old('kantor') == 'KPP SMG Selatan' ? 'selected' : '' }}>KPP SMG Selatan</option>
-                                <option value="KPP SMG Tengah 1" {{ old('kantor') == 'KPP SMG Tengah 1' ? 'selected' : '' }}>KPP SMG Tengah 1</option>
-                                <option value="KPTIK" {{ old('kantor') == 'KPTIK' ? 'selected' : '' }}>KPTIK</option>
-                                <option value="PT Gumilang" {{ old('kantor') == 'PT Gumilang' ? 'selected' : '' }}>PT Gumilang</option>
-                                <option value="Kanwil DJPB" {{ old('kantor') == 'Kanwil DJPB' ? 'selected' : '' }}>Kanwil DJPB</option>
-                                <option value="KPTIK BMN Semarang" {{ old('kantor') == 'KPTIK BMN Semarang' ? 'selected' : '' }}>KPTIK BMN Semarang</option>
-                                <option value="KPP Madya Dua Semarang" {{ old('kantor') == 'KPP Madya Dua Semarang' ? 'selected' : '' }}>KPP Madya Dua Semarang</option>
-                                <option value="Kanwil DJP Jateng 1" {{ old('kantor') == 'Kanwil DJP Jateng 1' ? 'selected' : '' }}>Kanwil DJP Jateng 1</option>
-                                <option value="Kanwil DJKN" {{ old('kantor') == 'Kanwil DJKN' ? 'selected' : '' }}>Kanwil DJKN</option>
-                                <option value="KPKNL Semarang" {{ old('kantor') == 'KPKNL Semarang' ? 'selected' : '' }}>KPKNL Semarang</option>
+                                @foreach($kantors as $kantor)
+                                    <option value="{{ $kantor->nama_kantor }}" {{ old('kantor') == $kantor->nama_kantor ? 'selected' : '' }}>
+                                        {{ $kantor->nama_kantor }}
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
                         @error('kantor')

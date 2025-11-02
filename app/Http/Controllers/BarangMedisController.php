@@ -506,7 +506,7 @@ class BarangMedisController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($barang, $jumlahDistribusi, $idLokasiAsal, $idLokasiTujuan) {
+            DB::transaction(function () use ($barang, $jumlahDistribusi, $idLokasiAsal, $idLokasiTujuan, $request) {
                 // --- PROSES LOKASI ASAL ---
                 $stokAsal = StokBarang::where('id_barang', $barang->id_obat)
                     ->where('id_lokasi', $idLokasiAsal)
@@ -553,6 +553,19 @@ class BarangMedisController extends Controller
                     'tanggal_transaksi' => now(),
                     'keterangan' => 'Distribusi dari ' . LokasiKlinik::find($idLokasiAsal)->nama_lokasi,
                     'user_id' => Auth::id()
+                ]);
+
+                // [BARU] LOG DISTRIBUSI UNTUK AUDIT PENGADAAN
+                \App\Models\DistribusiBarang::create([
+                    'id_barang' => $barang->id_obat,
+                    'id_lokasi_asal' => $idLokasiAsal,
+                    'id_lokasi_tujuan' => $idLokasiTujuan,
+                    'id_user' => Auth::id(),
+                    'jumlah' => $jumlahDistribusi,
+                    'keterangan' => $request->keterangan ?? null,
+                    'status' => 'approved', // Langsung approved, tidak perlu approval
+                    'validated_by' => null,
+                    'validated_at' => null,
                 ]);
             });
 

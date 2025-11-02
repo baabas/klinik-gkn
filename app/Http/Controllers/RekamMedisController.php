@@ -40,8 +40,7 @@ class RekamMedisController extends Controller
             'obat' => ['nullable', 'array'],
             'obat.*.id_obat' => ['required_with:obat', 'integer', 'exists:barang_medis,id_obat'],
             'obat.*.jumlah' => ['required_with:obat', 'integer', 'min:1'],
-            // [DIHAPUS] Validasi untuk aturan_pakai dihapus
-            // 'obat.*.aturan_pakai' => ['nullable', 'string'], 
+            'obat.*.dosis' => ['nullable', 'string', 'max:255'], // [BARU] Validasi untuk dosis obat
             'nama_sa' => ['nullable', 'string', 'max:255'],
             'jenis_kelamin_sa' => ['nullable', 'string', 'max:20'],
         ]);
@@ -81,6 +80,7 @@ class RekamMedisController extends Controller
                         $rekamMedis->resepObat()->create([
                             'id_obat' => $resep['id_obat'],
                             'jumlah' => $resep['jumlah'],
+                            'dosis' => $resep['dosis'] ?? null, // [BARU] Simpan dosis
                         ]);
                         $stok->decrement('jumlah', $resep['jumlah']);
                     }
@@ -88,6 +88,13 @@ class RekamMedisController extends Controller
             }
 
             DB::commit();
+            
+            // [BARU] Redirect ke halaman print resep jika ada resep obat
+            if (!empty($validated['obat'])) {
+                return redirect()->route('rekam-medis.print-resep', $rekamMedis->id_rekam_medis)
+                    ->with('success', 'Rekam medis berhasil ditambahkan. Silakan print resep untuk pasien.');
+            }
+            
             $redirectRoute = $user->nip ? route('pasien.show', $user->nip) : route('pasien.show_non_karyawan', $user->nik);
             return redirect($redirectRoute)->with('success', 'Rekam medis berhasil ditambahkan.');
         } catch (\Exception $e) {
@@ -162,5 +169,23 @@ class RekamMedisController extends Controller
             'success' => true,
             'data' => $obat
         ]);
+    }
+
+    /**
+     * [BARU] Menampilkan halaman print resep obat untuk struk thermal 80mm.
+     *
+     * @param int $id
+     * @return \Illuminate\View\View
+     */
+    public function printResep($id)
+    {
+        $rekamMedis = RekamMedis::with([
+            'resepObat.obat',
+            'dokter.karyawan',
+            'pasien.karyawan',
+            'pasienNonKaryawan.user'  // Load user untuk nama non-karyawan
+        ])->findOrFail($id);
+
+        return view('rekam-medis.print-resep', compact('rekamMedis'));
     }
 }

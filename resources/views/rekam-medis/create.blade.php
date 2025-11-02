@@ -115,7 +115,8 @@
                 </div>
             </div>
 
-            <div class="card shadow-sm mb-4">
+            {{-- [BARU] Keterangan Tambahan - HIDDEN --}}
+            <div class="card shadow-sm mb-4" style="display: none;">
                 <div class="card-header"><h5 class="mb-0">Keterangan Tambahan</h5></div>
                 <div class="card-body">
                     <p class="form-text mt-0 mb-2">Isi jika berobat untuk keluarga.</p>
@@ -286,13 +287,16 @@
             function addResepRow() {
                 const newResep = `
                     <div class="row g-2 mb-2 align-items-center resep-entry" id="resep-entry-${resepIndex}">
-                        <div class="col-sm-8 position-relative">
+                        <div class="col-sm-5 position-relative">
                             <input type="hidden" name="obat[${resepIndex}][id_obat]" class="obat-id-input" required>
                             <input type="text" class="form-control obat-search-input" placeholder="Cari nama atau kode obat..." autocomplete="off">
                             <div class="obat-dropdown-results position-absolute w-100" style="z-index: 1050; max-height: 200px; overflow-y: auto; background: white; border: 1px solid #ddd; border-top: none; display: none;"></div>
                         </div>
-                        <div class="col-sm-3">
+                        <div class="col-sm-2">
                             <input type="number" name="obat[${resepIndex}][jumlah]" class="form-control" placeholder="Qty" min="1" required>
+                        </div>
+                        <div class="col-sm-4">
+                            <input type="text" name="obat[${resepIndex}][dosis]" class="form-control" placeholder="Dosis (contoh: 3x1)">
                         </div>
                         <div class="col-sm-1 text-end">
                             <button type="button" class="btn btn-sm btn-outline-danger remove-resep"><i class="bi bi-x-lg"></i></button>
@@ -311,7 +315,7 @@
             $('#resep-obat-container').on('keyup', '.obat-search-input', function() {
                 let obatSearchInput = $(this);
                 let obatIdInput = obatSearchInput.closest('.resep-entry').find('.obat-id-input');
-                let dropdownResults = obatSearchInput.closest('.col-sm-8').find('.obat-dropdown-results');
+                let dropdownResults = obatSearchInput.closest('.position-relative').find('.obat-dropdown-results');
                 let query = obatSearchInput.val();
 
                 // Clear previous timeout

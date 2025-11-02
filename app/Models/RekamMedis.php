@@ -21,11 +21,21 @@ class RekamMedis extends Model
         'nip_pasien',
         'nik_pasien', // [BARU] Ditambahkan untuk pasien non-karyawan
         'id_dokter',
+        'id_lokasi', // [BARU] Ditambahkan untuk filter feedback berdasarkan lokasi
         'tanggal_kunjungan',
         'anamnesa',
         'terapi',
         'nama_sa',
         'jenis_kelamin_sa',
+    ];
+
+    /**
+     * Atribut yang harus di-cast ke tipe data tertentu.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'tanggal_kunjungan' => 'datetime',
     ];
 
     /**
@@ -66,5 +76,21 @@ class RekamMedis extends Model
     public function resepObat()
     {
         return $this->hasMany(ResepObat::class, 'id_rekam_medis', 'id_rekam_medis');
+    }
+
+    /**
+     * [BARU] Relasi one-to-one ke FeedbackPasien.
+     */
+    public function feedback()
+    {
+        return $this->hasOne(FeedbackPasien::class, 'id_rekam_medis', 'id_rekam_medis');
+    }
+    
+    /**
+     * [BARU] Relasi ke LokasiKlinik.
+     */
+    public function lokasi()
+    {
+        return $this->belongsTo(LokasiKlinik::class, 'id_lokasi', 'id');
     }
 }

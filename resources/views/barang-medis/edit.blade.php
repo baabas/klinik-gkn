@@ -150,11 +150,14 @@
 
 @push('scripts')
 <script>
+// @ts-nocheck
+/* eslint-disable */
 document.addEventListener('DOMContentLoaded', function() {
     // Auto calculate total satuan when kemasan changed
     const kemasanInputs = document.querySelectorAll('input[name*="[kemasan]"]');
-    const isiKemasanJumlah = {{ $barangMedi->isi_kemasan_jumlah ?? 1 }};
-    const isiPerSatuan = {{ $barangMedi->isi_per_satuan ?? 1 }};
+    const isiKemasanJumlah = {!! json_encode($barangMedi->isi_kemasan_jumlah ?? 1) !!};
+    const isiPerSatuan = {!! json_encode($barangMedi->isi_per_satuan ?? 1) !!};
+    const satuanTerkecil = {!! json_encode($barangMedi->satuan_terkecil ?? 'satuan') !!};
     
     kemasanInputs.forEach(function(input) {
         input.addEventListener('input', function() {
@@ -172,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             if (kemasan > 0) {
-                preview.textContent = '= ' + totalSatuan + ' {{ $barangMedi->satuan_terkecil ?? "satuan" }}';
+                preview.textContent = '= ' + totalSatuan + ' ' + satuanTerkecil;
             } else {
                 preview.textContent = '';
             }

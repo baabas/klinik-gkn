@@ -8,8 +8,9 @@
     <title>@yield('title', config('app.name', 'Klinik GKN'))</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
-        body { padding-top: 56px; }
-        .sidebar { position: fixed; top: 56px; bottom: 0; left: 0; z-index: 1000; width: 240px; box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1); }
+        /* Hapus padding-top karena tidak ada top navbar */
+        body { padding-top: 0; }
+        .sidebar { position: fixed; top: 0; bottom: 0; left: 0; z-index: 1000; width: 240px; box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1); }
         .main-content { margin-left: 240px; }
         
         /* Enhanced Sidebar Styles with Hover Effects */
@@ -26,6 +27,15 @@
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+        
+        /* Fix untuk button yang digunakan sebagai dropdown toggle */
+        .sidebar button.nav-link {
+            background: transparent;
+            cursor: pointer;
+        }
+        .sidebar button.nav-link:hover {
+            background-color: rgba(13, 110, 253, 0.08);
         }
         
         /* Hover effects for all nav links */
@@ -152,6 +162,20 @@
             transform: scale(0.98);
             transition: transform 0.1s ease-in-out;
         }
+        
+        /* Chevron animation for dropdown menus */
+        .sidebar button.nav-link .bi-chevron-down {
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        .sidebar button.nav-link[aria-expanded="true"] .bi-chevron-down {
+            transform: rotate(180deg);
+        }
+        
+        /* Smooth collapse transition */
+        .sidebar .collapse {
+            transition: height 0.35s ease;
+        }
     </style>
 
     {{-- ================== PERBAIKAN DI SINI ================== --}}
@@ -161,11 +185,11 @@
 
 </head>
 <body class="bg-light">
-    @include('layouts.navigation-top', ['showNavigation' => false, 'showSidebarToggle' => true])
+    {{-- Top navbar dihapus - tidak diperlukan --}}
     <div class="container-fluid">
         <div class="row">
             @include('layouts.navigation-sidebar')
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content pt-4">
                 @yield('content')
             </main>
         </div>
@@ -262,6 +286,33 @@
 
     {{-- Ini sudah ada dan benar, tidak perlu diubah --}}
     @stack('scripts')
+
+    {{-- Fix untuk dropdown yang memerlukan double click --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ambil semua link dengan data-bs-toggle="collapse"
+            const collapseToggles = document.querySelectorAll('[data-bs-toggle="collapse"]');
+            
+            collapseToggles.forEach(function(toggle) {
+                // Hapus href yang bisa menyebabkan konflik
+                toggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Ambil target collapse
+                    const targetId = this.getAttribute('data-bs-target');
+                    const targetElement = document.querySelector(targetId);
+                    
+                    if (targetElement) {
+                        // Toggle collapse menggunakan Bootstrap Collapse API
+                        const bsCollapse = new bootstrap.Collapse(targetElement, {
+                            toggle: true
+                        });
+                    }
+                });
+            });
+        });
+    </script>
 
 </body>
 </html>

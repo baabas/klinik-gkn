@@ -286,11 +286,12 @@
                             <input type="number" name="isi_kemasan_jumlah" class="form-control" id="isi_kemasan_jumlah" placeholder="10" value="{{ old('isi_kemasan_jumlah') }}" required>
                             <select name="isi_kemasan_satuan" id="isi_kemasan_satuan" class="form-select" required>
                                 <option value="">Pilih</option>
-                                <option value="strip" {{ old('isi_kemasan_satuan') == 'strip' ? 'selected' : '' }}>strip</option>
-                                <option value="kotak" {{ old('isi_kemasan_satuan') == 'kotak' ? 'selected' : '' }}>kotak</option>
-                                <option value="botol" {{ old('isi_kemasan_satuan') == 'botol' ? 'selected' : '' }}>botol</option>
-                                <option value="vial" {{ old('isi_kemasan_satuan') == 'vial' ? 'selected' : '' }}>vial</option>
-                                <option value="tube" {{ old('isi_kemasan_satuan') == 'tube' ? 'selected' : '' }}>tube</option>
+                                @foreach(\App\Models\MasterIsiKemasan::where('is_active', true)->orderBy('nama_isi_kemasan')->get() as $isiKemasan)
+                                    <option value="{{ strtolower($isiKemasan->nama_isi_kemasan) }}" 
+                                            {{ old('isi_kemasan_satuan') == strtolower($isiKemasan->nama_isi_kemasan) ? 'selected' : '' }}>
+                                        {{ $isiKemasan->nama_isi_kemasan }}
+                                    </option>
+                                @endforeach
                                 <option value="lainnya" {{ old('isi_kemasan_satuan') == 'lainnya' ? 'selected' : '' }}>Lainnya (tulis manual)</option>
                             </select>
                         </div>
@@ -312,14 +313,12 @@
                         <label for="satuan_terkecil" class="form-label">Satuan Terkecil</label>
                         <select name="satuan_terkecil" id="satuan_terkecil" class="form-select" required>
                             <option value="">Pilih Satuan Terkecil</option>
-                            <option value="Tablet" {{ old('satuan_terkecil') == 'Tablet' ? 'selected' : '' }}>Tablet</option>
-                            <option value="Botol" {{ old('satuan_terkecil') == 'Botol' ? 'selected' : '' }}>Botol</option>
-                            <option value="Pcs" {{ old('satuan_terkecil') == 'Pcs' ? 'selected' : '' }}>Pcs</option>
-                            <option value="Vial" {{ old('satuan_terkecil') == 'Vial' ? 'selected' : '' }}>Vial</option>
-                            <option value="Tube" {{ old('satuan_terkecil') == 'Tube' ? 'selected' : '' }}>Tube</option>
-                            <option value="Troches" {{ old('satuan_terkecil') == 'Troches' ? 'selected' : '' }}>Troches</option>
-                            <option value="Kapsul" {{ old('satuan_terkecil') == 'Kapsul' ? 'selected' : '' }}>Kapsul</option>
-                            <option value="Sirup" {{ old('satuan_terkecil') == 'Sirup' ? 'selected' : '' }}>Sirup</option>
+                            @foreach(\App\Models\MasterSatuan::where('is_active', true)->orderBy('nama_satuan')->get() as $satuan)
+                                <option value="{{ $satuan->nama_satuan }}" 
+                                        {{ old('satuan_terkecil') == $satuan->nama_satuan ? 'selected' : '' }}>
+                                    {{ $satuan->nama_satuan }}
+                                </option>
+                            @endforeach
                             <option value="lainnya" {{ old('satuan_terkecil') == 'lainnya' ? 'selected' : '' }}>Lainnya (tulis manual)</option>
                         </select>
                         <!-- Field input tambahan untuk satuan terkecil baru -->

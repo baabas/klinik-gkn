@@ -18,6 +18,7 @@ class ResepObat extends Model
         'id_obat',
         'kuantitas',
         'jumlah',
+        'dosis', // [BARU] Tambahan untuk dosis obat (contoh: "3x1", "2x1 setelah makan")
         'aturan_pakai',
     ];
 

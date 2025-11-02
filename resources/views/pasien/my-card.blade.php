@@ -103,8 +103,8 @@
                                                     @endforeach
                                                 </ul>
                                             @endif
-                                            @if($rekam->riwayat_sakit)
-                                                <span class="section-title">Keluhan:</span> {{ $rekam->riwayat_sakit }}
+                                            @if($rekam->anamnesa)
+                                                <span class="section-title">Keluhan:</span> {{ $rekam->anamnesa }}
                                             @endif
                                         </td>
                                         <td>
@@ -116,8 +116,8 @@
                                                     @endforeach
                                                 </ul>
                                             @endif
-                                             @if($rekam->pengobatan)
-                                                <span class="section-title">Catatan Terapi:</span> {{ $rekam->pengobatan }}
+                                             @if($rekam->terapi)
+                                                <span class="section-title">Catatan Terapi:</span> {{ $rekam->terapi }}
                                             @endif
                                         </td>
                                         <td>
