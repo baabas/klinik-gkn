@@ -12,7 +12,7 @@
         body { padding-top: 0; }
         .sidebar { position: fixed; top: 0; bottom: 0; left: 0; z-index: 1000; width: 240px; box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1); }
         .main-content { margin-left: 240px; }
-        
+
         /* Enhanced Sidebar Styles with Hover Effects */
         .sidebar .nav-link {
             position: relative;
@@ -28,7 +28,7 @@
             align-items: center;
             gap: 10px;
         }
-        
+
         /* Fix untuk button yang digunakan sebagai dropdown toggle */
         .sidebar button.nav-link {
             background: transparent;
@@ -37,7 +37,7 @@
         .sidebar button.nav-link:hover {
             background-color: rgba(13, 110, 253, 0.08);
         }
-        
+
         /* Hover effects for all nav links */
         .sidebar .nav-link:hover {
             color: #0d6efd;
@@ -46,7 +46,7 @@
             transform: translateX(2px);
             box-shadow: 0 2px 8px rgba(13, 110, 253, 0.15);
         }
-        
+
         /* Focus effects */
         .sidebar .nav-link:focus {
             color: #0d6efd;
@@ -55,7 +55,7 @@
             outline: none;
             box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.2);
         }
-        
+
         /* Active state */
         .sidebar .nav-link.active {
             color: #0d6efd;
@@ -64,13 +64,13 @@
             font-weight: 600;
             box-shadow: 0 2px 12px rgba(13, 110, 253, 0.2);
         }
-        
+
         /* Icon hover effects */
         .sidebar .nav-link:hover i {
             transform: scale(1.1);
             transition: transform 0.2s ease-in-out;
         }
-        
+
         /* Dropdown toggle specific styles */
         .sidebar .nav-link[data-bs-toggle="collapse"] {
             position: relative;
@@ -84,7 +84,7 @@
         .sidebar .nav-link[data-bs-toggle="collapse"]:hover .bi-chevron-down {
             color: #0d6efd;
         }
-        
+
         /* Submenu styles */
         .sidebar .collapse .nav-link {
             font-size: 0.9rem;
@@ -114,12 +114,12 @@
             background-color: rgba(13, 110, 253, 0.15);
             font-weight: 500;
         }
-        
+
         /* Smooth animation for sidebar container */
         .sidebar {
             transition: all 0.3s ease-in-out;
         }
-        
+
         /* Custom scrollbar for sidebar */
         .sidebar::-webkit-scrollbar {
             width: 4px;
@@ -134,44 +134,44 @@
         .sidebar::-webkit-scrollbar-thumb:hover {
             background: #a8a8a8;
         }
-        
+
         /* Add subtle pulse animation for active items */
         @keyframes subtle-pulse {
             0% { box-shadow: 0 2px 12px rgba(13, 110, 253, 0.2); }
             50% { box-shadow: 0 2px 16px rgba(13, 110, 253, 0.3); }
             100% { box-shadow: 0 2px 12px rgba(13, 110, 253, 0.2); }
         }
-        
+
         .sidebar .nav-link.active {
             animation: subtle-pulse 2s ease-in-out infinite;
         }
-        
+
         /* Hover effect for entire sidebar */
         .sidebar:hover {
             box-shadow: inset -1px 0 0 rgba(13, 110, 253, 0.2), 2px 0 12px rgba(0, 0, 0, 0.1);
         }
-        
+
         /* Improve typography */
         .sidebar .nav-link {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             letter-spacing: 0.3px;
         }
-        
+
         /* Add ripple effect on click */
         .sidebar .nav-link:active {
             transform: scale(0.98);
             transition: transform 0.1s ease-in-out;
         }
-        
+
         /* Chevron animation for dropdown menus */
         .sidebar button.nav-link .bi-chevron-down {
             transition: transform 0.3s ease-in-out;
         }
-        
+
         .sidebar button.nav-link[aria-expanded="true"] .bi-chevron-down {
             transform: rotate(180deg);
         }
-        
+
         /* Smooth collapse transition */
         .sidebar .collapse {
             transition: height 0.35s ease;
@@ -200,22 +200,22 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Enhanced keyboard navigation for sidebar
             const sidebarLinks = document.querySelectorAll('.sidebar .nav-link');
-            
+
             sidebarLinks.forEach(link => {
                 // Add tabindex for better keyboard navigation
                 if (!link.hasAttribute('tabindex')) {
                     link.setAttribute('tabindex', '0');
                 }
-                
+
                 // Enhanced focus handling
                 link.addEventListener('focus', function() {
                     this.classList.add('keyboard-focus');
                 });
-                
+
                 link.addEventListener('blur', function() {
                     this.classList.remove('keyboard-focus');
                 });
-                
+
                 // Enhanced keyboard support
                 link.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -223,42 +223,57 @@
                         this.click();
                     }
                 });
-                
+
                 // Add smooth scroll to active item on page load
                 if (link.classList.contains('active')) {
                     setTimeout(() => {
-                        link.scrollIntoView({ 
-                            behavior: 'smooth', 
-                            block: 'center' 
+                        link.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center'
                         });
                     }, 500);
                 }
             });
-            
-            // Enhanced dropdown behavior
+
+            // Enhanced dropdown behavior with Bootstrap Collapse API
             const dropdownToggles = document.querySelectorAll('.sidebar [data-bs-toggle="collapse"]');
             dropdownToggles.forEach(toggle => {
+                const targetSelector = toggle.getAttribute('data-bs-target');
+                const target = document.querySelector(targetSelector);
+
+                if (!target) {
+                    return;
+                }
+
+                const collapseInstance = new bootstrap.Collapse(target, {
+                    toggle: false
+                });
+
+                // Set initial aria-expanded state based on current visibility
+                toggle.setAttribute('aria-expanded', target.classList.contains('show') ? 'true' : 'false');
+
                 toggle.addEventListener('click', function(e) {
                     e.preventDefault();
-                    const target = document.querySelector(this.getAttribute('data-bs-target'));
-                    const isExpanded = this.getAttribute('aria-expanded') === 'true';
-                    
-                    // Toggle expanded state
-                    this.setAttribute('aria-expanded', !isExpanded);
-                    
-                    // Smooth toggle
-                    if (target) {
-                        if (isExpanded) {
-                            target.classList.remove('show');
-                        } else {
-                            target.classList.add('show');
-                        }
+                    const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+
+                    if (isExpanded) {
+                        collapseInstance.hide();
+                    } else {
+                        collapseInstance.show();
                     }
+                });
+
+                target.addEventListener('shown.bs.collapse', function() {
+                    toggle.setAttribute('aria-expanded', 'true');
+                });
+
+                target.addEventListener('hidden.bs.collapse', function() {
+                    toggle.setAttribute('aria-expanded', 'false');
                 });
             });
         });
     </script>
-    
+
     {{-- Additional CSS for keyboard focus --}}
     <style>
         .sidebar .nav-link.keyboard-focus {
@@ -266,12 +281,12 @@
             outline-offset: 2px;
             box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.2);
         }
-        
+
         /* Smooth entrance animation for sidebar */
         .sidebar {
             animation: slideInLeft 0.4s ease-out;
         }
-        
+
         @keyframes slideInLeft {
             from {
                 transform: translateX(-100%);
@@ -286,33 +301,6 @@
 
     {{-- Ini sudah ada dan benar, tidak perlu diubah --}}
     @stack('scripts')
-
-    {{-- Fix untuk dropdown yang memerlukan double click --}}
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Ambil semua link dengan data-bs-toggle="collapse"
-            const collapseToggles = document.querySelectorAll('[data-bs-toggle="collapse"]');
-            
-            collapseToggles.forEach(function(toggle) {
-                // Hapus href yang bisa menyebabkan konflik
-                toggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    // Ambil target collapse
-                    const targetId = this.getAttribute('data-bs-target');
-                    const targetElement = document.querySelector(targetId);
-                    
-                    if (targetElement) {
-                        // Toggle collapse menggunakan Bootstrap Collapse API
-                        const bsCollapse = new bootstrap.Collapse(targetElement, {
-                            toggle: true
-                        });
-                    }
-                });
-            });
-        });
-    </script>
 
 </body>
 </html>
