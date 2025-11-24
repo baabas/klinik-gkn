@@ -446,23 +446,15 @@
                             <label for="kantor">Kantor</label>
                             <div class="input-with-icon">
                                 <i class="bi bi-building icon-left"></i>
-                                @if($kantors->isNotEmpty())
-                                    <select id="kantor" name="kantor" required>
-                                        <option value="">Pilih Kantor</option>
-                                        @foreach($kantors as $kantor)
-                                            <option value="{{ $kantor->nama_kantor }}" {{ old('kantor') == $kantor->nama_kantor ? 'selected' : '' }}>
-                                                {{ $kantor->nama_kantor }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                @else
-                                    <input id="kantor" type="text" name="kantor" value="{{ old('kantor') }}" required
-                                           placeholder="Masukkan nama kantor">
-                                @endif
+                                <select id="kantor" name="kantor" required>
+                                    <option value="">Pilih Kantor</option>
+                                    @foreach($kantors as $kantor)
+                                        <option value="{{ $kantor->nama_kantor }}" {{ old('kantor') == $kantor->nama_kantor ? 'selected' : '' }}>
+                                            {{ $kantor->nama_kantor }}
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
-                            @if($kantors->isEmpty())
-                                <div class="helper-text">Data kantor belum tersedia, masukkan nama kantor secara manual.</div>
-                            @endif
                             @error('kantor')
                                 <div class="error-text">{{ $message }}</div>
                             @enderror
@@ -542,7 +534,7 @@
 
                     <div style="margin-top: 22px; display: grid; gap: 10px;">
                         <button type="submit" class="btn-modern">
-                            <i class="bi bi-person-check me-2"></i>{{ __('Daftar') }}
+                            <i class="bi bi-person-check me-2"></i>Daftar
                         </button>
                         <div class="link-inline">
                             Sudah punya akun? <a href="{{ route('login') }}">Login di sini</a>

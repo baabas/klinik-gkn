@@ -23,13 +23,30 @@ class RegisteredUserController extends Controller
      */
     public function create(): View
     {
+        $fallbackKantors = collect([
+            'Kanwil',
+            'KPP Gayam Sari',
+            'KPP Madya SMG',
+            'KPP SMG Selatan',
+            'KPP SMG Tengah 1',
+            'KPTIK',
+            'PT Gumilang',
+            'Kanwil DJPB',
+            'KPTIK BMN Semarang',
+            'KPP Madya Dua Semarang',
+            'Kanwil DJP Jateng 1',
+            'Kanwil DJKN',
+            'KPKNL Semarang',
+        ])->map(fn ($namaKantor) => (object) ['nama_kantor' => $namaKantor]);
+
         // Ambil data kantor dari master_kantor yang aktif
         $kantors = Schema::hasTable('master_kantor')
             ? MasterKantor::where('is_active', true)
                 ->orderBy('nama_kantor')
                 ->get()
-            : collect();
-        
+                ->whenEmpty(fn () => $fallbackKantors)
+            : $fallbackKantors;
+
         return view('auth.register', compact('kantors'));
     }
 
