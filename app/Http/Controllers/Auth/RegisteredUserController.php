@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
 
@@ -23,9 +24,11 @@ class RegisteredUserController extends Controller
     public function create(): View
     {
         // Ambil data kantor dari master_kantor yang aktif
-        $kantors = MasterKantor::where('is_active', true)
-                              ->orderBy('nama_kantor')
-                              ->get();
+        $kantors = Schema::hasTable('master_kantor')
+            ? MasterKantor::where('is_active', true)
+                ->orderBy('nama_kantor')
+                ->get()
+            : collect();
         
         return view('auth.register', compact('kantors'));
     }
