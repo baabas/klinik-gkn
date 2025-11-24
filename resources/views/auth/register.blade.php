@@ -19,11 +19,29 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: #f8f9fa;
+            background-image: url('{{ asset('images/backgrounds/GKN1.jpg') }}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            position: relative;
+        }
+        /* Overlay gelap untuk meningkatkan kontras */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.4);
+            z-index: 0;
         }
         .register-card {
             width: 100%;
             max-width: 800px;
+            position: relative;
+            z-index: 1;
         }
         .form-row {
             display: flex;

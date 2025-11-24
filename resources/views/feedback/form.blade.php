@@ -14,7 +14,7 @@
         }
 
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #28a745 0%, #218838 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -83,7 +83,7 @@
         }
 
         .alert-info {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #28a745 0%, #218838 100%);
             border: none;
             color: white;
             border-radius: 15px;
@@ -128,8 +128,8 @@
         .emoji-btn.active {
             opacity: 1;
             transform: scale(1.4);
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5);
+            background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+            box-shadow: 0 10px 30px rgba(40, 167, 69, 0.5);
         }
 
         .emoji-btn::after {
@@ -165,24 +165,24 @@
         }
 
         .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            border-color: #28a745;
+            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #28a745 0%, #218838 100%);
             border: none;
             border-radius: 12px;
             padding: 15px;
             font-size: 18px;
             font-weight: 700;
             transition: all 0.3s;
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 20px rgba(40, 167, 69, 0.4);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.6);
+            box-shadow: 0 8px 30px rgba(40, 167, 69, 0.6);
         }
 
         .thank-you-screen {
@@ -235,7 +235,7 @@
     <div class="feedback-container">
         {{-- Waiting Screen --}}
         <div id="waiting-screen" class="waiting-screen">
-            <div class="spinner-border text-primary mb-4" role="status">
+            <div class="spinner-border text-success mb-4" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
             <h3>Menunggu Pasien Berikutnya...</h3>
