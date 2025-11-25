@@ -55,7 +55,6 @@
                 </div>
                 <div class="col-md-6">
                     <p><strong>Kantor:</strong><br> {{ $user->karyawan->kantor ?? '-' }}</p>
-                    <p class="mb-0"><strong>Alamat:</strong><br> {{ $user->karyawan->alamat ?? '-' }}</p>
                 </div>
             </div>
         @else

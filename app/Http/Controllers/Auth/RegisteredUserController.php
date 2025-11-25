@@ -68,8 +68,6 @@ class RegisteredUserController extends Controller
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email', 'unique:karyawan,email'],
                 'password' => ['required', 'confirmed', Rules\Password::defaults()],
                 'kantor' => ['required', 'string', 'max:100'],
-                'alamat' => ['required', 'string'],
-                'agama' => ['required', 'string', 'max:50'],
                 'tanggal_lahir' => ['required', 'date'],
                 ], [
                 'nip.digits' => 'NIP harus terdiri dari 18 digit.',
@@ -87,8 +85,6 @@ class RegisteredUserController extends Controller
                 'nama_karyawan' => $request->name,
                 'kantor' => $request->kantor,
                 'email' => $request->email,
-                'alamat' => $request->alamat,
-                'agama' => $request->agama,
                 'tanggal_lahir' => $request->tanggal_lahir,
             ]);
             Log::info('Karyawan created successfully', ['nip' => $karyawan->nip]);

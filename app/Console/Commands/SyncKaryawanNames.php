@@ -98,7 +98,6 @@ class SyncKaryawanNames extends Command
                     Karyawan::create([
                         'nip' => $user->nip,
                         'nama_karyawan' => $user->nama_karyawan,
-                        'alamat' => '-',
                         'no_hp' => '-',
                         'id_lokasi' => 1,
                     ]);

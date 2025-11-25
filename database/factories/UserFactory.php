@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Karyawan;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -23,11 +24,16 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        // Create or get a karyawan first
+        $karyawan = Karyawan::factory()->create();
+
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
+            'nama_karyawan' => $karyawan->nama_karyawan,
+            'nip' => $karyawan->nip,
+            'nik' => fake()->unique()->numerify('################'),
+            'email' => $karyawan->email,
             'password' => static::$password ??= Hash::make('password'),
+            'akses' => 'PASIEN',
             'remember_token' => Str::random(10),
         ];
     }

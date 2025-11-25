@@ -32,7 +32,6 @@ class NonKaryawan extends Model
      */
     protected $fillable = [
         'nik',
-        'alamat',
         'lokasi_gedung',
         'tanggal_lahir',
     ];

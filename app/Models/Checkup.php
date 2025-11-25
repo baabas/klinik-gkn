@@ -11,6 +11,13 @@ class Checkup extends Model
     use HasFactory;
 
     /**
+     * Primary key untuk tabel checkups.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id_checkup';
+
+    /**
      * Atribut yang dapat diisi secara massal.
      *
      * @var array

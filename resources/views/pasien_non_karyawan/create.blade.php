@@ -30,14 +30,6 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="alamat" class="form-label fw-bold">Alamat</label>
-                        <textarea class="form-control @error('alamat') is-invalid @enderror" id="alamat" name="alamat" rows="3">{{ old('alamat') }}</textarea>
-                        @error('alamat')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <div class="mb-3">
                         <label for="lokasi_gedung" class="form-label fw-bold">Lokasi Gedung <span class="text-danger">*</span></label>
                         <select class="form-select @error('lokasi_gedung') is-invalid @enderror" id="lokasi_gedung" name="lokasi_gedung" required>
                             <option value="">Pilih Lokasi Gedung</option>

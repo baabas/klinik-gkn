@@ -26,7 +26,6 @@ class NonKaryawanController extends Controller
         $validatedData = $request->validate([
             'nik' => 'required|string|digits:16|unique:users,nik',
             'nama' => 'required|string|max:255',
-            'alamat' => 'nullable|string',
             'lokasi_gedung' => 'required|string|max:100',
             'tanggal_lahir' => 'required|date|before_or_equal:today',
         ], [
@@ -55,7 +54,6 @@ class NonKaryawanController extends Controller
             // 3. Buat record di tabel 'non_karyawan' sebagai profil
             NonKaryawan::create([
                 'nik' => $validatedData['nik'],
-                'alamat' => $validatedData['alamat'],
                 'lokasi_gedung' => $validatedData['lokasi_gedung'],
                 'tanggal_lahir' => $validatedData['tanggal_lahir'],
             ]);

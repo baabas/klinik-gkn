@@ -15,6 +15,6 @@ class Karyawan extends Model
     protected $keyType = 'string'; // Tipe data NIP adalah string
 
     protected $fillable = [
-        'nip', 'nama_karyawan', 'jabatan', 'kantor', 'email', 'alamat', 'agama', 'tanggal_lahir'
+        'nip', 'nama_karyawan', 'jabatan', 'kantor', 'email', 'tanggal_lahir'
     ];
 }

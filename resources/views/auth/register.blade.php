@@ -374,7 +374,6 @@
                 <p>Lengkapi data Anda untuk membuat akun pasien</p>
                 <ul class="auth-points">
                     <li><i class="bi bi-shield-check"></i>Data aman dan terverifikasi</li>
-                    <li><i class="bi bi-calendar-heart"></i>Mudah mengatur jadwal berobat</li>
                     <li><i class="bi bi-activity"></i>Akses rekam medis pribadi</li>
                 </ul>
             </div>
@@ -491,25 +490,6 @@
                         </div>
 
                         <div class="input-group-modern">
-                            <label for="agama">Agama</label>
-                            <div class="input-with-icon">
-                                <i class="bi bi-stars icon-left"></i>
-                                <select id="agama" name="agama" required>
-                                    <option value="">Pilih Agama</option>
-                                    <option value="Islam" {{ old('agama') == 'Islam' ? 'selected' : '' }}>Islam</option>
-                                    <option value="Kristen" {{ old('agama') == 'Kristen' ? 'selected' : '' }}>Kristen</option>
-                                    <option value="Katolik" {{ old('agama') == 'Katolik' ? 'selected' : '' }}>Katolik</option>
-                                    <option value="Hindu" {{ old('agama') == 'Hindu' ? 'selected' : '' }}>Hindu</option>
-                                    <option value="Buddha" {{ old('agama') == 'Buddha' ? 'selected' : '' }}>Buddha</option>
-                                    <option value="Konghucu" {{ old('agama') == 'Konghucu' ? 'selected' : '' }}>Konghucu</option>
-                                </select>
-                            </div>
-                            @error('agama')
-                                <div class="error-text">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="input-group-modern">
                             <label for="tanggal_lahir">Tanggal Lahir</label>
                             <div class="input-with-icon">
                                 <i class="bi bi-calendar-event icon-left"></i>
@@ -519,22 +499,11 @@
                                 <div class="error-text">{{ $message }}</div>
                             @enderror
                         </div>
-
-                        <div class="input-group-modern full-width">
-                            <label for="alamat">Alamat</label>
-                            <div class="input-with-icon">
-                                <i class="bi bi-geo-alt icon-left" style="top: 18px;"></i>
-                                <textarea id="alamat" name="alamat" rows="2" required placeholder="Tulis alamat lengkap">{{ old('alamat') }}</textarea>
-                            </div>
-                            @error('alamat')
-                                <div class="error-text">{{ $message }}</div>
-                            @enderror
-                        </div>
                     </div>
 
                     <div style="margin-top: 22px; display: grid; gap: 10px;">
                         <button type="submit" class="btn-modern">
-                            <i class="bi bi-person-check me-2"></i>Daftar
+                            <i class="bi bi-person-check me-2"></i>{{ __('Daftar') }}
                         </button>
                         <div class="link-inline">
                             Sudah punya akun? <a href="{{ route('login') }}">Login di sini</a>
