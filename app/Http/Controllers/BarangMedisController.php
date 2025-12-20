@@ -4,6 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\BarangMedis;
 use App\Models\LokasiKlinik;
+use App\Models\DistribusiBarang;
+use App\Models\SuratDistribusi;
+use App\Models\DetailSuratDistribusi;
+use App\Models\MasterWhatsappValidator;
+use App\Models\MasterSatuan;
+use App\Models\MasterIsiKemasan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -34,39 +40,24 @@ class BarangMedisController extends Controller
                     $query->where('id_lokasi', $idLokasi);
                 }
             })
-            ->withSum(['stok' => function ($q) use ($idLokasi) {
-                if ($idLokasi) {
-                    $q->where('id_lokasi', $idLokasi);
-                } else {
-                    // Jika tidak ada filter lokasi, tampilkan semua
-                    return $q;
-                }
-            }], 'jumlah')
+            // Total stok dari semua lokasi (untuk kolom Total Stok)
+            ->withSum('stok', 'jumlah')
+            // Stok per lokasi spesifik
             ->withSum(['stok as stok_gkn1' => function ($q) use ($gkn1Id) {
                 $q->where('id_lokasi', $gkn1Id ?? 0);
             }], 'jumlah')
             ->withSum(['stok as stok_gkn2' => function ($q) use ($gkn2Id) {
                 $q->where('id_lokasi', $gkn2Id ?? 0);
             }], 'jumlah')
-            ->withSum(['stokMasuk as total_kemasan_masuk' => function ($q) use ($idLokasi) {
-                if ($idLokasi) {
-                    $q->where('id_lokasi', $idLokasi);
-                }
-            }], 'jumlah_kemasan')
-            ->withSum(['stokMasuk as total_unit_masuk' => function ($q) use ($idLokasi) {
-                if ($idLokasi) {
-                    $q->where('id_lokasi', $idLokasi);
-                }
-            }], 'perubahan')
-            ->withMax(['stokMasuk as tanggal_masuk_terakhir' => function ($q) use ($idLokasi) {
-                if ($idLokasi) {
-                    $q->where('id_lokasi', $idLokasi);
-                }
-            }], 'tanggal_transaksi')
-            ->withMin(['stokMasuk as expired_terdekat' => function ($q) use ($idLokasi) {
-                if ($idLokasi) {
-                    $q->where('id_lokasi', $idLokasi);
-                }
+            // Total kemasan masuk (dari semua lokasi untuk info global)
+            ->withSum('stokMasuk', 'jumlah_kemasan')
+            // Total unit masuk (dari semua lokasi untuk info global)
+            ->withSum(['stokMasuk as total_unit_masuk'], 'perubahan')
+            // Tanggal masuk terakhir dari semua lokasi
+            ->withMax(['stokMasuk as tanggal_masuk_terakhir'], 'tanggal_transaksi')
+            // Expired terdekat dari semua lokasi (yang belum expired)
+            ->withMin(['stokMasuk as expired_terdekat' => function ($q) {
+                $q->where('expired_at', '>=', now());
             }], 'expired_at')
             ->with(['stokMasukTerakhir' => function ($query) use ($idLokasi) {
                 if ($idLokasi) {
@@ -93,7 +84,10 @@ class BarangMedisController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('barang-medis.index', compact('barang', 'search'));
+        // Ambil data WhatsApp Validator yang aktif
+        $validators = MasterWhatsappValidator::active()->orderBy('nama_validator')->get();
+
+        return view('barang-medis.index', compact('barang', 'search', 'validators'));
     }
 
     /**
@@ -116,39 +110,24 @@ class BarangMedisController extends Controller
                         $query->where('id_lokasi', $idLokasi);
                     }
                 })
-                ->withSum(['stok' => function ($q) use ($idLokasi) {
-                    if ($idLokasi) {
-                        $q->where('id_lokasi', $idLokasi);
-                    } else {
-                        // Jika tidak ada filter lokasi, tampilkan semua
-                        return $q;
-                    }
-                }], 'jumlah')
+                // Total stok dari semua lokasi (untuk kolom Total Stok)
+                ->withSum('stok', 'jumlah')
+                // Stok per lokasi spesifik
                 ->withSum(['stok as stok_gkn1' => function ($q) use ($gkn1Id) {
                     $q->where('id_lokasi', $gkn1Id ?? 0);
                 }], 'jumlah')
                 ->withSum(['stok as stok_gkn2' => function ($q) use ($gkn2Id) {
                     $q->where('id_lokasi', $gkn2Id ?? 0);
                 }], 'jumlah')
-                ->withSum(['stokMasuk as total_kemasan_masuk' => function ($q) use ($idLokasi) {
-                    if ($idLokasi) {
-                        $q->where('id_lokasi', $idLokasi);
-                    }
-                }], 'jumlah_kemasan')
-                ->withSum(['stokMasuk as total_unit_masuk' => function ($q) use ($idLokasi) {
-                    if ($idLokasi) {
-                        $q->where('id_lokasi', $idLokasi);
-                    }
-                }], 'perubahan')
-                ->withMax(['stokMasuk as tanggal_masuk_terakhir' => function ($q) use ($idLokasi) {
-                    if ($idLokasi) {
-                        $q->where('id_lokasi', $idLokasi);
-                    }
-                }], 'tanggal_transaksi')
-                ->withMin(['stokMasuk as expired_terdekat' => function ($q) use ($idLokasi) {
-                    if ($idLokasi) {
-                        $q->where('id_lokasi', $idLokasi);
-                    }
+                // Total kemasan masuk (dari semua lokasi untuk info global)
+                ->withSum('stokMasuk', 'jumlah_kemasan')
+                // Total unit masuk (dari semua lokasi untuk info global)
+                ->withSum(['stokMasuk as total_unit_masuk'], 'perubahan')
+                // Tanggal masuk terakhir dari semua lokasi
+                ->withMax(['stokMasuk as tanggal_masuk_terakhir'], 'tanggal_transaksi')
+                // Expired terdekat dari semua lokasi (yang belum expired)
+                ->withMin(['stokMasuk as expired_terdekat' => function ($q) {
+                    $q->where('expired_at', '>=', now());
                 }], 'expired_at')
                 ->with(['stokMasukTerakhir' => function ($query) use ($idLokasi) {
                     if ($idLokasi) {
@@ -244,20 +223,38 @@ class BarangMedisController extends Controller
             abort(403, 'Anda tidak memiliki hak akses.');
         }
 
+        // Get active satuan from MasterSatuan table
+        $activeSatuanList = MasterSatuan::where('is_active', true)
+            ->pluck('nama_satuan')
+            ->toArray();
+        $activeSatuanList[] = 'lainnya'; // Add 'lainnya' option
+        $satuanValidation = 'required|string|in:' . implode(',', $activeSatuanList);
+
+        // Get active isi kemasan from MasterIsiKemasan table (convert to lowercase for validation)
+        $activeIsiKemasanList = MasterIsiKemasan::where('is_active', true)
+            ->pluck('nama_isi_kemasan')
+            ->map(fn($item) => strtolower($item))
+            ->toArray();
+        $activeIsiKemasanList[] = 'lainnya'; // Add 'lainnya' option
+        $isiKemasanValidation = 'required|string|in:' . implode(',', $activeIsiKemasanList);
+
         $validated = $request->validate([
             'kategori_barang' => 'required|string|in:Obat,BMHP,Alkes,APD',
             'nama_obat' => 'required|string|max:255',
             'isi_kemasan_jumlah' => 'required|integer|min:1',
-            'isi_kemasan_satuan' => 'required|string|in:strip,kotak,botol,vial,tube,lainnya',
+            'isi_kemasan_satuan' => $isiKemasanValidation,
             'isi_kemasan_satuan_custom' => 'required_if:isi_kemasan_satuan,lainnya|nullable|string|max:50',
             'isi_per_satuan' => 'required|integer|min:1',
-            'satuan_terkecil' => 'required|string|in:Tablet,Botol,Pcs,Vial,Tube,Troches,Kapsul,Sirup,lainnya',
+            'satuan_terkecil' => $satuanValidation,
             'satuan_terkecil_custom' => 'required_if:satuan_terkecil,lainnya|nullable|string|max:50',
         ]);
 
         // Process custom values
         if ($validated['isi_kemasan_satuan'] === 'lainnya') {
             $validated['isi_kemasan_satuan'] = $validated['isi_kemasan_satuan_custom'];
+        } else {
+            // Capitalize first letter for database storage
+            $validated['isi_kemasan_satuan'] = ucfirst($validated['isi_kemasan_satuan']);
         }
 
         if ($validated['satuan_terkecil'] === 'lainnya') {
@@ -266,6 +263,18 @@ class BarangMedisController extends Controller
 
         // Remove custom fields from validated data as they're not needed in database
         unset($validated['isi_kemasan_satuan_custom'], $validated['satuan_terkecil_custom']);
+
+        // Cek duplikasi berdasarkan nama, isi kemasan satuan, dan satuan terkecil
+        $existingBarang = BarangMedis::where('nama_obat', $validated['nama_obat'])
+            ->where('isi_kemasan_satuan', $validated['isi_kemasan_satuan'])
+            ->where('satuan_terkecil', $validated['satuan_terkecil'])
+            ->first();
+
+        if ($existingBarang) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Obat/Alat Medis dengan nama "' . $validated['nama_obat'] . '", kemasan "' . $validated['isi_kemasan_satuan'] . '", dan satuan terkecil "' . $validated['satuan_terkecil'] . '" sudah terdaftar dalam sistem. Jika Anda ingin menambahkan varian berbeda, gunakan kemasan atau satuan terkecil yang berbeda.');
+        }
 
         // Generate kode otomatis berdasarkan kategori
         $kodeObat = $this->generateKodeBarang($validated['kategori_barang']);
@@ -373,20 +382,38 @@ class BarangMedisController extends Controller
             abort(403, 'Anda tidak memiliki hak akses.');
         }
 
+        // Get active satuan from MasterSatuan table
+        $activeSatuanList = MasterSatuan::where('is_active', true)
+            ->pluck('nama_satuan')
+            ->toArray();
+        $activeSatuanList[] = 'lainnya'; // Add 'lainnya' option
+        $satuanValidation = 'required|string|in:' . implode(',', $activeSatuanList);
+
+        // Get active isi kemasan from MasterIsiKemasan table (convert to lowercase for validation)
+        $activeIsiKemasanList = MasterIsiKemasan::where('is_active', true)
+            ->pluck('nama_isi_kemasan')
+            ->map(fn($item) => strtolower($item))
+            ->toArray();
+        $activeIsiKemasanList[] = 'lainnya'; // Add 'lainnya' option
+        $isiKemasanValidation = 'required|string|in:' . implode(',', $activeIsiKemasanList);
+
         $validated = $request->validate([
             'kategori_barang' => 'required|string|in:Obat,BMHP,Alkes,APD',
             'nama_obat' => 'required|string|max:255',
             'isi_kemasan_jumlah' => 'required|integer|min:1',
-            'isi_kemasan_satuan' => 'required|string|in:strip,kotak,botol,vial,tube,lainnya',
+            'isi_kemasan_satuan' => $isiKemasanValidation,
             'isi_kemasan_satuan_custom' => 'required_if:isi_kemasan_satuan,lainnya|nullable|string|max:50',
             'isi_per_satuan' => 'required|integer|min:1',
-            'satuan_terkecil' => 'required|string|in:Tablet,Botol,Pcs,Vial,Tube,Troches,Kapsul,Sirup,lainnya',
+            'satuan_terkecil' => $satuanValidation,
             'satuan_terkecil_custom' => 'required_if:satuan_terkecil,lainnya|nullable|string|max:50',
         ]);
 
         // Process custom values
         if ($validated['isi_kemasan_satuan'] === 'lainnya') {
             $validated['isi_kemasan_satuan'] = $validated['isi_kemasan_satuan_custom'];
+        } else {
+            // Capitalize first letter for database storage
+            $validated['isi_kemasan_satuan'] = ucfirst($validated['isi_kemasan_satuan']);
         }
 
         if ($validated['satuan_terkecil'] === 'lainnya') {
@@ -396,11 +423,102 @@ class BarangMedisController extends Controller
         // Remove custom fields from validated data as they're not needed in database
         unset($validated['isi_kemasan_satuan_custom'], $validated['satuan_terkecil_custom']);
 
+        // Cek duplikasi berdasarkan nama, isi kemasan satuan, dan satuan terkecil (kecuali untuk barang yang sedang diedit)
+        $existingBarang = BarangMedis::where('nama_obat', $validated['nama_obat'])
+            ->where('isi_kemasan_satuan', $validated['isi_kemasan_satuan'])
+            ->where('satuan_terkecil', $validated['satuan_terkecil'])
+            ->where('id_obat', '!=', $barangMedi->id_obat)
+            ->first();
+
+        if ($existingBarang) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Obat/Alat Medis dengan nama "' . $validated['nama_obat'] . '", kemasan "' . $validated['isi_kemasan_satuan'] . '", dan satuan terkecil "' . $validated['satuan_terkecil'] . '" sudah terdaftar dalam sistem.');
+        }
+
         // Set kemasan ke "Box" secara otomatis
         $validated['kemasan'] = 'Box';
 
         // Set satuan sama dengan satuan_terkecil
         $validated['satuan'] = $validated['satuan_terkecil'];
+
+        // Proses koreksi stok jika ada
+        if ($request->has('koreksi')) {
+            DB::beginTransaction();
+            try {
+                foreach ($request->input('koreksi', []) as $idLokasi => $koreksi) {
+                    // Skip jika tidak ada tipe koreksi
+                    if (empty($koreksi['type'])) {
+                        continue;
+                    }
+
+                    $jumlahKemasan = (int) ($koreksi['kemasan'] ?? 0);
+                    $jumlahIsiKemasan = (int) ($koreksi['isi_kemasan'] ?? 0);
+                    $jumlahSatuan = (int) ($koreksi['satuan'] ?? 0);
+                    
+                    // Hitung total dalam satuan terkecil
+                    // Formula: (kemasan × isi_kemasan_jumlah × isi_per_satuan) + (isi_kemasan × isi_per_satuan) + satuan
+                    $totalSatuan = ($jumlahKemasan * $barangMedi->isi_kemasan_jumlah * $barangMedi->isi_per_satuan) 
+                                 + ($jumlahIsiKemasan * $barangMedi->isi_per_satuan) 
+                                 + $jumlahSatuan;
+
+                    // Skip jika total 0
+                    if ($totalSatuan == 0) {
+                        continue;
+                    }
+
+                    // Cari atau buat stok untuk lokasi ini
+                    $stok = StokBarang::firstOrCreate(
+                        [
+                            'id_barang' => $barangMedi->id_obat,
+                            'id_lokasi' => $idLokasi
+                        ],
+                        ['jumlah' => 0]
+                    );
+
+                    // Tentukan perubahan berdasarkan tipe
+                    $perubahan = $koreksi['type'] === 'tambah' ? $totalSatuan : -$totalSatuan;
+
+                    // Validasi stok tidak boleh negatif jika mengurangi
+                    if ($koreksi['type'] === 'kurang' && $stok->jumlah < $totalSatuan) {
+                        DB::rollBack();
+                        $lokasiNama = LokasiKlinik::find($idLokasi)->nama_lokasi ?? 'Lokasi';
+                        return redirect()->back()
+                            ->with('error', "Stok di {$lokasiNama} tidak mencukupi. Stok saat ini: {$stok->jumlah} {$barangMedi->satuan_terkecil}")
+                            ->withInput();
+                    }
+
+                    // Update stok
+                    $stok->jumlah += $perubahan;
+                    $stok->save();
+
+                    // Catat di stok history
+                    StokHistory::create([
+                        'id_barang' => $barangMedi->id_obat,
+                        'id_lokasi' => $idLokasi,
+                        'id_user' => Auth::id(),
+                        'perubahan' => $perubahan,
+                        'stok_sebelum' => $stok->jumlah - $perubahan,
+                        'stok_sesudah' => $stok->jumlah,
+                        'jumlah_kemasan' => $jumlahKemasan,
+                        'tanggal_transaksi' => now(),
+                        'expired_at' => !empty($koreksi['expired_at']) ? $koreksi['expired_at'] : null,
+                        'keterangan' => 'Koreksi Stok: ' . ($koreksi['keterangan'] ?? ($koreksi['type'] === 'tambah' ? 'Penambahan' : 'Pengurangan') . " {$totalSatuan} {$barangMedi->satuan_terkecil}")
+                    ]);
+                }
+
+                $barangMedi->update($validated);
+                DB::commit();
+
+                return redirect()->route('barang-medis.index')->with('success', 'Data barang dan koreksi stok berhasil diperbarui.');
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Error updating barang with stock correction: ' . $e->getMessage());
+                return redirect()->back()
+                    ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
+                    ->withInput();
+            }
+        }
 
         $barangMedi->update($validated);
 
@@ -575,6 +693,182 @@ class BarangMedisController extends Controller
             return redirect()->back()->with('success',
                 "Berhasil mendistribusikan {$jumlahDistribusi} unit {$barang->nama_obat} dari {$lokasiAsal} ke {$lokasiTujuan}."
             );
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal melakukan distribusi: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Distribute multiple items at once between locations
+     */
+    public function distribusiMulti(Request $request)
+    {
+        $user = Auth::user();
+
+        // Izinkan PENGADAAN dan DOKTER untuk melakukan distribusi
+        if (!$user->hasRole('PENGADAAN') && !$user->hasRole('DOKTER')) {
+            abort(403, 'Anda tidak memiliki hak akses.');
+        }
+
+        $validated = $request->validate([
+            'lokasi_asal' => 'required|exists:lokasi_klinik,id',
+            'lokasi_tujuan' => 'required|exists:lokasi_klinik,id|different:lokasi_asal',
+            'nomor_wa_validator' => 'required|string|min:10|max:15',
+            'catatan' => 'nullable|string|max:500',
+            'items' => 'required|array|min:1',
+            'items.*.id_barang' => 'required|exists:barang_medis,id_obat',
+            'items.*.jumlah' => 'required|integer|min:1'
+        ], [
+            'lokasi_tujuan.different' => 'Lokasi tujuan tidak boleh sama dengan lokasi asal.',
+            'items.required' => 'Pilih minimal satu obat untuk didistribusikan.',
+            'items.min' => 'Pilih minimal satu obat untuk didistribusikan.',
+            'nomor_wa_validator.required' => 'Nomor WhatsApp validator wajib diisi.',
+            'nomor_wa_validator.min' => 'Nomor WhatsApp minimal 10 digit.',
+        ]);
+
+        $idLokasiAsal = $validated['lokasi_asal'];
+        $idLokasiTujuan = $validated['lokasi_tujuan'];
+        $nomorWaValidator = $validated['nomor_wa_validator'];
+        $catatan = $validated['catatan'] ?? null;
+        $items = $validated['items'];
+
+        // Validasi khusus untuk role DOKTER - hanya bisa distribusi dari/ke lokasi mereka
+        if ($user->hasRole('DOKTER')) {
+            $userLokasiId = $user->id_lokasi;
+
+            if ($idLokasiAsal != $userLokasiId && $idLokasiTujuan != $userLokasiId) {
+                abort(403, 'Dokter hanya dapat melakukan distribusi dari atau ke lokasi klinik mereka sendiri.');
+            }
+        }
+
+        $successCount = 0;
+        $failedItems = [];
+        $successItems = [];
+        $suratDistribusi = null;
+
+        try {
+            DB::transaction(function () use ($items, $idLokasiAsal, $idLokasiTujuan, $nomorWaValidator, $catatan, &$successCount, &$failedItems, &$successItems, &$suratDistribusi) {
+                
+                // Buat Surat Distribusi terlebih dahulu
+                $suratDistribusi = SuratDistribusi::create([
+                    'nomor_surat' => SuratDistribusi::generateNomorSurat(),
+                    'kode_validasi' => SuratDistribusi::generateKodeValidasi(),
+                    'id_lokasi_asal' => $idLokasiAsal,
+                    'id_lokasi_tujuan' => $idLokasiTujuan,
+                    'id_user' => Auth::id(),
+                    'tanggal_distribusi' => now()->toDateString(),
+                    'nomor_wa_validator' => $nomorWaValidator,
+                    'catatan' => $catatan,
+                    'status' => 'pending',
+                ]);
+
+                foreach ($items as $item) {
+                    $idBarang = $item['id_barang'];
+                    $jumlahDistribusi = $item['jumlah'];
+
+                    $barang = BarangMedis::find($idBarang);
+                    if (!$barang) {
+                        $failedItems[] = "Barang ID {$idBarang} tidak ditemukan";
+                        continue;
+                    }
+
+                    // --- PROSES LOKASI ASAL ---
+                    $stokAsal = StokBarang::where('id_barang', $idBarang)
+                        ->where('id_lokasi', $idLokasiAsal)
+                        ->lockForUpdate()
+                        ->first();
+
+                    $stokSebelumAsal = $stokAsal->jumlah ?? 0;
+
+                    if ($stokSebelumAsal < $jumlahDistribusi) {
+                        $failedItems[] = "{$barang->nama_obat} (stok tidak cukup: {$stokSebelumAsal})";
+                        continue;
+                    }
+
+                    // Kurangi stok di lokasi asal
+                    $stokAsal->decrement('jumlah', $jumlahDistribusi);
+
+                    // Catat riwayat pengurangan stok di lokasi asal
+                    StokHistory::create([
+                        'id_barang' => $idBarang,
+                        'id_lokasi' => $idLokasiAsal,
+                        'perubahan' => -$jumlahDistribusi,
+                        'stok_sebelum' => $stokSebelumAsal,
+                        'stok_sesudah' => $stokSebelumAsal - $jumlahDistribusi,
+                        'tanggal_transaksi' => now(),
+                        'keterangan' => 'Distribusi ke ' . LokasiKlinik::find($idLokasiTujuan)->nama_lokasi,
+                        'user_id' => Auth::id()
+                    ]);
+
+                    // --- PROSES LOKASI TUJUAN ---
+                    $stokTujuan = StokBarang::firstOrCreate(
+                        ['id_barang' => $idBarang, 'id_lokasi' => $idLokasiTujuan],
+                        ['jumlah' => 0]
+                    );
+
+                    $stokSebelumTujuan = $stokTujuan->jumlah;
+                    $stokTujuan->increment('jumlah', $jumlahDistribusi);
+
+                    // Catat riwayat penambahan stok di lokasi tujuan
+                    StokHistory::create([
+                        'id_barang' => $idBarang,
+                        'id_lokasi' => $idLokasiTujuan,
+                        'perubahan' => $jumlahDistribusi,
+                        'stok_sebelum' => $stokSebelumTujuan,
+                        'stok_sesudah' => $stokSebelumTujuan + $jumlahDistribusi,
+                        'tanggal_transaksi' => now(),
+                        'keterangan' => 'Distribusi dari ' . LokasiKlinik::find($idLokasiAsal)->nama_lokasi,
+                        'user_id' => Auth::id()
+                    ]);
+
+                    // LOG DISTRIBUSI UNTUK AUDIT PENGADAAN
+                    DistribusiBarang::create([
+                        'id_barang' => $idBarang,
+                        'id_lokasi_asal' => $idLokasiAsal,
+                        'id_lokasi_tujuan' => $idLokasiTujuan,
+                        'id_user' => Auth::id(),
+                        'jumlah' => $jumlahDistribusi,
+                        'keterangan' => 'Surat: ' . $suratDistribusi->nomor_surat,
+                        'status' => 'approved',
+                        'validated_by' => null,
+                        'validated_at' => null,
+                    ]);
+
+                    // Simpan detail ke surat distribusi
+                    DetailSuratDistribusi::create([
+                        'id_surat' => $suratDistribusi->id_surat,
+                        'id_barang' => $idBarang,
+                        'jumlah' => $jumlahDistribusi,
+                    ]);
+
+                    $successCount++;
+                    $successItems[] = "{$barang->nama_obat} ({$jumlahDistribusi} unit)";
+                }
+
+                // Jika tidak ada item yang berhasil, hapus surat
+                if ($successCount === 0) {
+                    $suratDistribusi->delete();
+                    $suratDistribusi = null;
+                }
+            });
+
+            $lokasiAsal = LokasiKlinik::find($idLokasiAsal)->nama_lokasi;
+            $lokasiTujuan = LokasiKlinik::find($idLokasiTujuan)->nama_lokasi;
+
+            $message = "Berhasil mendistribusikan {$successCount} jenis obat dari {$lokasiAsal} ke {$lokasiTujuan}.";
+            
+            if (count($failedItems) > 0) {
+                $message .= " Gagal: " . implode(', ', $failedItems);
+            }
+
+            // Jika surat berhasil dibuat, redirect ke halaman cetak surat
+            if ($suratDistribusi) {
+                return redirect()->route('surat-distribusi.show', $suratDistribusi->id_surat)
+                    ->with('success', $message . ' Silakan cetak surat distribusi.');
+            }
+
+            return redirect()->back()->with('success', $message);
 
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal melakukan distribusi: ' . $e->getMessage());

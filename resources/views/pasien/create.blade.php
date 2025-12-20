@@ -53,7 +53,8 @@
                         <p class="text-muted">Lengkapi data di bawah ini untuk mendaftarkan pasien baru.</p>
                         <div class="mb-3">
                             <label for="nik" class="form-label">NIK <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control @error('nik') is-invalid @enderror" id="nik" name="nik" value="{{ old('nik') }}">
+                            <input type="text" class="form-control @error('nik') is-invalid @enderror" id="nik" name="nik" value="{{ old('nik') }}" inputmode="numeric" minlength="16" maxlength="16" pattern="\d{16}">
+                            <div class="form-text">NIK harus terdiri dari 16 digit.</div>
                             @error('nik') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div class="mb-3">

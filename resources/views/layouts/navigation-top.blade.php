@@ -165,21 +165,27 @@
             </div>
 
             @if(Auth::check())
-                <span class="d-none d-sm-inline me-3">Hallo, {{ Auth::user()->nama_karyawan }}</span>
-
-                {{-- Profile Dropdown (tanpa logout) --}}
+                {{-- Profile Dropdown dengan nama user --}}
                 <div class="nav-item dropdown me-2" style="position: relative;">
-                    <a class="nav-link dropdown-toggle text-white p-1 rounded-circle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown"
-                        aria-expanded="false" style="background-color: rgba(255,255,255,0.1); transition: all 0.3s ease;">
-                        <i class="bi bi-person-circle fs-4 align-middle"></i>
+                    <a class="nav-link text-white px-3 py-2 d-flex align-items-center" 
+                       href="javascript:void(0)" 
+                       id="userDropdown" 
+                       role="button" 
+                       aria-expanded="false" 
+                       style="background-color: rgba(255,255,255,0.1); transition: all 0.3s ease; border-radius: 8px;">
+                        <i class="bi bi-person-circle fs-5 me-2"></i>
+                        <span class="d-none d-sm-inline">Hallo, {{ Auth::user()->nama_karyawan }}</span>
+                        <i class="bi bi-chevron-down ms-2 small"></i>
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0" aria-labelledby="userDropdown" style="min-width: 200px;">
-                        <li class="dropdown-header">
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-person-circle fs-5 me-2 text-primary"></i>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0" aria-labelledby="userDropdown" style="min-width: 250px;">
+                        <li class="dropdown-header bg-light">
+                            <div class="d-flex align-items-center py-2">
+                                <i class="bi bi-person-circle fs-3 me-3 text-primary"></i>
                                 <div>
-                                    <div class="fw-semibold">{{ Auth::user()->nama_karyawan }}</div>
-                                    <small class="text-muted">
+                                    <div class="fw-bold text-dark">{{ Auth::user()->nama_karyawan }}</div>
+                                    <small class="text-muted">{{ Auth::user()->email }}</small>
+                                    <br>
+                                    <small class="badge bg-primary mt-1">
                                         @switch($activeRole)
                                             @case('PENGADAAN')
                                                 Staff Pengadaan
@@ -190,33 +196,35 @@
                                             @case('PASIEN')
                                                 Pasien
                                                 @break
+                                            @default
+                                                User
                                         @endswitch
                                     </small>
                                 </div>
                             </div>
                         </li>
-                        <li><hr class="dropdown-divider"></li>
+                        <li><hr class="dropdown-divider my-2"></li>
                         <li>
-                            <a class="dropdown-item d-flex align-items-center" href="{{ route('profile.edit') }}">
-                                <i class="bi bi-gear me-2 text-secondary"></i>
-                                Profile Settings
+                            <a class="dropdown-item d-flex align-items-center py-2" href="{{ route('profile.edit') }}" style="transition: all 0.2s;">
+                                <i class="bi bi-gear-fill me-3 text-primary fs-5"></i>
+                                <div>
+                                    <div class="fw-semibold">Pengaturan Profile</div>
+                                    <small class="text-muted">Update informasi akun Anda</small>
+                                </div>
                             </a>
+                        </li>
+                        <li><hr class="dropdown-divider my-2"></li>
+                        <li>
+                            <form method="POST" action="{{ route('logout') }}" class="px-3 py-2">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-danger btn-sm w-100 d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-box-arrow-right me-2"></i>
+                                    Logout
+                                </button>
+                            </form>
                         </li>
                     </ul>
                 </div>
-
-                {{-- Tombol Logout Terpisah --}}
-                <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                    @csrf
-                    <button type="submit" class="btn btn-outline-light btn-sm d-flex align-items-center"
-                            style="border-color: rgba(255,255,255,0.3); transition: all 0.3s ease;"
-                            onmouseover="this.style.backgroundColor='rgba(220,53,69,0.1)'; this.style.borderColor='#dc3545'; this.style.color='#dc3545';"
-                            onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255,255,255,0.3)'; this.style.color='white';"
-                            title="Logout dari sistem">
-                        <i class="bi bi-box-arrow-right me-1"></i>
-                        <span class="d-none d-sm-inline">Logout</span>
-                    </button>
-                </form>
             @endif
         </div>
     </div>
@@ -415,6 +423,9 @@
     }
 
     .dropdown-menu.show {
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
         z-index: 10000 !important;
         position: absolute !important;
         top: 100% !important;
@@ -422,6 +433,26 @@
         left: auto !important;
         transform: none !important;
         margin-top: 0.125rem !important;
+    }
+
+    .dropdown-menu {
+        display: none;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    /* User profile dropdown specific styles */
+    #userDropdown {
+        cursor: pointer;
+    }
+
+    #userDropdown:hover {
+        background-color: rgba(255,255,255,0.2) !important;
+    }
+
+    .dropdown-item:hover {
+        background-color: rgba(13, 110, 253, 0.1) !important;
     }
 
     /* Ensure dropdown appears above all content */
@@ -594,6 +625,66 @@
             obatMedisMenu.addEventListener('click', function(e) {
                 e.stopPropagation();
             });
+        }
+
+        // Handle User Profile Dropdown - ALWAYS INITIALIZE
+        const userDropdownToggle = document.getElementById('userDropdown');
+        const userDropdownMenu = userDropdownToggle ? userDropdownToggle.nextElementSibling : null;
+
+        console.log('User Dropdown Elements:', {
+            toggle: userDropdownToggle,
+            menu: userDropdownMenu
+        });
+
+        if (userDropdownToggle && userDropdownMenu) {
+            // Remove any existing listeners to prevent duplicates
+            const newToggle = userDropdownToggle.cloneNode(true);
+            userDropdownToggle.parentNode.replaceChild(newToggle, userDropdownToggle);
+            
+            const refreshedToggle = document.getElementById('userDropdown');
+            const refreshedMenu = refreshedToggle.nextElementSibling;
+
+            refreshedToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                console.log('User dropdown clicked!');
+
+                // Close obat medis dropdown if open
+                if (obatMedisMenu && obatMedisMenu.style) {
+                    obatMedisMenu.style.display = 'none';
+                }
+
+                // Toggle user dropdown
+                const isOpen = refreshedMenu.classList.contains('show');
+
+                // Close all dropdowns first
+                document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                    if (menu !== refreshedMenu) {
+                        menu.classList.remove('show');
+                    }
+                });
+
+                if (!isOpen) {
+                    refreshedMenu.classList.add('show');
+                    refreshedToggle.setAttribute('aria-expanded', 'true');
+                    console.log('User dropdown opened');
+                } else {
+                    refreshedMenu.classList.remove('show');
+                    refreshedToggle.setAttribute('aria-expanded', 'false');
+                    console.log('User dropdown closed');
+                }
+            });
+
+            // Close user dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (refreshedMenu && !refreshedToggle.contains(e.target) && !refreshedMenu.contains(e.target)) {
+                    refreshedMenu.classList.remove('show');
+                    refreshedToggle.setAttribute('aria-expanded', 'false');
+                }
+            });
+        } else {
+            console.error('User dropdown elements not found!');
         }
     });
 </script>

@@ -325,6 +325,29 @@
             background: #efe;
             color: #3c3;
         }
+
+        .error-text {
+            color: #c33;
+            font-size: 12px;
+            margin-top: 6px;
+        }
+
+        .helper-text {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 6px;
+        }
+
+        /* Style untuk input error */
+        .input-error {
+            border-color: #dc3545 !important;
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.15) !important;
+        }
+
+        .input-error:focus {
+            border-color: #dc3545 !important;
+            box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.2) !important;
+        }
         
         /* Animations */
         @keyframes slideIn {
@@ -436,8 +459,10 @@
                     <div class="input-with-icon">
                         <i class="bi bi-person-badge"></i>
                         <input type="text" id="nip" name="nip" value="{{ old('nip') }}" 
-                               placeholder="Masukkan NIP Anda" required autofocus>
+                               placeholder="Masukkan 18 digit NIP" required autofocus
+                               inputmode="numeric" minlength="18" maxlength="18" pattern="\d{18}">
                     </div>
+                    <p class="helper-text">NIP harus terdiri dari 18 digit.</p>
                 </div>
                 
                 <!-- Password Input -->
@@ -500,6 +525,108 @@
             icon.classList.add('bi-eye');
         }
     }
+
+    // Validasi NIP - hanya angka yang diperbolehkan
+    document.getElementById('nip').addEventListener('input', function(e) {
+        // Hapus semua karakter selain angka
+        this.value = this.value.replace(/[^0-9]/g, '');
+    });
+
+    // Mencegah paste karakter non-angka
+    document.getElementById('nip').addEventListener('paste', function(e) {
+        e.preventDefault();
+        const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+        const numbersOnly = pastedText.replace(/[^0-9]/g, '');
+        this.value = numbersOnly.substring(0, 18);
+    });
+
+    // Mencegah input huruf via keypress, tapi izinkan Enter
+    document.getElementById('nip').addEventListener('keypress', function(e) {
+        // Izinkan Enter untuk submit form
+        if (e.key === 'Enter') {
+            return true;
+        }
+        // Hanya izinkan angka
+        if (!/[0-9]/.test(e.key)) {
+            e.preventDefault();
+        }
+    });
+
+    // Validasi form sebelum submit
+    document.querySelector('form').addEventListener('submit', function(e) {
+        let errors = [];
+        
+        const nip = document.getElementById('nip');
+        const password = document.getElementById('password');
+        
+        // Reset error state
+        nip.classList.remove('input-error');
+        password.classList.remove('input-error');
+        
+        // Validasi NIP
+        const nipValue = nip.value.trim();
+        if (!nipValue || nipValue === '') {
+            errors.push('NIP wajib diisi');
+            nip.classList.add('input-error');
+        } else if (nipValue.length !== 18) {
+            errors.push('NIP harus terdiri dari 18 digit');
+            nip.classList.add('input-error');
+        }
+        
+        // Validasi Password
+        const passwordValue = password.value;
+        if (!passwordValue || passwordValue === '') {
+            errors.push('Password wajib diisi');
+            password.classList.add('input-error');
+        }
+        
+        if (errors.length > 0) {
+            e.preventDefault();
+            alert('Mohon lengkapi form dengan benar:\n\n• ' + errors.join('\n• '));
+            
+            // Focus ke field pertama yang error
+            const firstErrorField = document.querySelector('.input-error');
+            if (firstErrorField) {
+                firstErrorField.focus();
+            }
+        }
+    });
+
+    // Hapus class error saat user mulai mengisi
+    document.querySelectorAll('input').forEach(function(element) {
+        element.addEventListener('input', function() {
+            this.classList.remove('input-error');
+        });
+    });
+
+    // Event listener untuk Enter pada semua input dalam form
+    const formInputs = document.querySelectorAll('input[type="text"], input[type="password"]');
+    formInputs.forEach(function(input) {
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                // Submit form
+                const submitButton = document.querySelector('button[type="submit"]');
+                submitButton.click();
+            }
+        });
+    });
+
+    // Auto hide alert setelah 2 detik
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert');
+        if (alerts.length > 0) {
+            alerts.forEach(function(alert) {
+                setTimeout(function() {
+                    alert.style.transition = 'opacity 0.5s ease';
+                    alert.style.opacity = '0';
+                    setTimeout(function() {
+                        alert.style.display = 'none';
+                    }, 500);
+                }, 2000);
+            });
+        }
+    });
 </script>
 
 @vite(['resources/js/app.js'])

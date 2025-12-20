@@ -33,28 +33,67 @@
 <div class="container py-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">Kartu Pasien Digital Anda</h1>
+        <div>
+            <a href="{{ route('dashboard') }}" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left me-2"></i>Kembali ke Dashboard
+            </a>
+        </div>
     </div>
 
     {{-- BIODATA KARTU (TELAH DIMODIFIKASI) --}}
     <div class="card shadow-sm mb-4">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <h4 class="mb-0">Nomor Index Pasien: {{ $user->id }}</h4>
+            @if($user->karyawan)
+                <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#updateKantorModal">
+                    <i class="bi bi-pencil-square"></i> Ubah Kantor
+                </button>
+            @endif
         </div>
         <div class="card-body p-4">
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>{{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
             @if($user->karyawan)
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <p><strong>NIP:</strong><br> {{ $user->nip }}</p>
                         <p><strong>Nama:</strong><br> {{ $user->nama_karyawan }}</p>
                         <p><strong>Tanggal Lahir:</strong><br>
                             {{ $user->karyawan->tanggal_lahir ? \Carbon\Carbon::parse($user->karyawan->tanggal_lahir)->translatedFormat('d F Y') : '-' }}
                         </p>
-                        <p class="mb-md-0"><strong>Usia:</strong><br>
+                        <p class="mb-md-0"><strong>Alamat:</strong><br> {{ $user->karyawan->alamat ?? '-' }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <p><strong>Usia:</strong><br>
                             {{ $user->karyawan->tanggal_lahir ? \Carbon\Carbon::parse($user->karyawan->tanggal_lahir)->age . ' Tahun' : '-' }}
                         </p>
+                        <p><strong>Jenis Kelamin:</strong><br>
+                            @if($user->karyawan->jenis_kelamin)
+                                {{ $user->karyawan->jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan' }}
+                            @else
+                                -
+                            @endif
+                        </p>
+                        <p><strong>No. HP:</strong><br> {{ $user->karyawan->no_hp ?? '-' }}</p>
+                        <p class="mb-md-0"><strong>Kantor:</strong><br> {{ $user->karyawan->kantor ?? '-' }}</p>
                     </div>
-                    <div class="col-md-6">
-                        <p><strong>Kantor:</strong><br> {{ $user->karyawan->kantor ?? '-' }}</p>
+                    <div class="col-md-4">
+                        @if($user->karyawan->alergi)
+                            <div class="alert alert-warning mb-0" role="alert">
+                                <strong><i class="bi bi-exclamation-triangle-fill me-2"></i>Alergi:</strong><br>
+                                {{ $user->karyawan->alergi }}
+                            </div>
+                        @endif
                     </div>
                 </div>
             @else
@@ -87,13 +126,16 @@
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead class="table-light">
-                                <tr><th>Tanggal</th><th>Pemeriksaan</th><th>Terapi</th><th>Berobat Untuk</th></tr>
+                                <tr><th>Tanggal</th><th>Anamnesa</th><th>Treatment</th></tr>
                             </thead>
                             <tbody>
                                 @forelse ($user->rekamMedis as $rekam)
                                     <tr>
                                         <td>{{ \Carbon\Carbon::parse($rekam->tanggal_kunjungan)->timezone(config('app.timezone'))->translatedFormat('d M Y, H:i') }}</td>
                                         <td>
+                                            @if($rekam->anamnesa)
+                                                <span class="section-title">Keluhan:</span> {{ $rekam->anamnesa }}
+                                            @endif
                                             @if($rekam->detailDiagnosa->isNotEmpty())
                                                 <span class="section-title">Diagnosa:</span>
                                                 <ul class="list-unstyled list-diagnosa">
@@ -101,9 +143,6 @@
                                                         <li><i class="bi bi-check-circle-fill text-success me-2"></i>{{ $diagnosa->penyakit->nama_penyakit ?? 'N/A' }}</li>
                                                     @endforeach
                                                 </ul>
-                                            @endif
-                                            @if($rekam->anamnesa)
-                                                <span class="section-title">Keluhan:</span> {{ $rekam->anamnesa }}
                                             @endif
                                         </td>
                                         <td>
@@ -115,20 +154,13 @@
                                                     @endforeach
                                                 </ul>
                                             @endif
-                                             @if($rekam->terapi)
-                                                <span class="section-title">Catatan Terapi:</span> {{ $rekam->terapi }}
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if($rekam->nama_sa)
-                                                <strong>{{ $rekam->nama_sa }}</strong> <br><small>({{ $rekam->jenis_kelamin_sa }})</small>
-                                            @else
-                                                <span class="badge bg-light text-dark">Diri Sendiri</span>
+                                             @if($rekam->treatment)
+                                                <span class="section-title">Advice:</span> {{ $rekam->treatment }}
                                             @endif
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="4" class="text-center p-4">Anda belum memiliki riwayat kunjungan.</td></tr>
+                                    <tr><td colspan="3" class="text-center p-4">Anda belum memiliki riwayat kunjungan.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -140,7 +172,7 @@
                     <div class="table-responsive">
                          <table class="table table-hover">
                             <thead class="table-light">
-                                <tr><th>Tgl Pemeriksaan</th><th>Hasil Pemeriksaan</th><th>Hasil Pengukuran</th><th>Diperiksa Untuk</th></tr>
+                                <tr><th>Tgl Pemeriksaan</th><th>Hasil Pemeriksaan</th><th>Hasil Pengukuran</th></tr>
                             </thead>
                             <tbody>
                                 @forelse ($user->checkups as $checkup)
@@ -162,16 +194,9 @@
                                                 <li>Lingkar Perut: <strong>{{ $checkup->lingkar_perut ? $checkup->lingkar_perut . ' cm' : '-' }}</strong></li>
                                             </ul>
                                         </td>
-                                        <td>
-                                            @if($checkup->nama_sa)
-                                                <strong>{{ $checkup->nama_sa }}</strong> <br><small>({{ $checkup->jenis_kelamin_sa }})</small>
-                                            @else
-                                                <span class="badge bg-light text-dark">Diri Sendiri</span>
-                                            @endif
-                                        </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="4" class="text-center p-4">Anda belum memiliki riwayat check-up.</td></tr>
+                                    <tr><td colspan="3" class="text-center p-4">Anda belum memiliki riwayat check-up.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -181,4 +206,43 @@
         </div>
     </div>
 </div>
+
+{{-- Modal Update Kantor --}}
+@if($user->karyawan)
+<div class="modal fade" id="updateKantorModal" tabindex="-1" aria-labelledby="updateKantorModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('pasien.update_kantor') }}" method="POST">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title" id="updateKantorModalLabel">Ubah Kantor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="kantor" class="form-label fw-bold">Pilih Kantor <span class="text-danger">*</span></label>
+                        <select class="form-select @error('kantor') is-invalid @enderror" id="kantor" name="kantor" required>
+                            <option value="">-- Pilih Kantor --</option>
+                            @foreach($kantors as $kantor)
+                                <option value="{{ $kantor->nama_kantor }}" {{ $user->karyawan->kantor == $kantor->nama_kantor ? 'selected' : '' }}>
+                                    {{ $kantor->nama_kantor }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('kantor')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                        <div class="form-text">Hanya kantor dari master data yang dapat dipilih</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
+
 @endsection

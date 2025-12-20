@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\MasterKantor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -113,6 +114,58 @@ class PasienController extends Controller
     public function myCard()
     {
         $user = Auth::user();
-        return view('pasien.my-card', compact('user'));
+        $kantors = MasterKantor::where('is_active', true)->orderBy('nama_kantor')->get();
+        return view('pasien.my-card', compact('user', 'kantors'));
+    }
+
+    public function updateKantor(Request $request)
+    {
+        $request->validate([
+            'kantor' => 'required|string|exists:master_kantor,nama_kantor'
+        ], [
+            'kantor.exists' => 'Kantor yang dipilih tidak valid.'
+        ]);
+
+        $user = Auth::user();
+        
+        if ($user->karyawan) {
+            $user->karyawan->update([
+                'kantor' => $request->kantor
+            ]);
+
+            return redirect()->back()->with('success', 'Kantor berhasil diperbarui.');
+        }
+
+        return redirect()->back()->with('error', 'Gagal memperbarui kantor.');
+    }
+
+    /**
+     * Update informasi pasien non-karyawan (hanya untuk dokter).
+     * Hanya field tertentu yang bisa diupdate: alergi, no_hp, lokasi_gedung, alamat.
+     */
+    public function updateNonKaryawanInfo(Request $request, User $pasien)
+    {
+        // Validasi: pastikan pasien adalah non-karyawan
+        if (!$pasien->nonKaryawan) {
+            return redirect()->back()->with('error', 'Data pasien tidak valid.');
+        }
+
+        // Validasi input
+        $validated = $request->validate([
+            'alergi' => 'nullable|string|max:500',
+            'no_hp' => 'nullable|string|max:20',
+            'lokasi_gedung' => 'nullable|string|max:255',
+            'alamat' => 'nullable|string|max:500',
+        ], [
+            'alergi.max' => 'Alergi maksimal 500 karakter.',
+            'no_hp.max' => 'Nomor HP maksimal 20 karakter.',
+            'lokasi_gedung.max' => 'Lokasi gedung maksimal 255 karakter.',
+            'alamat.max' => 'Alamat maksimal 500 karakter.',
+        ]);
+
+        // Update data non-karyawan
+        $pasien->nonKaryawan->update($validated);
+
+        return redirect()->back()->with('success', 'Informasi pasien berhasil diperbarui.');
     }
 }

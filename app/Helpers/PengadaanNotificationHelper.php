@@ -32,20 +32,14 @@ class PengadaanNotificationHelper
 
     /**
      * Hitung jumlah permintaan yang sudah disetujui dan siap untuk input barang masuk
-     * (berdasarkan PendingStokMasuk atau permintaan dengan status APPROVED)
+     * Hanya hitung permintaan dengan status APPROVED (belum diproses sama sekali)
+     * Permintaan dengan status PROCESSING sudah tidak perlu notifikasi karena sudah diinput
      */
     public static function countApprovedRequestsForInput()
     {
-        // Hitung pending stock masuk yang belum diproses
-        $pendingStock = PendingStokMasuk::count();
-        
-        // Jika tidak ada pending stock, hitung permintaan yang disetujui tapi belum diproses
-        if ($pendingStock == 0) {
-            $approvedRequests = PermintaanBarang::where('status', 'APPROVED')->count();
-            return $approvedRequests;
-        }
-        
-        return $pendingStock;
+        // Hitung permintaan yang disetujui dan belum diproses (status APPROVED)
+        // Tidak termasuk yang sudah status PROCESSING karena pengadaan sudah input barang masuk
+        return PermintaanBarang::where('status', 'APPROVED')->count();
     }
 
     /**

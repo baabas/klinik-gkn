@@ -16,8 +16,15 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $user = $request->user();
+        
+        // Load relasi karyawan jika ada NIP
+        if ($user->nip) {
+            $user->load('karyawan');
+        }
+        
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user' => $user,
         ]);
     }
 
@@ -26,14 +33,43 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
-
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $user = $request->user();
+        $validated = $request->validated();
+        
+        // Update email di tabel users
+        $user->email = $validated['email'];
+        
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
         }
-
-        $request->user()->save();
-
+        
+        $user->save();
+        
+        // Update data karyawan jika user adalah karyawan (punya NIP)
+        if ($user->nip && $user->karyawan) {
+            $karyawanData = [];
+            
+            if (isset($validated['no_hp'])) {
+                $karyawanData['no_hp'] = $validated['no_hp'];
+            }
+            if (isset($validated['tanggal_lahir'])) {
+                $karyawanData['tanggal_lahir'] = $validated['tanggal_lahir'];
+            }
+            if (isset($validated['alergi'])) {
+                $karyawanData['alergi'] = $validated['alergi'];
+            }
+            if (isset($validated['alamat'])) {
+                $karyawanData['alamat'] = $validated['alamat'];
+            }
+            
+            // Update email di tabel karyawan juga
+            $karyawanData['email'] = $validated['email'];
+            
+            if (!empty($karyawanData)) {
+                $user->karyawan()->update($karyawanData);
+            }
+        }
+        
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 

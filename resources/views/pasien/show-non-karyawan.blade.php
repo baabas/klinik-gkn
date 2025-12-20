@@ -36,24 +36,42 @@
 
 {{-- BIODATA KARTU (disesuaikan untuk Non-Karyawan) --}}
 <div class="card shadow-sm mb-4">
-    <div class="card-header bg-success text-white">
+    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
         <h4 class="mb-0">Nomor Index Pasien: {{ $pasien->id }}</h4>
+        @if(Auth::user()->hasRole('DOKTER'))
+            <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#editInfoModal">
+                <i class="bi bi-pencil"></i> Edit Info Pasien
+            </button>
+        @endif
     </div>
     <div class="card-body p-4">
         @if($pasien->nonKaryawan)
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <p><strong>NIK:</strong><br> {{ $pasien->nik }}</p>
                     <p><strong>Nama:</strong><br> {{ $pasien->nama_karyawan }}</p>
                     <p><strong>Tanggal Lahir:</strong><br>
                         {{ $pasien->nonKaryawan->tanggal_lahir ? \Carbon\Carbon::parse($pasien->nonKaryawan->tanggal_lahir)->translatedFormat('d F Y') : '-' }}
                     </p>
-                    <p class="mb-md-0"><strong>Usia:</strong><br>
+                    <p class="mb-md-0"><strong>Alamat:</strong><br> {{ $pasien->nonKaryawan->alamat ?? '-' }}</p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>Usia:</strong><br>
                         {{ $pasien->nonKaryawan->tanggal_lahir ? \Carbon\Carbon::parse($pasien->nonKaryawan->tanggal_lahir)->age . ' Tahun' : '-' }}
                     </p>
+                    <p><strong>Jenis Kelamin:</strong><br>
+                        {{ $pasien->nonKaryawan->jenis_kelamin == 'L' ? 'Laki-laki' : ($pasien->nonKaryawan->jenis_kelamin == 'P' ? 'Perempuan' : '-') }}
+                    </p>
+                    <p><strong>No. HP:</strong><br> {{ $pasien->nonKaryawan->no_hp ?? '-' }}</p>
+                    <p class="mb-md-0"><strong>Lokasi Gedung:</strong><br> {{ $pasien->nonKaryawan->lokasi_gedung ?? '-' }}</p>
                 </div>
-                <div class="col-md-6">
-                    <p class="mb-0"><strong>Lokasi Gedung:</strong><br> {{ $pasien->nonKaryawan->lokasi_gedung ?? '-' }}</p>
+                <div class="col-md-4">
+                    @if($pasien->nonKaryawan->alergi)
+                        <div class="alert alert-warning mb-0" role="alert">
+                            <strong><i class="bi bi-exclamation-triangle-fill me-2"></i>Alergi:</strong><br>
+                            {{ $pasien->nonKaryawan->alergi }}
+                        </div>
+                    @endif
                 </div>
             </div>
         @else
@@ -105,13 +123,16 @@
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead class="table-light">
-                            <tr><th>Tanggal</th><th>Pemeriksaan</th><th>Terapi</th><th>Berobat Untuk</th></tr>
+                            <tr><th>Tanggal</th><th>Anamnesa</th><th>Treatment</th></tr>
                         </thead>
                         <tbody>
                             @forelse ($pasien->rekamMedisNonKaryawan as $rekam)
                                 <tr>
                                     <td>{{ \Carbon\Carbon::parse($rekam->tanggal_kunjungan)->translatedFormat('d M Y') }}</td>
                                     <td>
+                                        @if($rekam->anamnesa)
+                                            <span class="section-title">Keluhan:</span> {{ $rekam->anamnesa }}
+                                        @endif
                                         @if($rekam->detailDiagnosa->isNotEmpty())
                                             <span class="section-title">Diagnosa:</span>
                                             <ul class="list-unstyled list-diagnosa">
@@ -119,9 +140,6 @@
                                                     <li><i class="bi bi-check-circle-fill text-success me-2"></i>{{ $diagnosa->penyakit->nama_penyakit ?? 'N/A' }}</li>
                                                 @endforeach
                                             </ul>
-                                        @endif
-                                        @if($rekam->anamnesa)
-                                            <span class="section-title">Keluhan:</span> {{ $rekam->anamnesa }}
                                         @endif
                                     </td>
                                     <td>
@@ -133,20 +151,13 @@
                                                 @endforeach
                                             </ul>
                                         @endif
-                                         @if($rekam->terapi)
-                                            <span class="section-title">Catatan Terapi:</span> {{ $rekam->terapi }}
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if($rekam->nama_sa)
-                                            <strong>{{ $rekam->nama_sa }}</strong> <br><small>({{ $rekam->jenis_kelamin_sa }})</small>
-                                        @else
-                                            <span class="badge bg-light text-dark">Diri Sendiri</span>
+                                         @if($rekam->treatment)
+                                            <span class="section-title">Advice:</span> {{ $rekam->treatment }}
                                         @endif
                                     </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="4" class="text-center p-4">Belum ada riwayat kunjungan.</td></tr>
+                                <tr><td colspan="3" class="text-center p-4">Belum ada riwayat kunjungan.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -158,7 +169,7 @@
                 <div class="table-responsive">
                      <table class="table table-hover">
                         <thead class="table-light">
-                            <tr><th>Tgl Pemeriksaan</th><th>Hasil Pemeriksaan</th><th>Hasil Pengukuran</th><th>Diperiksa Untuk</th></tr>
+                            <tr><th>Tgl Pemeriksaan</th><th>Hasil Pemeriksaan</th><th>Hasil Pengukuran</th></tr>
                         </thead>
                         <tbody>
                             @forelse ($pasien->checkupNonKaryawan as $checkup)
@@ -180,16 +191,9 @@
                                             <li>Lingkar Perut: <strong>{{ $checkup->lingkar_perut ? $checkup->lingkar_perut . ' cm' : '-' }}</strong></li>
                                         </ul>
                                     </td>
-                                    <td>
-                                        @if($checkup->nama_sa)
-                                            <strong>{{ $checkup->nama_sa }}</strong> <br><small>({{ $checkup->jenis_kelamin_sa }})</small>
-                                        @else
-                                            <span class="badge bg-light text-dark">Diri Sendiri</span>
-                                        @endif
-                                    </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="4" class="text-center p-4">Belum ada riwayat check-up.</td></tr>
+                                <tr><td colspan="3" class="text-center p-4">Belum ada riwayat check-up.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -198,4 +202,73 @@
         </div>
     </div>
 </div>
+
+{{-- Modal Edit Info Pasien Non-Karyawan --}}
+@if(Auth::user()->hasRole('DOKTER') && $pasien->nonKaryawan)
+<div class="modal fade" id="editInfoModal" tabindex="-1" aria-labelledby="editInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ route('pasien.update_non_karyawan_info', $pasien->nik) }}">
+                @csrf
+                @method('PATCH')
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editInfoModalLabel">Edit Informasi Pasien</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info" role="alert">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <small>Hanya field berikut yang dapat diupdate: Alergi, No. HP, Lokasi Gedung, dan Alamat.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="alergi" class="form-label">Alergi</label>
+                        <textarea name="alergi" id="alergi" class="form-control @error('alergi') is-invalid @enderror" rows="2" placeholder="Masukkan informasi alergi pasien">{{ old('alergi', $pasien->nonKaryawan->alergi) }}</textarea>
+                        @error('alergi')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                        <small class="text-muted">Contoh: Alergi obat X, makanan Y, dll.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="no_hp" class="form-label">No. HP</label>
+                        <input type="text" name="no_hp" id="no_hp" class="form-control @error('no_hp') is-invalid @enderror" value="{{ old('no_hp', $pasien->nonKaryawan->no_hp) }}" placeholder="Contoh: 081234567890">
+                        @error('no_hp')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="lokasi_gedung" class="form-label">Lokasi Gedung</label>
+                        <select name="lokasi_gedung" id="lokasi_gedung" class="form-select @error('lokasi_gedung') is-invalid @enderror">
+                            <option value="">Pilih Lokasi Gedung</option>
+                            <option value="GKN 1" {{ old('lokasi_gedung', $pasien->nonKaryawan->lokasi_gedung) == 'GKN 1' ? 'selected' : '' }}>GKN 1</option>
+                            <option value="GKN 2" {{ old('lokasi_gedung', $pasien->nonKaryawan->lokasi_gedung) == 'GKN 2' ? 'selected' : '' }}>GKN 2</option>
+                        </select>
+                        @error('lokasi_gedung')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="alamat" class="form-label">Alamat</label>
+                        <textarea name="alamat" id="alamat" class="form-control @error('alamat') is-invalid @enderror" rows="3" placeholder="Masukkan alamat lengkap pasien">{{ old('alamat', $pasien->nonKaryawan->alamat) }}</textarea>
+                        @error('alamat')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i> Batal
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i> Simpan Perubahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
 @endsection

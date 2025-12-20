@@ -43,18 +43,35 @@
         {{-- [PERBAIKAN] Menggunakan relasi $user->karyawan untuk mengakses data profil --}}
         @if($user->karyawan)
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <p><strong>NIP:</strong><br> {{ $user->nip }}</p>
                     <p><strong>Nama:</strong><br> {{ $user->nama_karyawan }}</p>
                     <p><strong>Tanggal Lahir:</strong><br>
                         {{ $user->karyawan->tanggal_lahir ? \Carbon\Carbon::parse($user->karyawan->tanggal_lahir)->translatedFormat('d F Y') : '-' }}
                     </p>
-                    <p class="mb-md-0"><strong>Usia:</strong><br>
+                    <p class="mb-md-0"><strong>Alamat:</strong><br> {{ $user->karyawan->alamat ?? '-' }}</p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>Usia:</strong><br>
                         {{ $user->karyawan->tanggal_lahir ? \Carbon\Carbon::parse($user->karyawan->tanggal_lahir)->age . ' Tahun' : '-' }}
                     </p>
+                    <p><strong>Jenis Kelamin:</strong><br>
+                        @if($user->karyawan->jenis_kelamin)
+                            {{ $user->karyawan->jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan' }}
+                        @else
+                            -
+                        @endif
+                    </p>
+                    <p><strong>No. HP:</strong><br> {{ $user->karyawan->no_hp ?? '-' }}</p>
+                    <p class="mb-md-0"><strong>Kantor:</strong><br> {{ $user->karyawan->kantor ?? '-' }}</p>
                 </div>
-                <div class="col-md-6">
-                    <p><strong>Kantor:</strong><br> {{ $user->karyawan->kantor ?? '-' }}</p>
+                <div class="col-md-4">
+                    @if($user->karyawan->alergi)
+                        <div class="alert alert-warning mb-0" role="alert">
+                            <strong><i class="bi bi-exclamation-triangle-fill me-2"></i>Alergi:</strong><br>
+                            {{ $user->karyawan->alergi }}
+                        </div>
+                    @endif
                 </div>
             </div>
         @else
@@ -106,13 +123,16 @@
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead class="table-light">
-                            <tr><th>Tanggal</th><th>Pemeriksaan</th><th>Terapi</th><th>Berobat Untuk</th></tr>
+                            <tr><th>Tanggal</th><th>Anamnesa</th><th>Treatment</th></tr>
                         </thead>
                         <tbody>
                             @forelse ($user->rekamMedisKaryawan as $rekam)
                                 <tr>
                                     <td>{{ \Carbon\Carbon::parse($rekam->tanggal_kunjungan)->translatedFormat('d M Y') }}</td>
                                     <td>
+                                        @if($rekam->anamnesa)
+                                            <span class="section-title">Keluhan:</span> {{ $rekam->anamnesa }}
+                                        @endif
                                         @if($rekam->detailDiagnosa->isNotEmpty())
                                             <span class="section-title">Diagnosa:</span>
                                             <ul class="list-unstyled list-diagnosa">
@@ -120,9 +140,6 @@
                                                     <li><i class="bi bi-check-circle-fill text-success me-2"></i>{{ $diagnosa->penyakit->nama_penyakit ?? 'N/A' }}</li>
                                                 @endforeach
                                             </ul>
-                                        @endif
-                                        @if($rekam->anamnesa)
-                                            <span class="section-title">Keluhan:</span> {{ $rekam->anamnesa }}
                                         @endif
                                     </td>
                                     <td>
@@ -134,20 +151,13 @@
                                                 @endforeach
                                             </ul>
                                         @endif
-                                         @if($rekam->terapi)
-                                            <span class="section-title">Catatan Terapi:</span> {{ $rekam->terapi }}
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if($rekam->nama_sa)
-                                            <strong>{{ $rekam->nama_sa }}</strong> <br><small>({{ $rekam->jenis_kelamin_sa }})</small>
-                                        @else
-                                            <span class="badge bg-light text-dark">Diri Sendiri</span>
+                                         @if($rekam->treatment)
+                                            <span class="section-title">Advice:</span> {{ $rekam->treatment }}
                                         @endif
                                     </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="4" class="text-center p-4">Belum ada riwayat kunjungan.</td></tr>
+                                <tr><td colspan="3" class="text-center p-4">Belum ada riwayat kunjungan.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -159,7 +169,7 @@
                 <div class="table-responsive">
                      <table class="table table-hover">
                         <thead class="table-light">
-                            <tr><th>Tgl Pemeriksaan</th><th>Hasil Pemeriksaan</th><th>Hasil Pengukuran</th><th>Diperiksa Untuk</th></tr>
+                            <tr><th>Tgl Pemeriksaan</th><th>Hasil Pemeriksaan</th><th>Hasil Pengukuran</th></tr>
                         </thead>
                         <tbody>
                             @forelse ($user->checkupKaryawan as $checkup)
@@ -181,16 +191,9 @@
                                             <li>Lingkar Perut: <strong>{{ $checkup->lingkar_perut ? $checkup->lingkar_perut . ' cm' : '-' }}</strong></li>
                                         </ul>
                                     </td>
-                                    <td>
-                                        @if($checkup->nama_sa)
-                                            <strong>{{ $checkup->nama_sa }}</strong> <br><small>({{ $checkup->jenis_kelamin_sa }})</small>
-                                        @else
-                                            <span class="badge bg-light text-dark">Diri Sendiri</span>
-                                        @endif
-                                    </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="4" class="text-center p-4">Belum ada riwayat check-up.</td></tr>
+                                <tr><td colspan="3" class="text-center p-4">Belum ada riwayat check-up.</td></tr>
                             @endforelse
                         </tbody>
                     </table>

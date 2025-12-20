@@ -36,8 +36,6 @@ class Checkup extends Model
         'suhu_badan', // [BARU] Tambahan untuk suhu badan
         'indeks_massa_tubuh',
         'lingkar_perut',
-        'nama_sa',
-        'jenis_kelamin_sa',
     ];
 
     /**

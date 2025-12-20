@@ -154,6 +154,62 @@
             font-weight: 600;
             color: #495057;
             font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-check {
+            display: none;
+        }
+
+        .btn-outline-success,
+        .btn-outline-danger {
+            flex: 1;
+            border: 2px solid;
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .btn-outline-success {
+            color: #28a745;
+            border-color: #28a745;
+            background: white;
+        }
+
+        .btn-outline-success:hover {
+            background: #f0f0f0;
+        }
+
+        .btn-check:checked + .btn-outline-success {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-outline-danger {
+            color: #dc3545;
+            border-color: #dc3545;
+            background: white;
+        }
+
+        .btn-outline-danger:hover {
+            background: #f0f0f0;
+        }
+
+        .btn-check:checked + .btn-outline-danger {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
         }
 
         .form-control {
@@ -229,6 +285,20 @@
             text-align: center;
             display: none;
         }
+
+        .obat-question {
+            text-align: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+            margin: 30px 0 20px 0;
+        }
+
+        .obat-options {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
     </style>
 </head>
 <body>
@@ -255,17 +325,22 @@
                 <input type="hidden" id="rating" name="rating">
 
                 <div class="emoji-rating">
-                    <span class="emoji-btn" data-rating="1" title="Sangat Tidak Puas">😡</span>
-                    <span class="emoji-btn" data-rating="2" title="Tidak Puas">😞</span>
-                    <span class="emoji-btn" data-rating="3" title="Cukup">😐</span>
-                    <span class="emoji-btn" data-rating="4" title="Puas">😊</span>
-                    <span class="emoji-btn" data-rating="5" title="Sangat Puas">😍</span>
+                    <span class="emoji-btn" data-rating="1" title="Tidak Puas">😞</span>
+                    <span class="emoji-btn" data-rating="2" title="Cukup">😐</span>
+                    <span class="emoji-btn" data-rating="3" title="Puas">😊</span>
                 </div>
 
-                <div class="mb-4">
-                    <label class="form-label">Komentar (Opsional)</label>
-                    <textarea class="form-control" name="komentar" rows="4" placeholder="Berikan masukan Anda untuk meningkatkan pelayanan kami..."></textarea>
+                <div class="obat-question">Jumlah obat sesuai dengan resep?</div>
+
+                <div class="obat-options">
+                    <input type="radio" class="btn-check" name="jumlah_obat_sesuai" id="obat_ya" value="1">
+                    <label class="btn btn-outline-success w-100" for="obat_ya" style="font-weight: 700; font-size: 18px; padding: 15px;">YA</label>
+                    
+                    <input type="radio" class="btn-check" name="jumlah_obat_sesuai" id="obat_tidak" value="0">
+                    <label class="btn btn-outline-danger w-100" for="obat_tidak" style="font-weight: 700; font-size: 18px; padding: 15px;">TIDAK</label>
                 </div>
+
+                <input type="hidden" id="jumlah_obat_sesuai" name="jumlah_obat_sesuai" value="">
 
                 <button type="submit" class="btn btn-primary w-100 btn-lg">
                     Kirim Feedback
@@ -287,25 +362,76 @@
     <script>
         let selectedRating = 0;
         let checkInterval = null;
+        let tokenRefreshInterval = null;
+        let idLokasi = '{{ request()->query("lokasi", $lokasi->id ?? "") }}'; // Ambil lokasi dari parameter atau view
+        let currentRekamMedisId = null; // Track ID rekam medis yang sedang ditampilkan
+
+        /**
+         * Refresh CSRF Token secara periodik
+         * Dipanggil setiap 10 menit untuk mencegah token expired
+         */
+        function refreshCsrfToken() {
+            $.ajax({
+                url: '{{ url("/") }}/sanctum/csrf-cookie',
+                method: 'GET',
+                xhrFields: {
+                    withCredentials: true
+                },
+                success: function() {
+                    // Token di-refresh via cookie, update meta tag jika ada response header
+                    console.log('CSRF token refreshed');
+                },
+                error: function() {
+                    // Fallback: reload halaman untuk mendapatkan token baru
+                    console.log('CSRF refresh failed, will reload page if needed');
+                }
+            });
+        }
+
+        /**
+         * Start token refresh interval (setiap 10 menit)
+         */
+        function startTokenRefresh() {
+            if (!tokenRefreshInterval) {
+                tokenRefreshInterval = setInterval(refreshCsrfToken, 10 * 60 * 1000); // 10 menit
+            }
+        }
 
         /**
          * Auto check untuk pending feedback setiap 5 detik
+         * Akan tetap berjalan meskipun form sedang ditampilkan
+         * Jika ada pasien baru (ID berbeda), langsung beralih ke pasien baru
          */
         function checkPendingFeedback() {
+            let url = '{{ route("api.feedback.check-pending") }}';
+            if (idLokasi) {
+                url += '?lokasi=' + idLokasi;
+            }
+            
             $.ajax({
-                url: '{{ route("api.feedback.check-pending") }}',
+                url: url,
                 method: 'GET',
                 success: function(response) {
                     if (response.has_pending) {
-                        showFeedbackForm(response.rekam_medis);
+                        // Jika ada pasien baru (ID berbeda dari yang sedang ditampilkan)
+                        // langsung beralih ke pasien baru
+                        if (currentRekamMedisId !== response.rekam_medis.id) {
+                            showFeedbackForm(response.rekam_medis);
+                        }
                     } else {
-                        showWaitingScreen();
+                        // Tidak ada pending feedback
+                        if (currentRekamMedisId === null) {
+                            showWaitingScreen();
+                        }
                     }
                 },
                 error: function(xhr, status, error) {
                     console.error('Error checking pending feedback:', error);
-                    // Tetap tampilkan waiting screen jika ada error
-                    showWaitingScreen();
+                    console.log('Response:', xhr.responseJSON);
+                    // Tetap tampilkan waiting screen jika ada error dan tidak ada form aktif
+                    if (currentRekamMedisId === null) {
+                        showWaitingScreen();
+                    }
                 }
             });
         }
@@ -314,6 +440,7 @@
          * Tampilkan waiting screen
          */
         function showWaitingScreen() {
+            currentRekamMedisId = null;
             $('#waiting-screen').fadeIn(300);
             $('#feedback-form').hide();
             $('#thank-you-screen').hide();
@@ -321,13 +448,11 @@
 
         /**
          * Tampilkan form feedback dengan data pasien
+         * Polling TETAP berjalan untuk mendeteksi pasien baru
          */
         function showFeedbackForm(rekamMedis) {
-            // Stop checking sementara
-            if (checkInterval) {
-                clearInterval(checkInterval);
-                checkInterval = null;
-            }
+            // Update ID rekam medis yang sedang ditampilkan
+            currentRekamMedisId = rekamMedis.id;
 
             $('#waiting-screen').hide();
             $('#feedback-form').fadeIn(300);
@@ -339,20 +464,26 @@
 
             // Reset form
             resetForm();
+            
+            // Pastikan polling tetap berjalan untuk mendeteksi pasien baru
+            startPolling();
         }
 
         /**
          * Tampilkan thank you screen
+         * Setelah 3 detik, kembali ke waiting dan check pending feedback
+         * Rekam medis yang ditimpa sudah di-expire di backend
          */
         function showThankYou() {
+            currentRekamMedisId = null; // Reset current ID
             $('#waiting-screen').hide();
             $('#feedback-form').hide();
             $('#thank-you-screen').fadeIn(300);
 
-            // Kembali ke waiting screen setelah 3 detik dan restart polling
+            // Kembali ke waiting screen setelah 3 detik dan check pending
             setTimeout(function() {
+                showWaitingScreen();
                 startPolling();
-                checkPendingFeedback();
             }, 3000);
         }
 
@@ -363,7 +494,8 @@
             selectedRating = 0;
             $('.emoji-btn').removeClass('active');
             $('#rating').val('');
-            $('textarea[name="komentar"]').val('');
+            $('input[name="jumlah_obat_sesuai"]').prop('checked', false);
+            $('#jumlah_obat_sesuai').val('');
             $('#error-message').hide();
         }
 
@@ -409,6 +541,13 @@
         });
 
         /**
+         * Handle change pada radio button jumlah obat
+         */
+        $(document).on('change', 'input[name="jumlah_obat_sesuai"]', function() {
+            $('#jumlah_obat_sesuai').val($(this).val());
+        });
+
+        /**
          * Handle submit form feedback
          */
         $('#form-feedback').submit(function(e) {
@@ -417,6 +556,12 @@
             // Validasi rating dipilih
             if (selectedRating === 0) {
                 showError('Silakan pilih rating terlebih dahulu');
+                return;
+            }
+
+            // Validasi jumlah obat dipilih
+            if (!$('input[name="jumlah_obat_sesuai"]:checked').val()) {
+                showError('Silakan pilih jawaban untuk jumlah obat');
                 return;
             }
 
@@ -442,6 +587,15 @@
                         errorMessage = xhr.responseJSON.message;
                     }
                     
+                    // Jika CSRF token mismatch (status 419), reload halaman
+                    if (xhr.status === 419) {
+                        showError('Sesi habis. Memuat ulang halaman...');
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 1500);
+                        return;
+                    }
+                    
                     showError(errorMessage);
                 }
             });
@@ -458,6 +612,9 @@
             
             // Start polling every 5 seconds
             startPolling();
+            
+            // Start token refresh setiap 10 menit
+            startTokenRefresh();
         });
 
         /**
@@ -465,6 +622,9 @@
          */
         $(window).on('beforeunload', function() {
             stopPolling();
+            if (tokenRefreshInterval) {
+                clearInterval(tokenRefreshInterval);
+            }
         });
     </script>
 </body>

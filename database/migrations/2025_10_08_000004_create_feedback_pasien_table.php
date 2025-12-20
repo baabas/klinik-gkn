@@ -16,7 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('id_rekam_medis');
             $table->string('nip_pasien', 30)->nullable();
             $table->string('nik_pasien', 16)->nullable();
-            $table->tinyInteger('rating')->comment('1=Sangat Tidak Puas, 2=Tidak Puas, 3=Cukup, 4=Puas, 5=Sangat Puas');
+            $table->tinyInteger('rating')->comment('1=Tidak Puas, 2=Cukup, 3=Puas');
             $table->text('komentar')->nullable();
             $table->timestamp('waktu_feedback');
             $table->timestamps();

@@ -24,19 +24,18 @@ class RegisteredUserController extends Controller
     public function create(): View
     {
         $fallbackKantors = collect([
-            'Kanwil',
             'KPP Gayam Sari',
-            'KPP Madya SMG',
-            'KPP SMG Selatan',
-            'KPP SMG Tengah 1',
-            'KPTIK',
-            'PT Gumilang',
-            'Kanwil DJPB',
+            'KPP Semarang Selatan',
+            'KPP Semarang Tengah 1',
+            'KPP Semarang Barat',
+            'Pihak Ketiga',
+            'Kanwil DJPB Jawa Tengah',
             'KPTIK BMN Semarang',
             'KPP Madya Dua Semarang',
             'Kanwil DJP Jateng 1',
-            'Kanwil DJKN',
+            'Kanwil DJKN Jateng dan DIY',
             'KPKNL Semarang',
+            'Tamu',
         ])->map(fn ($namaKantor) => (object) ['nama_kantor' => $namaKantor]);
 
         // Ambil data kantor dari master_kantor yang aktif
@@ -64,13 +63,19 @@ class RegisteredUserController extends Controller
         try {
             $request->validate([
                 'nip' => ['required', 'digits:18', 'unique:users,nip', 'unique:karyawan,nip'],
-                'name' => ['required', 'string', 'max:255'],
+                'name' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s\.]+$/'],
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email', 'unique:karyawan,email'],
                 'password' => ['required', 'confirmed', Rules\Password::defaults()],
                 'kantor' => ['required', 'string', 'max:100'],
                 'tanggal_lahir' => ['required', 'date'],
+                'jenis_kelamin' => ['required', 'in:L,P'],
+                'alamat' => ['nullable', 'string'],
+                'no_hp' => ['nullable', 'string', 'max:20', 'unique:karyawan,no_hp', 'unique:non_karyawan,no_hp'],
+                'alergi' => ['nullable', 'string'],
                 ], [
                 'nip.digits' => 'NIP harus terdiri dari 18 digit.',
+                'name.regex' => 'Nama hanya boleh berisi huruf, spasi, dan titik.',
+                'no_hp.unique' => 'Nomor HP sudah terdaftar dalam sistem.',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('Validation failed', $e->errors());
@@ -86,6 +91,10 @@ class RegisteredUserController extends Controller
                 'kantor' => $request->kantor,
                 'email' => $request->email,
                 'tanggal_lahir' => $request->tanggal_lahir,
+                'jenis_kelamin' => $request->jenis_kelamin,
+                'alamat' => $request->alamat,
+                'no_hp' => $request->no_hp,
+                'alergi' => $request->alergi,
             ]);
             Log::info('Karyawan created successfully', ['nip' => $karyawan->nip]);
 
@@ -123,5 +132,40 @@ class RegisteredUserController extends Controller
                 'error' => 'Terjadi kesalahan saat registrasi. Silakan coba lagi.'
             ])->withInput();
         }
+    }
+
+    /**
+     * Check for duplicate NIP and Email
+     */
+    public function checkDuplicate(Request $request)
+    {
+        $nip = $request->input('nip');
+        $email = $request->input('email');
+        $noHp = $request->input('no_hp');
+
+        $nipExists = false;
+        $emailExists = false;
+        $noHpExists = false;
+
+        if ($nip) {
+            $nipExists = User::where('nip', $nip)->exists() || 
+                         Karyawan::where('nip', $nip)->exists();
+        }
+
+        if ($email) {
+            $emailExists = User::where('email', $email)->exists() || 
+                          Karyawan::where('email', $email)->exists();
+        }
+
+        if ($noHp) {
+            $noHpExists = Karyawan::where('no_hp', $noHp)->exists() || 
+                         \App\Models\NonKaryawan::where('no_hp', $noHp)->exists();
+        }
+
+        return response()->json([
+            'nip_exists' => $nipExists,
+            'email_exists' => $emailExists,
+            'no_hp_exists' => $noHpExists
+        ]);
     }
 }

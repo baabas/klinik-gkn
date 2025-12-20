@@ -28,12 +28,19 @@ class NonKaryawanController extends Controller
             'nama' => 'required|string|max:255',
             'lokasi_gedung' => 'required|string|max:100',
             'tanggal_lahir' => 'required|date|before_or_equal:today',
+            'jenis_kelamin' => 'required|in:L,P',
+            'alamat' => 'nullable|string',
+            'no_hp' => 'nullable|string|max:20|unique:karyawan,no_hp|unique:non_karyawan,no_hp',
+            'alergi' => 'nullable|string',
         ], [
             // [DITAMBAHKAN] Pesan validasi kustom
             'nik.unique' => 'NIK ini sudah terdaftar sebagai pasien.',
             'nik.digits' => 'NIK harus terdiri dari 16 digit.',
             'tanggal_lahir.before_or_equal' => 'Tanggal lahir tidak boleh melebihi hari ini.',
             'lokasi_gedung.required' => 'Lokasi gedung wajib dipilih.',
+            'jenis_kelamin.required' => 'Jenis kelamin wajib dipilih.',
+            'jenis_kelamin.in' => 'Jenis kelamin harus Laki-laki atau Perempuan.',
+            'no_hp.unique' => 'Nomor HP sudah terdaftar dalam sistem.',
         ]);
 
         // Gunakan transaction untuk memastikan kedua tabel berhasil diisi
@@ -56,6 +63,10 @@ class NonKaryawanController extends Controller
                 'nik' => $validatedData['nik'],
                 'lokasi_gedung' => $validatedData['lokasi_gedung'],
                 'tanggal_lahir' => $validatedData['tanggal_lahir'],
+                'jenis_kelamin' => $validatedData['jenis_kelamin'],
+                'alamat' => $validatedData['alamat'] ?? null,
+                'no_hp' => $validatedData['no_hp'] ?? null,
+                'alergi' => $validatedData['alergi'] ?? null,
             ]);
 
             DB::commit(); // Simpan perubahan jika semua berhasil

@@ -11,10 +11,23 @@
             </div>
         </div>
 
-        <div class="card text-center text-bg-primary mb-4">
-            <div class="card-body">
-                  <h5 class="card-title">Jumlah Kunjungan Hari Ini</h5>
-                  <p class="display-3 fw-bold mb-0">{{ $kasus_hari_ini }}</p>
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="card text-center text-bg-primary h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Jumlah Kunjungan Hari Ini</h5>
+                        <p class="display-3 fw-bold mb-0">{{ $kasus_hari_ini }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card text-center text-bg-success h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Jumlah Kunjungan Bulan Ini</h5>
+                        <p class="display-3 fw-bold mb-0">{{ $kunjunganBulanIni }}</p>
+                        <small class="text-white-50">{{ now()->format('F Y') }}</small>
+                    </div>
+                </div>
             </div>
         </div>
 

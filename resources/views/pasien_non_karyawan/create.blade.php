@@ -15,7 +15,8 @@
                     @csrf
                     <div class="mb-3">
                         <label for="nik" class="form-label fw-bold">NIK <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control @error('nik') is-invalid @enderror" id="nik" name="nik" value="{{ old('nik') }}" required>
+                        <input type="text" class="form-control @error('nik') is-invalid @enderror" id="nik" name="nik" value="{{ old('nik') }}" required inputmode="numeric" minlength="16" maxlength="16" pattern="\d{16}">
+                        <div class="form-text">NIK harus terdiri dari 16 digit.</div>
                         @error('nik')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -45,6 +46,42 @@
                         <label for="tanggal_lahir" class="form-label fw-bold">Tanggal Lahir <span class="text-danger">*</span></label>
                         <input type="date" class="form-control @error('tanggal_lahir') is-invalid @enderror" id="tanggal_lahir" name="tanggal_lahir" value="{{ old('tanggal_lahir') }}" required>
                         @error('tanggal_lahir')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="jenis_kelamin" class="form-label fw-bold">Jenis Kelamin <span class="text-danger">*</span></label>
+                        <select class="form-select @error('jenis_kelamin') is-invalid @enderror" id="jenis_kelamin" name="jenis_kelamin" required>
+                            <option value="">Pilih Jenis Kelamin</option>
+                            <option value="L" {{ old('jenis_kelamin') == 'L' ? 'selected' : '' }}>Laki-laki</option>
+                            <option value="P" {{ old('jenis_kelamin') == 'P' ? 'selected' : '' }}>Perempuan</option>
+                        </select>
+                        @error('jenis_kelamin')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="alamat" class="form-label fw-bold">Alamat</label>
+                        <textarea class="form-control @error('alamat') is-invalid @enderror" id="alamat" name="alamat" rows="3" placeholder="Alamat lengkap">{{ old('alamat') }}</textarea>
+                        @error('alamat')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="no_hp" class="form-label fw-bold">No. HP</label>
+                        <input type="text" class="form-control @error('no_hp') is-invalid @enderror" id="no_hp" name="no_hp" value="{{ old('no_hp') }}" placeholder="08xxxxxxxxxx">
+                        @error('no_hp')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="alergi" class="form-label fw-bold">Alergi (jika ada)</label>
+                        <textarea class="form-control @error('alergi') is-invalid @enderror" id="alergi" name="alergi" rows="3" placeholder="Sebutkan alergi yang dimiliki (opsional)">{{ old('alergi') }}</textarea>
+                        @error('alergi')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>

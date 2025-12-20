@@ -48,8 +48,9 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="anamnesa" class="form-label fw-bold">Keluhan & Riwayat Sakit</label>
-                        <textarea class="form-control" id="anamnesa" name="anamnesa" rows="4" placeholder="Contoh: Pasien datang dengan keluhan demam selama 3 hari, batuk, dan sakit tenggorokan.">{{ old('anamnesa') }}</textarea>
+                        <label for="anamnesa" class="form-label fw-bold">Keluhan & Riwayat Sakit <span class="text-danger">*</span></label>
+                        <textarea class="form-control @error('anamnesa') is-invalid @enderror" id="anamnesa" name="anamnesa" rows="4" placeholder="Contoh: Pasien datang dengan keluhan demam selama 3 hari, batuk, dan sakit tenggorokan." required>{{ old('anamnesa') }}</textarea>
+                        @error('anamnesa') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                 </div>
             </div>
@@ -57,7 +58,7 @@
             <div class="card shadow-sm mb-4">
                 <div class="card-header"><h5 class="mb-0 form-section-title">2. Diagnosa</h5></div>
                 <div class="card-body">
-                    <label class="form-label fw-bold">Diagnosa Penyakit</label>
+                    <label class="form-label fw-bold">Diagnosa Penyakit <span class="text-danger">*</span></label>
                     <div id="diagnosa-container">
                         <div class="row g-2 mb-2 align-items-center diagnosa-entry">
                             <div class="col-sm-3">
@@ -78,22 +79,25 @@
                         <i class="bi bi-info-circle"></i> 
                         Anda dapat mengetik kode ICD-10 untuk mendapatkan nama penyakit otomatis, atau mencari berdasarkan nama penyakit di kolom sebelah kanan.
                     </div>
+                    @error('diagnosa') <div class="text-danger small mt-2">{{ $message }}</div> @enderror
                     @error('diagnosa.*.kode_penyakit') <div class="text-danger small mt-2">{{ $message }}</div> @enderror
                 </div>
             </div>
 
             <div class="card shadow-sm mb-4">
-                <div class="card-header"><h5 class="mb-0 form-section-title">3. Resep Obat & Terapi</h5></div>
+                <div class="card-header"><h5 class="mb-0 form-section-title">3. Resep Obat & Treatment</h5></div>
                 <div class="card-body">
-                    <label class="form-label fw-bold">Resep Obat</label>
+                    <label class="form-label fw-bold">Resep Obat <span class="text-danger">*</span></label>
                     <div id="resep-obat-container">
                         {{-- Akan diisi oleh JavaScript --}}
                     </div>
                     <button type="button" id="add-resep" class="btn btn-sm btn-outline-primary mt-2"><i class="bi bi-plus-circle"></i> Tambah Obat</button>
+                    @error('obat') <div class="text-danger small mt-2">{{ $message }}</div> @enderror
                     <hr class="my-3">
                     <div class="mb-3">
-                        <label for="terapi" class="form-label fw-bold">Catatan Pengobatan / Lainnya</label>
-                        <textarea class="form-control" id="terapi" name="terapi" rows="3" placeholder="Contoh: Istirahat yang cukup, perbanyak minum air putih.">{{ old('terapi') }}</textarea>
+                        <label for="terapi" class="form-label fw-bold">Advice <span class="text-danger">*</span></label>
+                        <textarea class="form-control @error('terapi') is-invalid @enderror" id="terapi" name="terapi" rows="3" placeholder="Contoh: Istirahat yang cukup, perbanyak minum air putih." required>{{ old('terapi') }}</textarea>
+                        @error('terapi') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                 </div>
             </div>

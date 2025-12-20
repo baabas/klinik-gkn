@@ -17,19 +17,30 @@ use Illuminate\Support\Facades\Log;
 class BarangMasukController extends Controller
 {
     /**
-     * Tampilkan daftar riwayat barang masuk dan koreksi stok.
+     * Tampilkan daftar riwayat barang masuk yang diinput oleh role pengadaan.
+     * Menampilkan barang masuk dari SEMUA LOKASI karena ini untuk tracking
+     * pekerjaan pengadaan secara menyeluruh, baik:
+     * 1. Input langsung tanpa permintaan
+     * 2. Input dari permintaan dokter yang sudah dikonfirmasi
      */
     public function index(Request $request)
     {
         $user = Auth::user();
-        $idLokasi = $user->id_lokasi; // Filter berdasarkan lokasi user
+        $idLokasi = $user->id_lokasi; // Untuk filter dropdown saja
         
         $entries = StokHistory::query()
             ->with(['barang', 'lokasi', 'user'])
-            // Filter berdasarkan lokasi user
-            ->when($idLokasi, function ($query) use ($idLokasi) {
-                $query->where('id_lokasi', $idLokasi);
+            // Filter hanya barang masuk (perubahan > 0)
+            ->where('perubahan', '>', 0)
+            // Exclude distribusi antar klinik dan penggunaan obat
+            ->where(function ($query) {
+                $query->where('keterangan', 'not like', '%Distribusi ke%')
+                      ->where('keterangan', 'not like', '%Distribusi dari%')
+                      ->where('keterangan', 'not like', '%Resep%')
+                      ->where('keterangan', 'not like', '%Digunakan%')
+                      ->where('keterangan', 'not like', '%Koreksi%');
             })
+            // TIDAK filter berdasarkan lokasi - tampilkan semua lokasi
             ->when($request->filled('barang'), function ($query) use ($request) {
                 $query->where('id_barang', $request->input('barang'));
             })
@@ -48,16 +59,25 @@ class BarangMasukController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        // Filter barang dropdown berdasarkan lokasi user
-        $barang = BarangMedis::when($idLokasi, function ($query) use ($idLokasi) {
-                $query->whereHas('stok', function ($q) use ($idLokasi) {
-                    $q->where('id_lokasi', $idLokasi);
-                });
-            })
+        // Filter barang dropdown - tampilkan semua barang yang pernah masuk
+        $barang = BarangMedis::whereHas('stokMasuk')
             ->orderBy('nama_obat')
             ->get(['id_obat', 'nama_obat']);
 
-        return view('barang-medis.masuk.index', compact('entries', 'barang'));
+        // Hitung statistik barang masuk (dari semua lokasi)
+        $totalEntries = $entries->total();
+        $totalKemasan = StokHistory::where('perubahan', '>', 0)
+            ->where(function ($query) {
+                $query->where('keterangan', 'not like', '%Distribusi ke%')
+                      ->where('keterangan', 'not like', '%Distribusi dari%')
+                      ->where('keterangan', 'not like', '%Resep%')
+                      ->where('keterangan', 'not like', '%Digunakan%')
+                      ->where('keterangan', 'not like', '%Koreksi%');
+            })
+            // Tidak filter lokasi - hitung dari semua lokasi
+            ->sum('jumlah_kemasan');
+
+        return view('barang-medis.masuk.index', compact('entries', 'barang', 'totalEntries', 'totalKemasan'));
     }
 
     /**
@@ -378,5 +398,112 @@ class BarangMasukController extends Controller
             'requestId' => $requestId,
             'completedItems' => $completedDetailIds
         ]);
+    }
+
+    /**
+     * Store multiple barang masuk manually (tanpa permintaan dokter)
+     * Mendukung multi-lokasi per batch
+     */
+    public function storeManualMultiple(Request $request)
+    {
+        if (!Auth::user()->hasRole('PENGADAAN')) {
+            abort(403, 'Anda tidak memiliki hak akses.');
+        }
+
+        $validated = $request->validate([
+            'items' => 'required|array|min:1',
+            'items.*.id_barang' => 'required|integer|exists:barang_medis,id_obat',
+            'items.*.tanggal_masuk' => 'required|date',
+            'items.*.keterangan_umum' => 'nullable|string|max:500',
+            'items.*.batches' => 'required|array|min:1',
+            'items.*.batches.*.jumlah_kemasan' => 'required|integer|min:1',
+            'items.*.batches.*.id_lokasi' => 'required|integer|exists:lokasi_klinik,id',
+            'items.*.batches.*.expired_at' => 'required|date|after_or_equal:today',
+            'items.*.batches.*.keterangan' => 'nullable|string|max:255',
+        ]);
+
+        $successItems = 0;
+        $totalBatches = 0;
+        $errors = [];
+
+        DB::transaction(function () use ($validated, &$successItems, &$totalBatches, &$errors) {
+            foreach ($validated['items'] as $itemIndex => $item) {
+                try {
+                    // Get barang info
+                    $barang = BarangMedis::findOrFail($item['id_barang']);
+                    
+                    // Calculate isi per kemasan
+                    $isiPerKemasan = ($barang->isi_kemasan_jumlah ?? 1) * ($barang->isi_per_satuan ?? 1);
+                    
+                    // Process each batch for this item - langsung update stok (manual input)
+                    foreach ($item['batches'] as $batchIndex => $batch) {
+                        // Hitung total satuan terkecil untuk batch ini
+                        $satuanBatch = $batch['jumlah_kemasan'] * $isiPerKemasan;
+
+                        // Update atau buat stok barang di lokasi yang dipilih
+                        $stok = StokBarang::firstOrCreate(
+                            [
+                                'id_barang' => $item['id_barang'],
+                                'id_lokasi' => $batch['id_lokasi'],
+                            ],
+                            ['jumlah' => 0]
+                        );
+
+                        $stokSebelum = $stok->jumlah;
+                        $stok->increment('jumlah', $satuanBatch);
+
+                        // Siapkan keterangan batch
+                        $keteranganBatch = $batch['keterangan'] ?? 
+                            "Batch " . chr(65 + $batchIndex) . " - {$batch['jumlah_kemasan']} {$barang->kemasan}";
+                        
+                        // Tambahkan keterangan umum jika ada
+                        if (!empty($item['keterangan_umum'])) {
+                            $keteranganBatch .= " | " . $item['keterangan_umum'];
+                        }
+
+                        // Catat riwayat stok untuk setiap batch
+                        StokHistory::create([
+                            'id_barang' => $item['id_barang'],
+                            'id_lokasi' => $batch['id_lokasi'],
+                            'perubahan' => $satuanBatch,
+                            'stok_sebelum' => $stokSebelum,
+                            'stok_sesudah' => $stok->jumlah,
+                            'tanggal_transaksi' => $item['tanggal_masuk'],
+                            'expired_at' => $batch['expired_at'] ?? null,
+                            'jumlah_kemasan' => $batch['jumlah_kemasan'],
+                            'isi_per_kemasan' => $isiPerKemasan,
+                            'satuan_kemasan' => $barang->kemasan ?? 'Box',
+                            'keterangan' => $keteranganBatch,
+                            'user_id' => Auth::id(),
+                        ]);
+
+                        $totalBatches++;
+                    }
+
+                    $successItems++;
+
+                } catch (\Exception $e) {
+                    $barangNama = isset($barang) ? $barang->nama_obat : 'Unknown';
+                    $errors[] = "Item " . ($itemIndex + 1) . " ($barangNama): " . $e->getMessage();
+                    Log::error("Error storing manual multiple barang masuk: " . $e->getMessage());
+                }
+            }
+        });
+
+        if ($successItems > 0) {
+            $message = "Berhasil menyimpan {$successItems} barang dengan total {$totalBatches} batch ke stok.";
+            if (!empty($errors)) {
+                $message .= " Namun terdapat " . count($errors) . " item yang gagal disimpan.";
+            }
+            
+            return redirect()
+                ->route('barang-masuk.index')
+                ->with('success', $message);
+        } else {
+            return redirect()
+                ->back()
+                ->withErrors(['errors' => $errors])
+                ->with('error', 'Semua item gagal disimpan.');
+        }
     }
 }

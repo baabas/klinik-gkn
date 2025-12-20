@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             MasterKantorSeeder::class,
             MasterIsiKemasanSeeder::class,
             MasterSatuanSeeder::class,
+            MasterWhatsappValidatorSeeder::class,
 
             // Seeder untuk membuat lokasi klinik dan barang medis (PengadaanSeeder membuat lokasi juga)
             PengadaanSeeder::class,

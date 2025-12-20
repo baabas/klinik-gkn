@@ -22,11 +22,12 @@ class RekamMedis extends Model
         'nik_pasien', // [BARU] Ditambahkan untuk pasien non-karyawan
         'id_dokter',
         'id_lokasi', // [BARU] Ditambahkan untuk filter feedback berdasarkan lokasi
+        'feedback_expired', // [BARU] Menandai feedback yang sudah expired/ditimpa
+        'kantor_saat_kunjungan', // Snapshot kantor karyawan saat kunjungan
+        'lokasi_gedung_saat_kunjungan', // Snapshot lokasi gedung non-karyawan saat kunjungan
         'tanggal_kunjungan',
         'anamnesa',
-        'terapi',
-        'nama_sa',
-        'jenis_kelamin_sa',
+        'treatment',
     ];
 
     /**
@@ -36,6 +37,7 @@ class RekamMedis extends Model
      */
     protected $casts = [
         'tanggal_kunjungan' => 'datetime',
+        'feedback_expired' => 'boolean',
     ];
 
     /**

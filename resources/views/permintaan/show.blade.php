@@ -77,14 +77,27 @@
                 </div>
             @endif
 
-            {{-- Tombol untuk PENGADAAN: Input Barang Masuk berdasarkan permintaan ini --}}
+            {{-- Tombol untuk PENGADAAN: Cek apakah ada barang baru yang belum ada di master data --}}
             @if(Auth::user()->hasRole('PENGADAAN') && $permintaan->status == 'APPROVED')
+                @php
+                    // Cek apakah ada barang baru (id_barang = null) yang belum ada di master data
+                    $hasNewItems = $permintaan->detail->contains(function ($item) {
+                        return is_null($item->id_barang) && !empty($item->nama_barang_baru);
+                    });
+                @endphp
                 <hr>  
                 <div class="mt-3 text-center">
-                    <p class="mb-2">Siap untuk input barang masuk berdasarkan permintaan ini?</p>
-                    <a href="{{ route('barang-masuk.create', ['request_id' => $permintaan->id]) }}" class="btn btn-success">
-                        <i class="bi bi-box-arrow-in-down me-2"></i> Input Barang Masuk
-                    </a>
+                    @if($hasNewItems)
+                        <p class="mb-2">Terdapat barang baru yang belum ada di master data. Silakan tambahkan barang baru terlebih dahulu.</p>
+                        <a href="{{ route('barang-medis.create') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i> Tambah Barang Baru
+                        </a>
+                    @else
+                        <p class="mb-2">Siap untuk input barang masuk berdasarkan permintaan ini?</p>
+                        <a href="{{ route('barang-masuk.create', ['request_id' => $permintaan->id]) }}" class="btn btn-success">
+                            <i class="bi bi-box-arrow-in-down me-2"></i> Input Barang Masuk
+                        </a>
+                    @endif
                 </div>
             @endif
 

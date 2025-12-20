@@ -64,6 +64,30 @@
                                     <td colspan="18" class="text-center p-4">Tidak ada data.</td>
                                 </tr>
                             @endforelse
+                            {{-- Grand Total Row for 1-16 --}}
+                            @if($daftar_obat->isNotEmpty())
+                            <tr class="table-secondary fw-bold">
+                                <td class="p-2 text-end">TOTAL KESELURUHAN:</td>
+                                @for ($i = 1; $i <= 16; $i++)
+                                    @php
+                                        $total_hari = 0;
+                                        foreach($daftar_obat as $obat) {
+                                            $total_hari += $data_pemakaian_harian->get($obat) ? $data_pemakaian_harian->get($obat)->where('hari', $i)->sum('jumlah') : 0;
+                                        }
+                                    @endphp
+                                    <td class="p-2">{{ $total_hari ?: '' }}</td>
+                                @endfor
+                                @php
+                                    $grand_total_periode_1 = 0;
+                                    foreach($daftar_obat as $obat) {
+                                        for ($i = 1; $i <= 16; $i++) {
+                                            $grand_total_periode_1 += $data_pemakaian_harian->get($obat) ? $data_pemakaian_harian->get($obat)->where('hari', $i)->sum('jumlah') : 0;
+                                        }
+                                    }
+                                @endphp
+                                <td class="p-2">{{ $grand_total_periode_1 }}</td>
+                            </tr>
+                            @endif
                         </tbody>
                     </table>
                 </div>
@@ -109,6 +133,35 @@
                                     <td colspan="{{ ($filter['jumlah_hari'] - 16) + 3 }}" class="text-center p-4">Tidak ada data.</td>
                                 </tr>
                             @endforelse
+                            {{-- Grand Total Row --}}
+                            @if($daftar_obat->isNotEmpty())
+                            <tr class="table-secondary fw-bold">
+                                <td class="p-2 text-end">TOTAL KESELURUHAN:</td>
+                                @for ($i = 17; $i <= $filter['jumlah_hari']; $i++)
+                                    @php
+                                        $total_hari = 0;
+                                        foreach($daftar_obat as $obat) {
+                                            $total_hari += $data_pemakaian_harian->get($obat) ? $data_pemakaian_harian->get($obat)->where('hari', $i)->sum('jumlah') : 0;
+                                        }
+                                    @endphp
+                                    <td class="p-2">{{ $total_hari ?: '' }}</td>
+                                @endfor
+                                @php
+                                    $grand_total_jml = 0;
+                                    $grand_total_bulan = 0;
+                                    foreach($daftar_obat as $obat) {
+                                        for ($i = 17; $i <= $filter['jumlah_hari']; $i++) {
+                                            $grand_total_jml += $data_pemakaian_harian->get($obat) ? $data_pemakaian_harian->get($obat)->where('hari', $i)->sum('jumlah') : 0;
+                                        }
+                                        for ($i = 1; $i <= $filter['jumlah_hari']; $i++) {
+                                            $grand_total_bulan += $data_pemakaian_harian->get($obat) ? $data_pemakaian_harian->get($obat)->where('hari', $i)->sum('jumlah') : 0;
+                                        }
+                                    }
+                                @endphp
+                                <td class="p-2">{{ $grand_total_jml }}</td>
+                                <td class="p-2 text-primary">{{ $grand_total_bulan }}</td>
+                            </tr>
+                            @endif
                         </tbody>
                     </table>
                 </div>

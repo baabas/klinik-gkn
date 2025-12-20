@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\FeedbackPasien;
 use App\Models\RekamMedis;
+use App\Helpers\SapaanHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
 
 class FeedbackController extends Controller
 {
@@ -22,6 +24,14 @@ class FeedbackController extends Controller
         // Ambil parameter lokasi dari query string (contoh: ?lokasi=1)
         $idLokasi = $request->query('lokasi');
         
+        // Jika tidak ada parameter lokasi, ambil dari user yang login
+        if (!$idLokasi) {
+            $user = Auth::user();
+            if ($user && $user->id_lokasi) {
+                $idLokasi = $user->id_lokasi;
+            }
+        }
+        
         // Validasi: id_lokasi harus diisi
         if (!$idLokasi) {
             abort(400, 'Parameter lokasi harus diisi. Contoh: /feedback/form?lokasi=1');
@@ -33,10 +43,11 @@ class FeedbackController extends Controller
             abort(404, 'Lokasi klinik tidak ditemukan.');
         }
         
-        // Ambil rekam medis yang baru disimpan hari ini dan belum ada feedback
+        // Ambil rekam medis yang belum ada feedback dan belum expired
         // FILTER BERDASARKAN LOKASI DOKTER (melalui relasi)
         $pendingFeedback = RekamMedis::whereDate('tanggal_kunjungan', today())
             ->whereDoesntHave('feedback')
+            ->where('feedback_expired', false) // Exclude yang sudah expired/ditimpa
             ->whereHas('dokter', function($query) use ($idLokasi) {
                 $query->where('id_lokasi', $idLokasi); // <-- FILTER via relasi dokter
             })
@@ -56,58 +67,101 @@ class FeedbackController extends Controller
      */
     public function checkPendingFeedback(Request $request)
     {
-        // Ambil parameter lokasi dari query string
+        // Ambil parameter lokasi dari query string atau dari user yang login
         $idLokasi = $request->query('lokasi');
         
-        // Validasi: id_lokasi harus diisi
+        // Jika tidak ada parameter lokasi, ambil dari user yang login atau dari dokter
+        if (!$idLokasi) {
+            // Coba ambil dari user yang login
+            $user = Auth::user();
+            if ($user && $user->id_lokasi) {
+                $idLokasi = $user->id_lokasi;
+            }
+        }
+        
+        // Jika masih tidak ada lokasi, return error
         if (!$idLokasi) {
             return response()->json([
                 'error' => true,
-                'message' => 'Parameter lokasi harus diisi.'
+                'message' => 'Lokasi tidak dapat ditentukan.'
             ], 400);
         }
         
-        // Cari rekam medis hari ini yang belum ada feedbacknya
+        // Cari rekam medis hari ini yang belum ada feedbacknya dan belum expired
         // FILTER BERDASARKAN LOKASI DOKTER (melalui relasi)
         $pending = RekamMedis::whereDate('tanggal_kunjungan', today())
             ->whereDoesntHave('feedback')
-            ->whereHas('dokter', function($query) use ($idLokasi) {
-                $query->where('id_lokasi', $idLokasi); // <-- FILTER via relasi dokter
-            })
-            ->with(['pasien.karyawan', 'pasienNonKaryawan.user'])
-            ->orderBy('created_at', 'desc')
+            ->where('feedback_expired', false) // Exclude yang sudah expired/ditimpa
+            ->with(['pasien.karyawan', 'pasienNonKaryawan.user', 'dokter'])
+            ->orderBy('tanggal_kunjungan', 'desc')
             ->first();
+        
+        // Filter berdasarkan lokasi jika lokasi ada
+        if ($pending && $idLokasi) {
+            $pending = $pending->dokter && $pending->dokter->id_lokasi === (int)$idLokasi ? $pending : null;
+        }
+        
+        // Jika ditemukan pending feedback, tandai semua rekam medis LAIN yang lebih lama sebagai expired
+        // Ini menangani kasus: pasien A tidak isi feedback, lalu ditimpa oleh pasien B
+        // Saat B ditampilkan, A akan di-expire-kan
+        if ($pending) {
+            RekamMedis::whereDate('tanggal_kunjungan', today())
+                ->whereDoesntHave('feedback')
+                ->where('feedback_expired', false)
+                ->where('id_rekam_medis', '!=', $pending->id_rekam_medis)
+                ->whereHas('dokter', function($query) use ($idLokasi) {
+                    $query->where('id_lokasi', $idLokasi);
+                })
+                ->update(['feedback_expired' => true]);
+        }
 
         if ($pending) {
             $pasienData = null;
             $namaPasien = null;
+            $sapaanPasien = null;
 
-            // KARYAWAN: Ambil nama dari users atau karyawan
+            // KARYAWAN: Ambil nama dari users, tapi jenis_kelamin dan tanggal_lahir dari karyawan
             if ($pending->nip_pasien) {
-                // Priority 1: Dari users.nama_karyawan
+                // Ambil nama dari users.nama_karyawan atau karyawan.nama_karyawan
                 if ($pending->pasien && !empty($pending->pasien->nama_karyawan)) {
                     $namaPasien = $pending->pasien->nama_karyawan;
-                }
-                // Priority 2: Dari karyawan.nama_karyawan
-                elseif ($pending->pasien && $pending->pasien->karyawan && !empty($pending->pasien->karyawan->nama_karyawan)) {
+                } elseif ($pending->pasien && $pending->pasien->karyawan && !empty($pending->pasien->karyawan->nama_karyawan)) {
                     $namaPasien = $pending->pasien->karyawan->nama_karyawan;
+                }
+
+                // Generate sapaan - jenis_kelamin dan tanggal_lahir SELALU dari tabel karyawan
+                if ($pending->pasien && $pending->pasien->karyawan) {
+                    $sapaanPasien = SapaanHelper::sapaan(
+                        $namaPasien,
+                        $pending->pasien->karyawan->jenis_kelamin ?? null,
+                        $pending->pasien->karyawan->tanggal_lahir ?? null
+                    );
                 }
 
                 $pasienData = [
                     'identifier' => $pending->nip_pasien,
-                    'nama' => $namaPasien ?: 'NIP: ' . $pending->nip_pasien,
+                    'nama' => $sapaanPasien ?: $namaPasien ?: 'NIP: ' . $pending->nip_pasien,
                     'type' => 'karyawan'
                 ];
             }
-            // NON-KARYAWAN: Ambil nama dari users via relasi
+            // NON-KARYAWAN: Ambil nama dari users via relasi, tapi jenis_kelamin dan tanggal_lahir dari non_karyawan
             elseif ($pending->nik_pasien) {
-                if ($pending->pasienNonKaryawan && $pending->pasienNonKaryawan->user && !empty($pending->pasienNonKaryawan->user->nama_karyawan)) {
-                    $namaPasien = $pending->pasienNonKaryawan->user->nama_karyawan;
+                if ($pending->pasienNonKaryawan) {
+                    // Nama diambil dari users via relasi
+                    if ($pending->pasienNonKaryawan->user && !empty($pending->pasienNonKaryawan->user->nama_karyawan)) {
+                        $namaPasien = $pending->pasienNonKaryawan->user->nama_karyawan;
+                    }
+                    // Generate sapaan - jenis_kelamin dan tanggal_lahir ada di tabel non_karyawan
+                    $sapaanPasien = SapaanHelper::sapaan(
+                        $namaPasien,
+                        $pending->pasienNonKaryawan->jenis_kelamin ?? null,
+                        $pending->pasienNonKaryawan->tanggal_lahir ?? null
+                    );
                 }
 
                 $pasienData = [
                     'identifier' => $pending->nik_pasien,
-                    'nama' => $namaPasien ?: 'NIK: ' . substr($pending->nik_pasien, 0, 10) . '...',
+                    'nama' => $sapaanPasien ?: $namaPasien ?: 'NIK: ' . substr($pending->nik_pasien, 0, 10) . '...',
                     'type' => 'non-karyawan'
                 ];
             }
@@ -137,16 +191,17 @@ class FeedbackController extends Controller
         // Validasi input
         $validator = Validator::make($request->all(), [
             'id_rekam_medis' => 'required|exists:rekam_medis,id_rekam_medis',
-            'rating' => 'required|integer|min:1|max:5',
-            'komentar' => 'nullable|string|max:1000',
+            'rating' => 'required|integer|min:1|max:3',
+            'jumlah_obat_sesuai' => 'required|boolean',
         ], [
             'id_rekam_medis.required' => 'ID Rekam Medis harus diisi.',
             'id_rekam_medis.exists' => 'Rekam Medis tidak ditemukan.',
             'rating.required' => 'Rating harus dipilih.',
             'rating.integer' => 'Rating harus berupa angka.',
             'rating.min' => 'Rating minimal 1.',
-            'rating.max' => 'Rating maksimal 5.',
-            'komentar.max' => 'Komentar maksimal 1000 karakter.',
+            'rating.max' => 'Rating maksimal 3.',
+            'jumlah_obat_sesuai.required' => 'Jumlah obat sesuai harus dipilih.',
+            'jumlah_obat_sesuai.boolean' => 'Jawaban obat tidak valid',
         ]);
 
         if ($validator->fails()) {
@@ -175,7 +230,7 @@ class FeedbackController extends Controller
                 'nip_pasien' => $rekamMedis->nip_pasien,
                 'nik_pasien' => $rekamMedis->nik_pasien,
                 'rating' => $request->rating,
-                'komentar' => $request->komentar,
+                'jumlah_obat_sesuai' => $request->boolean('jumlah_obat_sesuai'),
                 'waktu_feedback' => now(),
             ]);
 

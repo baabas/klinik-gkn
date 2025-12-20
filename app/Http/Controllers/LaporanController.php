@@ -100,54 +100,38 @@ class LaporanController extends Controller
             ->select('dp.nama_penyakit', DB::raw('DAY(rm.tanggal_kunjungan) as hari'), DB::raw('COUNT(dd.id_detail_diagnosa) as jumlah'))
             ->groupBy('dp.nama_penyakit', 'hari')->get()->groupBy('nama_penyakit');
 
-        // [DIPERBAIKI] Gabungkan daftar kantor dari karyawan dan lokasi gedung dari non-karyawan
-        $daftar_kantor_karyawan = DB::table('karyawan')
-            ->whereNotNull('kantor')->where('kantor', '!=', '')
-            ->select('kantor')->distinct()->pluck('kantor');
-
-        $daftar_kantor_non_karyawan = DB::table('non_karyawan')
-            ->whereNotNull('lokasi_gedung')->where('lokasi_gedung', '!=', '')
-            ->select('lokasi_gedung as kantor')->distinct()->pluck('kantor');
-
-        $daftar_kantor = $daftar_kantor_karyawan->merge($daftar_kantor_non_karyawan)->unique()->sort()->values();
-
-        // [DIPERBAIKI] Gabungkan data kunjungan dari karyawan dan non-karyawan
-        $data_kunjungan_karyawan = DB::table('rekam_medis as rm')
-            ->join('users', 'rm.NIP_pasien', '=', 'users.nip')
-            ->join('karyawan as k', 'users.nip', '=', 'k.nip')
-            ->join('users as dokter', 'rm.id_dokter', '=', 'dokter.id') // Join dengan tabel users untuk filter lokasi dokter
+        // [UPDATED] Dapatkan daftar kantor dari snapshot kantor_saat_kunjungan di rekam_medis
+        $daftar_kantor = DB::table('rekam_medis as rm')
+            ->join('users as dokter', 'rm.id_dokter', '=', 'dokter.id')
             ->when($idLokasi, function ($query, $idLokasi) {
                 return $query->where('dokter.id_lokasi', $idLokasi);
             })
-            ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
-            ->select('k.kantor', DB::raw('DAY(rm.tanggal_kunjungan) as hari'), DB::raw('COUNT(rm.id_rekam_medis) as jumlah'))
-            ->groupBy('k.kantor', 'hari')->get();
+            ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])
+            ->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
+            ->whereRaw('(rm.kantor_saat_kunjungan IS NOT NULL OR rm.lokasi_gedung_saat_kunjungan IS NOT NULL)')
+            ->select(DB::raw('COALESCE(rm.kantor_saat_kunjungan, rm.lokasi_gedung_saat_kunjungan) as kantor'))
+            ->distinct()
+            ->pluck('kantor')
+            ->sort()
+            ->values();
 
-        $data_kunjungan_non_karyawan = DB::table('rekam_medis as rm')
-            ->join('users', 'rm.NIK_pasien', '=', 'users.nik')
-            ->join('non_karyawan as nk', 'users.nik', '=', 'nk.nik')
-            ->join('users as dokter', 'rm.id_dokter', '=', 'dokter.id') // Join dengan tabel users untuk filter lokasi dokter
+        // [UPDATED] Ambil data kunjungan dari snapshot kantor_saat_kunjungan
+        $data_kunjungan = DB::table('rekam_medis as rm')
+            ->join('users as dokter', 'rm.id_dokter', '=', 'dokter.id')
             ->when($idLokasi, function ($query, $idLokasi) {
                 return $query->where('dokter.id_lokasi', $idLokasi);
             })
-            ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
-            ->whereNotNull('nk.lokasi_gedung')->where('nk.lokasi_gedung', '!=', '')
-            ->select('nk.lokasi_gedung as kantor', DB::raw('DAY(rm.tanggal_kunjungan) as hari'), DB::raw('COUNT(rm.id_rekam_medis) as jumlah'))
-            ->groupBy('nk.lokasi_gedung', 'hari')->get();
-
-        // Gabungkan data kunjungan
-        $data_kunjungan_gabungan = $data_kunjungan_karyawan->concat($data_kunjungan_non_karyawan);
-        
-        // Group by kantor dan aggregasi jumlah
-        $data_kunjungan = $data_kunjungan_gabungan->groupBy('kantor')->map(function ($items) {
-            return $items->groupBy('hari')->map(function ($hariItems) {
-                return (object) [
-                    'kantor' => $hariItems->first()->kantor,
-                    'hari' => $hariItems->first()->hari,
-                    'jumlah' => $hariItems->sum('jumlah')
-                ];
-            });
-        });
+            ->whereYear('rm.tanggal_kunjungan', $filter['tahun'])
+            ->whereMonth('rm.tanggal_kunjungan', $filter['bulan'])
+            ->whereRaw('(rm.kantor_saat_kunjungan IS NOT NULL OR rm.lokasi_gedung_saat_kunjungan IS NOT NULL)')
+            ->select(
+                DB::raw('COALESCE(rm.kantor_saat_kunjungan, rm.lokasi_gedung_saat_kunjungan) as kantor'),
+                DB::raw('DAY(rm.tanggal_kunjungan) as hari'),
+                DB::raw('COUNT(rm.id_rekam_medis) as jumlah')
+            )
+            ->groupBy('kantor', 'hari')
+            ->get()
+            ->groupBy('kantor');
 
         $pdf = Pdf::loadView('laporan.pdf_penyakit_kunjungan', [
             'daftar_penyakit' => $daftar_penyakit,

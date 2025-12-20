@@ -18,10 +18,21 @@ class LoginRequest extends FormRequest
 
     public function rules(): array
     {
-        // [DIKEMBALIKAN] Validasi untuk NIP
+        // [DIKEMBALIKAN] Validasi untuk NIP dengan Max Length Validation
         return [
-            'nip' => ['required', 'string'],
-            'password' => ['required', 'string'],
+            'nip' => ['required', 'string', 'digits:18', 'max:18'],
+            'password' => ['required', 'string', 'max:255'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'nip.required' => 'NIP wajib diisi.',
+            'nip.digits' => 'NIP harus terdiri dari 18 digit angka.',
+            'nip.max' => 'NIP terlalu panjang (maksimal 18 karakter).',
+            'password.required' => 'Password wajib diisi.',
+            'password.max' => 'Password terlalu panjang (maksimal 255 karakter).',
         ];
     }
 

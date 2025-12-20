@@ -128,7 +128,7 @@
                         Master Data
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </button>
-                    <div class="collapse {{ request()->routeIs('master-kantor.*') || request()->routeIs('master-isi-kemasan.*') || request()->routeIs('master-satuan.*') ? 'show' : '' }}" id="masterDataSubmenu">
+                    <div class="collapse {{ request()->routeIs('master-kantor.*') || request()->routeIs('master-isi-kemasan.*') || request()->routeIs('master-satuan.*') || request()->routeIs('master-whatsapp-validator.*') ? 'show' : '' }}" id="masterDataSubmenu">
                         <ul class="nav flex-column ms-3">
                             <li class="nav-item">
                                 <a class="nav-link py-2 {{ request()->routeIs('master-kantor.*') ? 'active' : '' }}" href="{{ route('master-kantor.index') }}">
@@ -143,6 +143,11 @@
                             <li class="nav-item">
                                 <a class="nav-link py-2 {{ request()->routeIs('master-satuan.*') ? 'active' : '' }}" href="{{ route('master-satuan.index') }}">
                                     <i class="bi bi-rulers"></i> Master Satuan Terkecil
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link py-2 {{ request()->routeIs('master-whatsapp-validator.*') ? 'active' : '' }}" href="{{ route('master-whatsapp-validator.index') }}">
+                                    <i class="bi bi-whatsapp"></i> Master WA Validator
                                 </a>
                             </li>
                         </ul>

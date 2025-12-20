@@ -19,7 +19,9 @@ use App\Http\Controllers\FeedbackController; // [BARU] Import FeedbackController
 use App\Http\Controllers\MasterKantorController; // [BARU] Import MasterKantorController
 use App\Http\Controllers\MasterIsiKemasanController; // [BARU] Import MasterIsiKemasanController
 use App\Http\Controllers\MasterSatuanController; // [BARU] Import MasterSatuanController
+use App\Http\Controllers\MasterWhatsappValidatorController; // [BARU] Import MasterWhatsappValidatorController
 use App\Http\Controllers\DistribusiBarangController; // [BARU] Import DistribusiBarangController
+use App\Http\Controllers\SuratDistribusiController; // [BARU] Import SuratDistribusiController
 
 /*
 |--------------------------------------------------------------------------
@@ -87,12 +89,14 @@ Route::middleware(['auth'])->group(function () {
     // --- RUTE KHUSUS PASIEN ---
     Route::middleware(['role:PASIEN'])->group(function () {
         Route::get('/kartu-pasien', [PasienController::class, 'myCard'])->name('pasien.my_card');
+        Route::post('/update-kantor', [PasienController::class, 'updateKantor'])->name('pasien.update_kantor');
     });
 
     // --- RUTE BERSAMA (DOKTER & PENGADAAN) ---
     Route::middleware(['role:DOKTER,PENGADAAN'])->group(function () {
         Route::get('barang-medis/{barang}/riwayat', [BarangMedisController::class, 'history'])->name('barang-medis.history');
         Route::put('barang-medis/{barang}/distribusi', [BarangMedisController::class, 'distribusi'])->name('barang-medis.distribusi');
+        Route::post('barang-medis/distribusi-multi', [BarangMedisController::class, 'distribusiMulti'])->name('barang-medis.distribusi-multi');
         Route::get('barang-masuk', [BarangMasukController::class, 'index'])->name('barang-masuk.index');
         Route::get('/api/barang-medis/search', [BarangMedisController::class, 'search'])->name('api.barang-medis.search');
         Route::get('/barang-medis/print-pdf', [BarangMedisController::class, 'printPdf'])
@@ -101,6 +105,13 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('barang-medis', BarangMedisController::class);
         Route::resource('permintaan', PermintaanBarangController::class);
         Route::get('/permintaan/{permintaan}/print-pdf', [PermintaanBarangController::class, 'printPdf'])->name('permintaan.print-pdf');
+
+        // Rute untuk Surat Distribusi
+        Route::get('/surat-distribusi', [SuratDistribusiController::class, 'index'])->name('surat-distribusi.index');
+        Route::get('/surat-distribusi/{id}', [SuratDistribusiController::class, 'show'])->name('surat-distribusi.show');
+        Route::get('/surat-distribusi/{id}/print-pdf', [SuratDistribusiController::class, 'printPdf'])->name('surat-distribusi.print-pdf');
+        Route::get('/surat-distribusi/{id}/preview-pdf', [SuratDistribusiController::class, 'previewPdf'])->name('surat-distribusi.preview-pdf');
+        Route::put('/surat-distribusi/{id}/update-wa', [SuratDistribusiController::class, 'updateWa'])->name('surat-distribusi.update-wa');
 
         // Rute untuk Laporan
     });
@@ -125,6 +136,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/pasien', [PasienController::class, 'index'])->name('pasien.index');
         Route::get('/pasien/{pasien:nip}', [PasienController::class, 'show'])->name('pasien.show');
         Route::get('/pasien-non-karyawan/{pasien:nik}', [PasienController::class, 'showNonKaryawan'])->name('pasien.show_non_karyawan');
+        Route::patch('/pasien-non-karyawan/{pasien:nik}/update-info', [PasienController::class, 'updateNonKaryawanInfo'])->name('pasien.update_non_karyawan_info');
 
         // Rekam Medis (parameter disamakan menjadi 'pasien')
         Route::get('/pasien/{pasien:nip}/rekam-medis/create', [RekamMedisController::class, 'create'])->name('rekam-medis.create');
@@ -158,8 +170,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('barang-masuk/create', [BarangMasukController::class, 'create'])->name('barang-masuk.create');
         Route::post('barang-masuk', [BarangMasukController::class, 'store'])->name('barang-masuk.store');
         Route::post('barang-masuk/store-multiple', [BarangMasukController::class, 'storeMultiple'])->name('barang-masuk.store-multiple');
+        Route::post('barang-masuk/store-manual-multiple', [BarangMasukController::class, 'storeManualMultiple'])->name('barang-masuk.store-manual-multiple');
         Route::get('barang-masuk/check-completion/{requestId}', [BarangMasukController::class, 'checkCompletion'])->name('barang-masuk.check-completion');
-        Route::get('/barang-medis/print-pdf', [BarangMedisController::class, 'printPdf'])->name('barang-medis.printPdf');
         
         // [BARU] Laporan Feedback untuk Pengadaan
         Route::get('/feedback', [FeedbackController::class, 'index'])->name('feedback.index');
@@ -168,6 +180,7 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('master-kantor', MasterKantorController::class);
         Route::resource('master-isi-kemasan', MasterIsiKemasanController::class);
         Route::resource('master-satuan', MasterSatuanController::class);
+        Route::resource('master-whatsapp-validator', MasterWhatsappValidatorController::class);
         
         // Log Distribusi Barang - Read Only untuk Audit Trail (PENGADAAN Only)
         Route::get('/distribusi-barang', [DistribusiBarangController::class, 'index'])->name('distribusi-barang.index');

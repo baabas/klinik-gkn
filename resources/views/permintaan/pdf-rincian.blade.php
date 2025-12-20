@@ -92,7 +92,7 @@
     <div class="header">
         <h1>KEMENTERIAN KEUANGAN REPUBLIK INDONESIA</h1>
         <div>SEKRETARIAT JENDERAL</div>
-        <div>PUSAT SISTEM INFORMASI DAN TEKNOLOGI KEUANGAN</div>
+        <div>BIRO UMUM</div>
         <div>KANTOR PENGELOLAAN TEKNOLOGI INFORMASI DAN KOMUNIKASI</div>
         <div>DAN BARANG MILIK NEGARA</div>
         <br>

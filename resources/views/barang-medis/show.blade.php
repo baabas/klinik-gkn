@@ -16,9 +16,11 @@
                     <a href="{{ route('barang-medis.index') }}" class="btn btn-outline-secondary me-2">
                         <i class="fas fa-arrow-left"></i> Kembali
                     </a>
-                    <a href="{{ route('barang-medis.edit', $barangMedi->id_obat) }}" class="btn btn-primary">
-                        <i class="fas fa-edit"></i> Edit Barang
-                    </a>
+                    @if(Auth::user()->hasRole('PENGADAAN'))
+                        <a href="{{ route('barang-medis.edit', $barangMedi->id_obat) }}" class="btn btn-primary">
+                            <i class="fas fa-edit"></i> Edit Barang
+                        </a>
+                    @endif
                 </div>
             </div>
 

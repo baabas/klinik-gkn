@@ -34,6 +34,10 @@ class NonKaryawan extends Model
         'nik',
         'lokasi_gedung',
         'tanggal_lahir',
+        'jenis_kelamin',
+        'alergi',
+        'no_hp',
+        'alamat',
     ];
 
     /**

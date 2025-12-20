@@ -113,56 +113,70 @@
 
                     @if(Auth::check())
                         <ul class="navbar-nav ms-auto align-items-center gap-3">
-                            <li class="nav-item d-none d-md-flex flex-column align-items-end text-white-50 me-2">
-                                <small class="text-light opacity-75" id="current-datetime" style="font-family: 'Courier New', monospace;">
-                                    {{ \Carbon\Carbon::now()->format('d M Y, H:i') }}
+                            {{-- Current Date and Time --}}
+                            <li class="nav-item d-none d-md-flex flex-column align-items-end me-3">
+                                <small class="text-light opacity-75" id="current-datetime">
+                                    {{ date('d M Y, H:i') }}
                                 </small>
                             </li>
-                            <li class="nav-item d-none d-sm-block text-white-50">
-                                <span>Hallo, {{ Auth::user()->nama_karyawan }}</span>
-                            </li>
-                            <li class="nav-item dropdown" style="position: relative;">
-                                <a class="nav-link dropdown-toggle text-white p-1 rounded-circle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: rgba(255,255,255,0.1); transition: all 0.3s ease;">
-                                    <i class="bi bi-person-circle fs-4 align-middle"></i>
+                            
+                            {{-- Profile Dropdown dengan nama user --}}
+                            <li class="nav-item dropdown me-2">
+                                <a class="nav-link dropdown-toggle text-white px-3 py-2 d-flex align-items-center" 
+                                   href="#" 
+                                   id="navbarDropdownProfile" 
+                                   role="button" 
+                                   data-bs-toggle="dropdown"
+                                   data-bs-auto-close="true"
+                                   aria-expanded="false" 
+                                   style="background-color: rgba(255,255,255,0.1); transition: all 0.3s ease; border-radius: 8px;">
+                                    <i class="bi bi-person-circle fs-5 me-2"></i>
+                                    <span class="d-none d-sm-inline">Hallo, {{ Auth::user()->nama_karyawan }}</span>
                                 </a>
-                                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0" aria-labelledby="navbarDropdown" style="min-width: 220px;">
-                                    <li class="dropdown-header">
-                                        <div class="d-flex align-items-center">
-                                            <i class="bi bi-person-circle fs-5 me-2 text-primary"></i>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0" aria-labelledby="navbarDropdownProfile" style="min-width: 250px;">
+                                    <li class="dropdown-header bg-light">
+                                        <div class="d-flex align-items-center py-2">
+                                            <i class="bi bi-person-circle fs-3 me-3 text-primary"></i>
                                             <div>
-                                                <div class="fw-semibold">{{ Auth::user()->nama_karyawan }}</div>
-                                                <small class="text-muted">
+                                                <div class="fw-bold text-dark">{{ Auth::user()->nama_karyawan }}</div>
+                                                <small class="text-muted">{{ Auth::user()->email }}</small>
+                                                <br>
+                                                <small class="badge bg-primary mt-1">
                                                     @switch($activeRole)
+                                                        @case('PENGADAAN')
+                                                            Staff Pengadaan
+                                                            @break
                                                         @case('DOKTER')
                                                             Dokter
                                                             @break
                                                         @case('PASIEN')
                                                             Pasien
                                                             @break
-                                                        @case('PENGADAAN')
-                                                            Staff Pengadaan
-                                                            @break
                                                         @default
-                                                            Pengguna
+                                                            User
                                                     @endswitch
                                                 </small>
                                             </div>
                                         </div>
                                     </li>
-                                    <li><hr class="dropdown-divider"></li>
+                                    <li><hr class="dropdown-divider my-2"></li>
                                     <li>
-                                        <a class="dropdown-item d-flex align-items-center" href="{{ route('profile.edit') }}">
-                                            <i class="bi bi-gear-fill me-2 text-primary"></i>Pengaturan Profil
+                                        <a class="dropdown-item d-flex align-items-center py-2" href="{{ route('profile.edit') }}" style="transition: all 0.2s;">
+                                            <i class="bi bi-gear-fill me-3 text-primary fs-5"></i>
+                                            <div>
+                                                <div class="fw-semibold">Pengaturan Profile</div>
+                                                <small class="text-muted">Update informasi akun Anda</small>
+                                            </div>
                                         </a>
                                     </li>
-                                    <li><hr class="dropdown-divider"></li>
+                                    <li><hr class="dropdown-divider my-2"></li>
                                     <li>
-                                        <form method="POST" action="{{ route('logout') }}" class="d-inline w-100">
+                                        <form method="POST" action="{{ route('logout') }}" class="px-3 py-2">
                                             @csrf
-                                            <a class="dropdown-item d-flex align-items-center text-danger" href="{{ route('logout') }}"
-                                               onclick="event.preventDefault(); this.closest('form').submit();">
-                                                <i class="bi bi-box-arrow-right me-2"></i>Logout
-                                            </a>
+                                            <button type="submit" class="btn btn-outline-danger btn-sm w-100 d-flex align-items-center justify-content-center">
+                                                <i class="bi bi-box-arrow-right me-2"></i>
+                                                Logout
+                                            </button>
                                         </form>
                                     </li>
                                 </ul>
@@ -209,8 +223,16 @@
                 });
 
                 // Debug dropdown functionality
-                const profileDropdownToggle = document.getElementById('navbarDropdown');
+                const profileDropdownToggle = document.getElementById('navbarDropdown') || document.getElementById('navbarDropdownProfile');
                 const profileDropdownMenu = profileDropdownToggle ? profileDropdownToggle.nextElementSibling : null;
+                
+                // Force initialize profile dropdown
+                if (profileDropdownToggle) {
+                    console.log('Initializing profile dropdown:', profileDropdownToggle.id);
+                    new bootstrap.Dropdown(profileDropdownToggle, {
+                        autoClose: true
+                    });
+                }
                 const laporanToggle = document.getElementById('laporan-dropdown-toggle');
                 const laporanMenu = document.getElementById('laporan-dropdown-menu');
 

@@ -96,6 +96,61 @@
     .text-warning { color: #fd7e14 !important; }
     .text-success { color: #198754 !important; }
     .text-primary { color: #0d6efd !important; }
+
+    /* Multi Distribusi Bar */
+    .multi-distribusi-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #198754 0%, #157347 100%);
+        color: white;
+        padding: 1rem 2rem;
+        z-index: 1050;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+        animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes slideUp {
+        from {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .multi-distribusi-bar .btn {
+        font-weight: 500;
+    }
+
+    /* Checkbox styling */
+    .barang-checkbox {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    .barang-checkbox:checked {
+        background-color: #198754;
+        border-color: #198754;
+    }
+
+    tr.selected-row {
+        background-color: rgba(25, 135, 84, 0.1) !important;
+    }
+
+    /* Multi distribusi modal improvements */
+    #multi-distribusi-items input[type="number"] {
+        text-align: center;
+    }
+
+    #multi-distribusi-items .btn-remove-item:hover {
+        background-color: #dc3545;
+        color: white;
+    }
 </style>
 @endpush
 
@@ -141,6 +196,9 @@
                             <i class="bi bi-filetype-pdf"></i> Print PDF
                         </a>
                     @endif
+                    <a href="{{ route('surat-distribusi.index') }}" class="btn btn-outline-success">
+                        <i class="bi bi-file-earmark-text"></i> Surat Distribusi
+                    </a>
                 </div>
 
                 <form action="{{ route('barang-medis.index') }}" method="GET" class="d-flex" style="max-width: 320px;" id="search-form">
@@ -150,16 +208,33 @@
             </div>
 
             @if(session('success'))
-                <div class="alert alert-success">{{ session('success') }}</div>
+                <div class="alert alert-success alert-dismissible fade show">
+                    <i class="bi bi-check-circle me-2"></i>{{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+            @if(session('warning'))
+                <div class="alert alert-warning alert-dismissible fade show">
+                    <i class="bi bi-exclamation-triangle me-2"></i>{{ session('warning') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
             @endif
             @if(session('error'))
-                <div class="alert alert-danger">{{ session('error') }}</div>
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <i class="bi bi-x-circle me-2"></i>{{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
             @endif
 
             <div class="table-responsive" style="max-height: 80vh; overflow-y: auto;">
                 <table class="table table-bordered table-striped table-hover align-middle mb-0">
                     <thead class="table-light sticky-top">
                         <tr>
+                            @if(Auth::user()->hasRole('DOKTER') || Auth::user()->hasRole('PENGADAAN'))
+                            <th style="width: 40px;" class="text-center">
+                                <input type="checkbox" class="form-check-input" id="select-all-checkbox" title="Pilih Semua">
+                            </th>
+                            @endif
                             <th style="width: 50px;" class="text-center">No</th>
                             <th style="width: 100px;" class="text-center">Kode</th>
                             <th style="min-width: 200px;">Nama Obat/Alat Medis</th>
@@ -182,6 +257,25 @@
                 </table>
             </div>
 
+            {{-- Floating Action Bar untuk Multi Distribusi --}}
+            @if(Auth::user()->hasRole('DOKTER') || Auth::user()->hasRole('PENGADAAN'))
+            <div id="multi-distribusi-bar" class="multi-distribusi-bar" style="display: none;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <strong><span id="selected-count">0</span> obat dipilih</strong>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-danger btn-sm" id="clear-selection">
+                            <i class="bi bi-x-circle"></i> Batalkan
+                        </button>
+                        <button type="button" class="btn btn-success" id="btn-multi-distribusi" data-bs-toggle="modal" data-bs-target="#multiDistribusiModal">
+                            <i class="bi bi-truck"></i> Distribusi <span id="selected-count-btn">0</span> Obat
+                        </button>
+                    </div>
+                </div>
+            </div>
+            @endif
+
             <!-- Loading indicator -->
             <div id="loading-indicator" class="text-center my-4" style="display: none;">
                 <div class="spinner-border text-primary" role="status">
@@ -197,79 +291,467 @@
         </div>
     </div>
 
-    {{-- Modal untuk Distribusi Stok (Tidak ada perubahan di sini) --}}
-    @foreach ($barang as $item)
-    <div class="modal fade" id="distribusiModal-{{ $item->id_obat }}" tabindex="-1" aria-labelledby="distribusiModalLabel-{{ $item->id_obat }}" aria-hidden="true">
-        <div class="modal-dialog">
+    {{-- Modal untuk Multi Distribusi --}}
+    @if(Auth::user()->hasRole('DOKTER') || Auth::user()->hasRole('PENGADAAN'))
+    <div class="modal fade" id="multiDistribusiModal" tabindex="-1" aria-labelledby="multiDistribusiModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="distribusiModalLabel-{{ $item->id_obat }}">Distribusi Stok: {{ $item->nama_obat }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="multiDistribusiModalLabel">
+                        <i class="bi bi-truck me-2"></i>Distribusi Multi Obat
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form action="{{ route('barang-medis.distribusi', $item->id_obat) }}" method="POST">
+                <form action="{{ route('barang-medis.distribusi-multi') }}" method="POST" id="multi-distribusi-form">
                     @csrf
-                    @method('PUT')
                     <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="lokasi_asal-{{ $item->id_obat }}" class="form-label">Dari Lokasi</label>
-                            <select class="form-select" name="lokasi_asal" id="lokasi_asal-{{ $item->id_obat }}" required>
-                                @if(Auth::user()->hasRole('PENGADAAN'))
-                                    {{-- PENGADAAN bisa distribusi dari lokasi mana saja --}}
-                                    <option value="1" data-stok="{{ (int)($item->stok_gkn1 ?? 0) }}">GKN 1 (Stok: {{ (int)($item->stok_gkn1 ?? 0) }})</option>
-                                    <option value="2" data-stok="{{ (int)($item->stok_gkn2 ?? 0) }}">GKN 2 (Stok: {{ (int)($item->stok_gkn2 ?? 0) }})</option>
-                                @elseif(Auth::user()->hasRole('DOKTER'))
-                                    {{-- DOKTER hanya bisa distribusi dari lokasi mereka atau ke lokasi mereka --}}
-                                    @if(Auth::user()->id_lokasi == 1)
-                                        <option value="1" data-stok="{{ (int)($item->stok_gkn1 ?? 0) }}">GKN 1 (Stok: {{ (int)($item->stok_gkn1 ?? 0) }})</option>
-                                        <option value="2" data-stok="{{ (int)($item->stok_gkn2 ?? 0) }}">GKN 2 (Stok: {{ (int)($item->stok_gkn2 ?? 0) }})</option>
-                                    @elseif(Auth::user()->id_lokasi == 2)
-                                        <option value="2" data-stok="{{ (int)($item->stok_gkn2 ?? 0) }}">GKN 2 (Stok: {{ (int)($item->stok_gkn2 ?? 0) }})</option>
-                                        <option value="1" data-stok="{{ (int)($item->stok_gkn1 ?? 0) }}">GKN 1 (Stok: {{ (int)($item->stok_gkn1 ?? 0) }})</option>
+                        {{-- Pilihan Lokasi --}}
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="multi_lokasi_asal" class="form-label fw-bold">Dari Lokasi</label>
+                                <select class="form-select" name="lokasi_asal" id="multi_lokasi_asal" required>
+                                    @if(Auth::user()->hasRole('PENGADAAN'))
+                                        <option value="1">GKN 1</option>
+                                        <option value="2">GKN 2</option>
+                                    @elseif(Auth::user()->hasRole('DOKTER'))
+                                        @if(Auth::user()->id_lokasi == 1)
+                                            <option value="1">GKN 1</option>
+                                            <option value="2">GKN 2</option>
+                                        @else
+                                            <option value="2">GKN 2</option>
+                                            <option value="1">GKN 1</option>
+                                        @endif
                                     @endif
-                                @endif
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="lokasi_tujuan-{{ $item->id_obat }}" class="form-label">Ke Lokasi</label>
-                            <select class="form-select" name="lokasi_tujuan" id="lokasi_tujuan-{{ $item->id_obat }}" required>
-                                @if(Auth::user()->hasRole('PENGADAAN'))
-                                    {{-- PENGADAAN bisa distribusi ke lokasi mana saja --}}
-                                    <option value="2">GKN 2</option>
-                                    <option value="1">GKN 1</option>
-                                @elseif(Auth::user()->hasRole('DOKTER'))
-                                    {{-- DOKTER bisa distribusi ke lokasi manapun termasuk lokasi mereka sendiri --}}
-                                    {{-- Karena mereka bisa menerima dari lokasi lain atau mengirim ke lokasi lain --}}
-                                    <option value="1">GKN 1</option>
-                                    <option value="2">GKN 2</option>
-                                @endif
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="jumlah-{{ $item->id_obat }}" class="form-label">Jumlah Distribusi</label>
-                            <input type="number" name="jumlah" id="jumlah-{{ $item->id_obat }}" class="form-control" required min="1" max="{{ (int)($item->stok_gkn1 ?? 0) }}">
-                            <div class="form-text">
-                                Stok tersedia di lokasi asal: <span class="stok-tersedia fw-bold">{{ (int)($item->stok_gkn1 ?? 0) }}</span>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="multi_lokasi_tujuan" class="form-label fw-bold">Ke Lokasi</label>
+                                <select class="form-select" name="lokasi_tujuan" id="multi_lokasi_tujuan" required>
+                                    @if(Auth::user()->hasRole('PENGADAAN'))
+                                        <option value="2">GKN 2</option>
+                                        <option value="1">GKN 1</option>
+                                    @elseif(Auth::user()->hasRole('DOKTER'))
+                                        <option value="1">GKN 1</option>
+                                        <option value="2">GKN 2</option>
+                                    @endif
+                                </select>
                             </div>
                         </div>
-                         <div class="alert alert-danger d-none" role="alert" id="warning-{{ $item->id_obat }}">
-                            Jumlah distribusi tidak boleh melebihi stok yang tersedia dan lokasi tujuan tidak boleh sama.
+
+                        {{-- Nomor WA Validator --}}
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="nomor_wa_validator" class="form-label fw-bold">
+                                    <i class="bi bi-whatsapp text-success"></i> Nomor WhatsApp Validator
+                                </label>
+                                <select class="form-select" name="nomor_wa_validator" id="nomor_wa_validator" required>
+                                    <option value="">-- Pilih Validator --</option>
+                                    @foreach($validators as $validator)
+                                        <option value="{{ $validator->nomor_wa }}" data-nama="{{ $validator->nama_validator }}">
+                                            {{ $validator->nama_validator }} ({{ $validator->nomor_wa }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="form-text">Nomor WA pihak ketiga yang akan menerima konfirmasi validasi</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="catatan_distribusi" class="form-label fw-bold">Catatan (Opsional)</label>
+                                <input type="text" class="form-control" name="catatan" id="catatan_distribusi" 
+                                       placeholder="Catatan tambahan..." maxlength="500">
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info d-flex align-items-center" role="alert">
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                            <div>
+                                <strong>Surat Distribusi akan dibuat otomatis</strong> dengan QR Code untuk validasi via WhatsApp.
+                                <br><small>Masukkan jumlah yang akan didistribusikan untuk setiap obat di bawah ini.</small>
+                            </div>
+                        </div>
+
+                        {{-- Daftar Obat yang Dipilih --}}
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-bordered table-hover mb-0">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th style="width: 50px;">No</th>
+                                        <th>Nama Obat</th>
+                                        <th class="text-center" style="width: 120px;">Stok Tersedia</th>
+                                        <th class="text-center" style="width: 150px;">Jumlah Distribusi</th>
+                                        <th class="text-center" style="width: 80px;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="multi-distribusi-items">
+                                    {{-- Items akan di-populate oleh JavaScript --}}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="alert alert-danger d-none mt-3" role="alert" id="multi-warning">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <span id="multi-warning-text">Pastikan semua jumlah valid dan tidak melebihi stok yang tersedia.</span>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-primary" id="submit-btn-{{ $item->id_obat }}">Simpan Distribusi</button>
+                        <button type="submit" class="btn btn-success" id="submit-multi-distribusi">
+                            <i class="bi bi-check-circle me-1"></i> Proses Distribusi
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-    @endforeach
+    @endif
 @endsection
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // ========================================
+    // Multi Distribusi Feature
+    // ========================================
+    const selectAllCheckbox = document.getElementById('select-all-checkbox');
+    const multiDistribusiBar = document.getElementById('multi-distribusi-bar');
+    const selectedCountSpan = document.getElementById('selected-count');
+    const selectedCountBtnSpan = document.getElementById('selected-count-btn');
+    const clearSelectionBtn = document.getElementById('clear-selection');
+    const multiDistribusiItems = document.getElementById('multi-distribusi-items');
+    const multiLokasiAsal = document.getElementById('multi_lokasi_asal');
+    const multiLokasiTujuan = document.getElementById('multi_lokasi_tujuan');
+    const multiWarning = document.getElementById('multi-warning');
+    const multiWarningText = document.getElementById('multi-warning-text');
+    const submitMultiDistribusi = document.getElementById('submit-multi-distribusi');
+
+    let selectedItems = new Map(); // Map to store selected items with their data
+
+    // Function to update selection count and show/hide bar
+    function updateSelectionUI() {
+        const count = selectedItems.size;
+        if (selectedCountSpan) selectedCountSpan.textContent = count;
+        if (selectedCountBtnSpan) selectedCountBtnSpan.textContent = count;
+        
+        if (multiDistribusiBar) {
+            if (count > 0) {
+                multiDistribusiBar.style.display = 'block';
+            } else {
+                multiDistribusiBar.style.display = 'none';
+            }
+        }
+
+        // Update select all checkbox state
+        const allCheckboxes = document.querySelectorAll('.barang-checkbox');
+        const checkedCount = document.querySelectorAll('.barang-checkbox:checked').length;
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = allCheckboxes.length > 0 && checkedCount === allCheckboxes.length;
+            selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < allCheckboxes.length;
+        }
+    }
+
+    // Function to handle checkbox change
+    function handleCheckboxChange(checkbox) {
+        const id = checkbox.value;
+        const row = checkbox.closest('tr');
+        
+        if (checkbox.checked) {
+            selectedItems.set(id, {
+                id: id,
+                nama: checkbox.dataset.nama,
+                stokGkn1: parseInt(checkbox.dataset.stokGkn1) || 0,
+                stokGkn2: parseInt(checkbox.dataset.stokGkn2) || 0,
+                satuan: checkbox.dataset.satuan || 'Pcs'
+            });
+            if (row) row.classList.add('selected-row');
+        } else {
+            selectedItems.delete(id);
+            if (row) row.classList.remove('selected-row');
+        }
+        
+        updateSelectionUI();
+    }
+
+    // Initialize checkbox listeners
+    function initCheckboxListeners() {
+        document.querySelectorAll('.barang-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                handleCheckboxChange(this);
+            });
+        });
+    }
+
+    // Function to restore selected checkboxes after search/pagination
+    function restoreSelectedCheckboxes() {
+        document.querySelectorAll('.barang-checkbox').forEach(checkbox => {
+            const id = checkbox.value;
+            if (selectedItems.has(id)) {
+                checkbox.checked = true;
+                const row = checkbox.closest('tr');
+                if (row) row.classList.add('selected-row');
+            }
+        });
+    }
+
+    // Select all checkbox handler
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.barang-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+                handleCheckboxChange(checkbox);
+            });
+        });
+    }
+
+    // Clear selection handler
+    if (clearSelectionBtn) {
+        clearSelectionBtn.addEventListener('click', function() {
+            document.querySelectorAll('.barang-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+                const row = checkbox.closest('tr');
+                if (row) row.classList.remove('selected-row');
+            });
+            selectedItems.clear();
+            updateSelectionUI();
+            if (selectAllCheckbox) selectAllCheckbox.checked = false;
+        });
+    }
+
+    // Function to get stok based on selected lokasi asal
+    function getStokByLokasiAsal(item) {
+        const lokasiAsal = multiLokasiAsal ? multiLokasiAsal.value : '1';
+        return lokasiAsal === '1' ? item.stokGkn1 : item.stokGkn2;
+    }
+
+    // Function to populate modal with selected items
+    function populateMultiDistribusiModal() {
+        if (!multiDistribusiItems) return;
+        
+        multiDistribusiItems.innerHTML = '';
+        let index = 0;
+        
+        selectedItems.forEach((item, id) => {
+            const stok = getStokByLokasiAsal(item);
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="text-center">${++index}</td>
+                <td>
+                    <strong>${item.nama}</strong>
+                    <input type="hidden" name="items[${index-1}][id_barang]" value="${item.id}">
+                </td>
+                <td class="text-center">
+                    <span class="badge bg-secondary stok-display" data-stok-gkn1="${item.stokGkn1}" data-stok-gkn2="${item.stokGkn2}">
+                        ${stok} ${item.satuan}
+                    </span>
+                </td>
+                <td>
+                    <input type="number" 
+                           name="items[${index-1}][jumlah]" 
+                           class="form-control form-control-sm jumlah-input" 
+                           min="1" 
+                           max="${stok}" 
+                           value="1" 
+                           required
+                           data-id="${item.id}">
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-outline-danger btn-sm btn-remove-item" data-id="${item.id}">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            `;
+            multiDistribusiItems.appendChild(row);
+        });
+
+        // Add event listeners to remove buttons
+        multiDistribusiItems.querySelectorAll('.btn-remove-item').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                selectedItems.delete(id);
+                
+                // Uncheck the checkbox in the table
+                const checkbox = document.querySelector(`.barang-checkbox[value="${id}"]`);
+                if (checkbox) {
+                    checkbox.checked = false;
+                    const row = checkbox.closest('tr');
+                    if (row) row.classList.remove('selected-row');
+                }
+                
+                updateSelectionUI();
+                populateMultiDistribusiModal();
+                
+                // Close modal if no items left
+                if (selectedItems.size === 0) {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('multiDistribusiModal'));
+                    if (modal) modal.hide();
+                }
+            });
+        });
+
+        // Add event listeners to validate jumlah inputs
+        multiDistribusiItems.querySelectorAll('.jumlah-input').forEach(input => {
+            input.addEventListener('input', validateMultiDistribusi);
+        });
+
+        validateMultiDistribusi();
+    }
+
+    // Function to validate multi distribusi form
+    function validateMultiDistribusi() {
+        if (!multiLokasiAsal || !multiLokasiTujuan) return;
+        
+        const lokasiAsal = multiLokasiAsal.value;
+        const lokasiTujuan = multiLokasiTujuan.value;
+        let isValid = true;
+        let errorMessages = [];
+
+        // Check if lokasi sama
+        if (lokasiAsal === lokasiTujuan) {
+            isValid = false;
+            errorMessages.push('Lokasi asal dan tujuan tidak boleh sama.');
+        }
+
+        // Check each item
+        multiDistribusiItems.querySelectorAll('.jumlah-input').forEach(input => {
+            const jumlah = parseInt(input.value) || 0;
+            const max = parseInt(input.max) || 0;
+            
+            if (jumlah <= 0) {
+                isValid = false;
+                input.classList.add('is-invalid');
+            } else if (jumlah > max) {
+                isValid = false;
+                input.classList.add('is-invalid');
+                errorMessages.push(`Jumlah melebihi stok yang tersedia.`);
+            } else {
+                input.classList.remove('is-invalid');
+            }
+        });
+
+        // Show/hide warning
+        if (multiWarning) {
+            if (!isValid && errorMessages.length > 0) {
+                multiWarningText.textContent = errorMessages.join(' ');
+                multiWarning.classList.remove('d-none');
+            } else {
+                multiWarning.classList.add('d-none');
+            }
+        }
+
+        // Enable/disable submit button
+        if (submitMultiDistribusi) {
+            submitMultiDistribusi.disabled = !isValid || selectedItems.size === 0;
+        }
+    }
+
+    // Update stok display when lokasi asal changes
+    if (multiLokasiAsal) {
+        multiLokasiAsal.addEventListener('change', function() {
+            // Update stok display and max values
+            multiDistribusiItems.querySelectorAll('tr').forEach(row => {
+                const stokDisplay = row.querySelector('.stok-display');
+                const jumlahInput = row.querySelector('.jumlah-input');
+                
+                if (stokDisplay && jumlahInput) {
+                    const stokGkn1 = parseInt(stokDisplay.dataset.stokGkn1) || 0;
+                    const stokGkn2 = parseInt(stokDisplay.dataset.stokGkn2) || 0;
+                    const newStok = this.value === '1' ? stokGkn1 : stokGkn2;
+                    
+                    // Get satuan from the item
+                    const id = jumlahInput.dataset.id;
+                    const item = selectedItems.get(id);
+                    const satuan = item ? item.satuan : 'Pcs';
+                    
+                    stokDisplay.textContent = `${newStok} ${satuan}`;
+                    jumlahInput.max = newStok;
+                    
+                    // Reset value if exceeds new max
+                    if (parseInt(jumlahInput.value) > newStok) {
+                        jumlahInput.value = newStok > 0 ? 1 : 0;
+                    }
+                }
+            });
+            
+            validateMultiDistribusi();
+        });
+    }
+
+    if (multiLokasiTujuan) {
+        multiLokasiTujuan.addEventListener('change', validateMultiDistribusi);
+    }
+
+    // Populate modal when opened
+    const multiDistribusiModal = document.getElementById('multiDistribusiModal');
+    if (multiDistribusiModal) {
+        multiDistribusiModal.addEventListener('show.bs.modal', function() {
+            populateMultiDistribusiModal();
+        });
+    }
+
+    // Initialize checkbox listeners on page load
+    initCheckboxListeners();
+
+    // Function to handle pagination clicks
+    function initPaginationListeners() {
+        const paginationLinks = document.querySelectorAll('#pagination-container a.page-link');
+        paginationLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const url = this.getAttribute('href');
+                if (url) {
+                    // Extract search query from current search input
+                    const searchQuery = searchInput ? searchInput.value : '';
+                    const urlObj = new URL(url);
+                    if (searchQuery.trim()) {
+                        urlObj.searchParams.set('search', searchQuery);
+                    }
+                    
+                    // Load page via AJAX
+                    loadPage(urlObj.toString());
+                }
+            });
+        });
+    }
+
+    // Function to load page content via AJAX
+    function loadPage(url) {
+        loadingIndicator.style.display = 'block';
+        tableBody.style.opacity = '0.5';
+
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                tableBody.innerHTML = data.table_body;
+                paginationContainer.innerHTML = data.pagination;
+                loadingIndicator.style.display = 'none';
+                tableBody.style.opacity = '1';
+                
+                initializeModals();
+                initCheckboxListeners();
+                initPaginationListeners();
+                restoreSelectedCheckboxes();
+                updateSelectionUI();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading page:', error);
+            loadingIndicator.style.display = 'none';
+            tableBody.style.opacity = '1';
+        });
+    }
+
+    // Initialize pagination listeners on page load
+    initPaginationListeners();
+
+    // ========================================
     // Live Search dengan Debounce
+    // ========================================
     const searchInput = document.getElementById('search-input');
     const tableBody = document.getElementById('barang-table-body');
     const paginationContainer = document.getElementById('pagination-container');
@@ -328,6 +810,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // Re-initialize modal functionality untuk data baru
                 initializeModals();
+                
+                // Re-initialize checkbox listeners untuk data baru
+                initCheckboxListeners();
+                
+                // Re-initialize pagination listeners untuk data baru
+                initPaginationListeners();
+                
+                // Restore previously selected checkboxes
+                restoreSelectedCheckboxes();
+                updateSelectionUI();
             } else {
                 // Handle server-side error
                 loadingIndicator.style.display = 'none';

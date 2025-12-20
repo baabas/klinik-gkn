@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -26,19 +27,48 @@ class AdminLoginController extends Controller
      */
     public function login(Request $request): RedirectResponse
     {
-        // 1. Validasi input dari form menggunakan NIP
+        // Rate Limiting - Cegah brute force attack
+        $key = 'login:' . $request->ip();
+        
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $seconds = RateLimiter::availableIn($key);
+            return back()->withErrors([
+                'login' => "Terlalu banyak percobaan login. Coba lagi dalam {$seconds} detik.",
+            ]);
+        }
+
+        // 1. Validasi input dari form menggunakan NIP atau Email (dengan Max Length Validation)
         $credentials = $request->validate([
-            'login' => ['required', 'string'],
-            'password' => ['required', 'string'],
+            'login' => ['required', 'string', 'max:255'],
+            'password' => ['required', 'string', 'max:255'],
+        ], [
+            'login.required' => 'NIP atau Email wajib diisi.',
+            'login.max' => 'NIP atau Email terlalu panjang (maksimal 255 karakter).',
+            'password.required' => 'Password wajib diisi.',
+            'password.max' => 'Password terlalu panjang (maksimal 255 karakter).',
         ]);
 
-        $field = filter_var($credentials['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'nip';
+        // Validasi tambahan: cek apakah login adalah NIP (18 digit) atau Email valid
+        $loginValue = $credentials['login'];
+        $isEmail = filter_var($loginValue, FILTER_VALIDATE_EMAIL);
+        $isNIP = preg_match('/^\d{18}$/', $loginValue);
+        
+        if (!$isEmail && !$isNIP) {
+            return back()->withErrors([
+                'login' => 'Masukkan NIP (18 digit angka) atau Email yang valid.',
+            ])->onlyInput('login');
+        }
+
+        $field = $isEmail ? 'email' : 'nip';
 
         // 2. Mencoba untuk melakukan otentikasi
         if (Auth::attempt([
             $field => $credentials['login'],
             'password' => $credentials['password'],
         ])) {
+            // Reset rate limiting counter jika login berhasil
+            RateLimiter::clear($key);
+            
             $user = Auth::user();
 
             // 3. Cek apakah user punya peran DOKTER atau PENGADAAN (Logika lama Anda dipertahankan)
@@ -58,6 +88,9 @@ class AdminLoginController extends Controller
                 'login' => 'Anda tidak memiliki hak akses sebagai admin.',
             ])->onlyInput('login');
         }
+
+        // Increment rate limiting counter jika login gagal
+        RateLimiter::hit($key, 60);
 
         // 5. Jika NIP atau Password salah
         return back()->withErrors([

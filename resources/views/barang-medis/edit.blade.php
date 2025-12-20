@@ -85,38 +85,65 @@
                                         <small class="text-muted">(Stok saat ini: {{ $stok->jumlah }} {{ $barangMedi->satuan_terkecil }})</small>
                                     </div>
                                     <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-md-6">
+                                        <!-- Baris 1: Jenis Koreksi -->
+                                        <div class="row mb-3">
+                                            <div class="col-12">
+                                                <label for="koreksi_type_{{ $stok->id_lokasi }}" class="form-label fw-bold">Jenis Koreksi <span class="text-danger">*</span></label>
+                                                <select class="form-select form-select-lg" name="koreksi[{{ $stok->id_lokasi }}][type]">
+                                                    <option value="">Tidak ada perubahan</option>
+                                                    <option value="tambah">➕ Tambah Stok</option>
+                                                    <option value="kurang">➖ Kurangi Stok</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <!-- Baris 2: Input Jumlah Koreksi -->
+                                        <div class="row mb-3">
+                                            <div class="col-md-4">
                                                 <label for="koreksi_kemasan_{{ $stok->id_lokasi }}" class="form-label">Koreksi Kemasan</label>
-                                                <div class="input-group">
+                                                <div class="input-group input-group-lg">
                                                     <input type="number" class="form-control" 
                                                            id="koreksi_kemasan_{{ $stok->id_lokasi }}" 
                                                            name="koreksi[{{ $stok->id_lokasi }}][kemasan]" 
                                                            min="0" step="1" placeholder="0">
                                                     <span class="input-group-text">{{ $barangMedi->kemasan ?? 'Box' }}</span>
                                                 </div>
-                                                <div class="form-text">Masukkan jumlah kemasan untuk menambah/mengurangi stok</div>
+                                                <small class="text-muted">Jumlah kemasan</small>
                                             </div>
-                                            <div class="col-md-6">
-                                                <label for="koreksi_type_{{ $stok->id_lokasi }}" class="form-label">Jenis Koreksi</label>
-                                                <select class="form-select" name="koreksi[{{ $stok->id_lokasi }}][type]">
-                                                    <option value="">Tidak ada perubahan</option>
-                                                    <option value="tambah">Tambah Stok (+)</option>
-                                                    <option value="kurang">Kurangi Stok (-)</option>
-                                                </select>
+                                            <div class="col-md-4">
+                                                <label for="koreksi_isi_kemasan_{{ $stok->id_lokasi }}" class="form-label">Koreksi Isi Kemasan</label>
+                                                <div class="input-group input-group-lg">
+                                                    <input type="number" class="form-control" 
+                                                           id="koreksi_isi_kemasan_{{ $stok->id_lokasi }}" 
+                                                           name="koreksi[{{ $stok->id_lokasi }}][isi_kemasan]" 
+                                                           min="0" step="1" placeholder="0">
+                                                    <span class="input-group-text">{{ $barangMedi->isi_kemasan_satuan ?? 'strip' }}</span>
+                                                </div>
+                                                <small class="text-muted">Jumlah isi kemasan</small>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label for="koreksi_satuan_{{ $stok->id_lokasi }}" class="form-label">Koreksi Satuan</label>
+                                                <div class="input-group input-group-lg">
+                                                    <input type="number" class="form-control" 
+                                                           id="koreksi_satuan_{{ $stok->id_lokasi }}" 
+                                                           name="koreksi[{{ $stok->id_lokasi }}][satuan]" 
+                                                           min="0" step="1" placeholder="0">
+                                                    <span class="input-group-text">{{ $barangMedi->satuan_terkecil ?? 'Unit' }}</span>
+                                                </div>
+                                                <small class="text-muted">Jumlah satuan terkecil</small>
                                             </div>
                                         </div>
-                                        <div class="row mt-2">
-                                            <div class="col-12">
+
+                                        <!-- Baris 3: Tanggal Kadaluarsa & Keterangan -->
+                                        <div class="row">
+                                            <div class="col-md-6">
                                                 <label for="koreksi_expired_{{ $stok->id_lokasi }}" class="form-label">Tanggal Kadaluarsa</label>
                                                 <input type="date" class="form-control" 
                                                        id="koreksi_expired_{{ $stok->id_lokasi }}" 
                                                        name="koreksi[{{ $stok->id_lokasi }}][expired_at]">
-                                                <div class="form-text">Opsional: untuk stok yang ditambahkan</div>
+                                                <small class="text-muted">Opsional: untuk stok yang ditambahkan</small>
                                             </div>
-                                        </div>
-                                        <div class="row mt-2">
-                                            <div class="col-12">
+                                            <div class="col-md-6">
                                                 <label for="koreksi_keterangan_{{ $stok->id_lokasi }}" class="form-label">Keterangan Koreksi</label>
                                                 <input type="text" class="form-control" 
                                                        id="koreksi_keterangan_{{ $stok->id_lokasi }}" 

@@ -14,20 +14,25 @@ class MasterKantorSeeder extends Seeder
     public function run(): void
     {
         $data = [
-            // Data kantor yang sesuai dengan form registrasi pasien
-            ['nama' => 'Kanwil', 'kode' => 'KANWIL'],
-            ['nama' => 'KPP Gayam Sari', 'kode' => 'KPP-GS'],
-            ['nama' => 'KPP Madya SMG', 'kode' => 'KPP-MSMG'],
-            ['nama' => 'KPP SMG Selatan', 'kode' => 'KPP-SMGS'],
-            ['nama' => 'KPP SMG Tengah 1', 'kode' => 'KPP-SMGT1'],
-            ['nama' => 'KPTIK', 'kode' => 'KPTIK'],
-            ['nama' => 'PT Gumilang', 'kode' => 'PTG'],
-            ['nama' => 'Kanwil DJPB', 'kode' => 'KANWIL-DJPB'],
-            ['nama' => 'KPTIK BMN Semarang', 'kode' => 'KPTIK-BMN'],
-            ['nama' => 'KPP Madya Dua Semarang', 'kode' => 'KPP-MD2'],
-            ['nama' => 'Kanwil DJP Jateng 1', 'kode' => 'KANWIL-DJP-JT1'],
-            ['nama' => 'Kanwil DJKN', 'kode' => 'KANWIL-DJKN'],
+            ['nama' => 'Kanwil DJBC Jateng dan DIY', 'kode' => 'BC-KANWIL'],
+            ['nama' => 'Kanwil DJKN Jateng dan DIY', 'kode' => 'KANWIL-DJKN-JT-DIY'],
+            ['nama' => 'Kanwil DJP Jateng I', 'kode' => 'KANWIL-DJP-JT1'],
+            ['nama' => 'Kanwil DJPb Prov. Jawa Tengah', 'kode' => 'KANWIL-DJPB-JT'],
             ['nama' => 'KPKNL Semarang', 'kode' => 'KPKNL-SMG'],
+            ['nama' => 'KPP Madya Dua Semarang', 'kode' => 'KPP-MD2-SMG'],
+            ['nama' => 'KPP Madya Semarang', 'kode' => 'KPP-MDY'],
+            ['nama' => 'KPP Pratama Semarang Barat', 'kode' => 'KPP-SMGB'],
+            ['nama' => 'KPP Pratama Semarang Candisari', 'kode' => 'KPP-CDS'],
+            ['nama' => 'KPP Pratama Semarang Gayamsari', 'kode' => 'KPP-GS'],
+            ['nama' => 'KPP Pratama Semarang Selatan', 'kode' => 'KPP-SMGS'],
+            ['nama' => 'KPP Pratama Semarang Tengah', 'kode' => 'KPP-SMGT1'],
+            ['nama' => 'KPP Pratama Semarang Timur', 'kode' => 'KPP-SMT'],
+            ['nama' => 'KPPBC TMP A Semarang', 'kode' => 'KPPBC-SMG'],
+            ['nama' => 'KPPBC TMP Tanjung Emas', 'kode' => 'KPPBC-TJE'],
+            ['nama' => 'KPPN Semarang I', 'kode' => 'KPPN-SMG1'],
+            ['nama' => 'KPPN Semarang II', 'kode' => 'KPPN-SMG2'],
+            ['nama' => 'KPTIK BMN Semarang', 'kode' => 'KPTIK-BMN-SMG'],
+            ['nama' => 'Lainnya', 'kode' => 'Lain'],
         ];
 
         foreach ($data as $item) {

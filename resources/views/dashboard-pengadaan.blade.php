@@ -51,18 +51,54 @@
         <div class="col-lg-4">
             <div class="row g-3 h-100">
                 <div class="col-12">
-                    <div class="card border-left-danger shadow-sm h-100">
+                    <div class="card border-left-primary shadow-sm h-100">
                         <div class="card-body py-4">
                             <div class="d-flex align-items-center">
                                 <div class="flex-grow-1">
-                                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-2">Stok Kritis</div>
-                                    <div class="h2 mb-0 font-weight-bold text-danger">{{ $stokMenipis }}</div>
-                                    <small class="text-muted">Perlu segera diproses</small>
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-2">Kunjungan Bulan Ini</div>
+                                    <div class="h2 mb-0 font-weight-bold text-dark">{{ $kunjunganBulanIni }}</div>
+                                    <small class="text-muted">Total pasien {{ now()->format('F Y') }}</small>
                                 </div>
                                 <div class="ms-3">
-                                    <i class="bi bi-exclamation-triangle-fill text-danger opacity-75" style="font-size: 3rem;"></i>
+                                    <i class="bi bi-people-fill text-primary opacity-75" style="font-size: 3rem;"></i>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Baris kedua - Card Sekunder --}}
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="card border-left-danger shadow-sm">
+                <div class="card-body py-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-2">Stok Kritis</div>
+                            <div class="h2 mb-0 font-weight-bold text-danger">{{ $stokMenipis }}</div>
+                            <small class="text-muted">Perlu segera diproses</small>
+                        </div>
+                        <div class="ms-3">
+                            <i class="bi bi-exclamation-triangle-fill text-danger opacity-75" style="font-size: 3rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card border-left-warning shadow-sm">
+                <div class="card-body py-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-2">Permintaan Pending</div>
+                            <div class="h2 mb-0 font-weight-bold text-dark">{{ $permintaanPending }}</div>
+                            <small class="text-muted">Menunggu persetujuan</small>
+                        </div>
+                        <div class="ms-3">
+                            <i class="bi bi-clock-fill text-warning opacity-75" style="font-size: 3rem;"></i>
                         </div>
                     </div>
                 </div>
@@ -232,6 +268,137 @@
             </div>
         </div>
     </div>
+
+    {{-- Baris keempat - Widget Feedback Pasien --}}
+    <div class="row g-3 mt-2">
+        {{-- Widget Tingkat Kepuasan --}}
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="bi bi-emoji-smile text-success me-2"></i>Tingkat Kepuasan Pasien
+                    </h6>
+                    <span class="badge bg-secondary">Bulan Ini</span>
+                </div>
+                <div class="card-body">
+                    @if($feedbackStats['total'] > 0)
+                        {{-- Chart Area --}}
+                        <div class="row align-items-center">
+                            <div class="col-5">
+                                <canvas id="chartKepuasan" style="max-height: 150px;"></canvas>
+                            </div>
+                            <div class="col-7">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="me-2" style="font-size: 1.5rem;">😊</span>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Puas</span>
+                                            <strong>{{ $feedbackStats['puas'] }} ({{ $feedbackStats['persentase_puas'] }}%)</strong>
+                                        </div>
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar bg-success" style="width: {{ $feedbackStats['persentase_puas'] }}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="me-2" style="font-size: 1.5rem;">😐</span>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Cukup</span>
+                                            <strong>{{ $feedbackStats['cukup'] }} ({{ $feedbackStats['persentase_cukup'] }}%)</strong>
+                                        </div>
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar bg-warning" style="width: {{ $feedbackStats['persentase_cukup'] }}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <span class="me-2" style="font-size: 1.5rem;">😞</span>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Tidak Puas</span>
+                                            <strong>{{ $feedbackStats['tidak_puas'] }} ({{ $feedbackStats['persentase_tidak_puas'] }}%)</strong>
+                                        </div>
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar bg-danger" style="width: {{ $feedbackStats['persentase_tidak_puas'] }}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center mt-3 pt-2 border-top">
+                            <small class="text-muted">Total: <strong>{{ $feedbackStats['total'] }}</strong> feedback</small>
+                        </div>
+                    @else
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-chat-left-text display-4 mb-2 d-block opacity-50"></i>
+                            <p class="mb-0">Belum ada feedback bulan ini.</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        {{-- Widget Kesesuaian Obat --}}
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="bi bi-capsule text-primary me-2"></i>Kesesuaian Jumlah Obat
+                    </h6>
+                    <span class="badge bg-secondary">Bulan Ini</span>
+                </div>
+                <div class="card-body">
+                    @if($feedbackStats['total'] > 0)
+                        {{-- Chart Area --}}
+                        <div class="row align-items-center">
+                            <div class="col-5">
+                                <canvas id="chartObat" style="max-height: 150px;"></canvas>
+                            </div>
+                            <div class="col-7">
+                                <div class="card border-0 bg-success bg-opacity-10 mb-2">
+                                    <div class="card-body py-2 px-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                                <span>Sesuai Resep</span>
+                                            </div>
+                                            <div class="text-end">
+                                                <strong class="fs-4 text-success">{{ $feedbackStats['obat_sesuai'] }}</strong>
+                                                <small class="text-muted d-block">{{ $feedbackStats['persentase_obat_sesuai'] }}%</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card border-0 bg-danger bg-opacity-10">
+                                    <div class="card-body py-2 px-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <i class="bi bi-x-circle-fill text-danger me-2"></i>
+                                                <span>Tidak Sesuai</span>
+                                            </div>
+                                            <div class="text-end">
+                                                <strong class="fs-4 text-danger">{{ $feedbackStats['obat_tidak_sesuai'] }}</strong>
+                                                <small class="text-muted d-block">{{ $feedbackStats['persentase_obat_tidak_sesuai'] }}%</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center mt-3 pt-2 border-top">
+                            <small class="text-muted">Total: <strong>{{ $feedbackStats['total'] }}</strong> feedback</small>
+                        </div>
+                    @else
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-capsule display-4 mb-2 d-block opacity-50"></i>
+                            <p class="mb-0">Belum ada data kesesuaian obat.</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 
@@ -370,4 +537,69 @@
         padding: 0.5rem !important;
     }
 </style>
+@endpush
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Data dari PHP
+    const feedbackStats = @json($feedbackStats);
+    
+    // Hanya render chart jika ada data
+    if (feedbackStats.total > 0) {
+        // Chart Kepuasan
+        const ctxKepuasan = document.getElementById('chartKepuasan');
+        if (ctxKepuasan) {
+            new Chart(ctxKepuasan, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Puas', 'Cukup', 'Tidak Puas'],
+                    datasets: [{
+                        data: [feedbackStats.puas, feedbackStats.cukup, feedbackStats.tidak_puas],
+                        backgroundColor: ['#198754', '#ffc107', '#dc3545'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    cutout: '60%'
+                }
+            });
+        }
+
+        // Chart Kesesuaian Obat
+        const ctxObat = document.getElementById('chartObat');
+        if (ctxObat) {
+            new Chart(ctxObat, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Sesuai', 'Tidak Sesuai'],
+                    datasets: [{
+                        data: [feedbackStats.obat_sesuai, feedbackStats.obat_tidak_sesuai],
+                        backgroundColor: ['#198754', '#dc3545'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    cutout: '60%'
+                }
+            });
+        }
+    }
+});
+</script>
 @endpush

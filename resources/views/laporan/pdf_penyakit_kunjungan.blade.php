@@ -112,6 +112,30 @@
                 <td colspan="{{ ($filter['jumlah_hari'] - 16) + 4 }}">Tidak ada data.</td>
             </tr>
             @endforelse
+            {{-- Grand Total Row --}}
+            @if($daftar_penyakit->isNotEmpty())
+            <tr style="background-color: #f8f9fa; font-weight: bold;">
+                <td colspan="3" class="text-end">TOTAL KESELURUHAN:</td>
+                @for ($hari = 17; $hari <= $filter['jumlah_hari']; $hari++)
+                    @php
+                        $total_hari = 0;
+                        foreach($daftar_penyakit as $p) {
+                            $kasus = $data_kasus->get($p->nama_penyakit);
+                            $total_hari += $kasus ? $kasus->where('hari', $hari)->sum('jumlah') : 0;
+                        }
+                    @endphp
+                    <td>{{ $total_hari > 0 ? $total_hari : '' }}</td>
+                @endfor
+                @php
+                    $grand_total = 0;
+                    foreach($daftar_penyakit as $p) {
+                        $kasus = $data_kasus->get($p->nama_penyakit);
+                        $grand_total += $kasus ? $kasus->sum('jumlah') : 0;
+                    }
+                @endphp
+                <td>{{ $grand_total }}</td>
+            </tr>
+            @endif
         </tbody>
     </table>
     @endif
@@ -197,6 +221,30 @@
                     <td colspan="{{ ($filter['jumlah_hari'] - 16) + 3 }}">Tidak ada data.</td>
                 </tr>
             @endforelse
+            {{-- Grand Total Row --}}
+            @if($daftar_kantor->isNotEmpty())
+            <tr style="background-color: #f8f9fa; font-weight: bold;">
+                <td class="text-end">TOTAL KESELURUHAN:</td>
+                @for ($hari = 17; $hari <= $filter['jumlah_hari']; $hari++)
+                    @php
+                        $total_hari = 0;
+                        foreach($daftar_kantor as $kantor) {
+                            $kunjungan = $data_kunjungan->get($kantor);
+                            $total_hari += $kunjungan ? $kunjungan->where('hari', $hari)->sum('jumlah') : 0;
+                        }
+                    @endphp
+                    <td>{{ $total_hari > 0 ? $total_hari : '' }}</td>
+                @endfor
+                @php
+                    $grand_total_kunjungan = 0;
+                    foreach($daftar_kantor as $kantor) {
+                        $kunjungan = $data_kunjungan->get($kantor);
+                        $grand_total_kunjungan += $kunjungan ? $kunjungan->sum('jumlah') : 0;
+                    }
+                @endphp
+                <td>{{ $grand_total_kunjungan }}</td>
+            </tr>
+            @endif
         </tbody>
     </table>
      @endif

@@ -33,30 +33,40 @@ class RekamMedisController extends Controller
         $user = $pasien;
         $validated = $request->validate([
             'tanggal_kunjungan' => ['required', 'date'],
-            'anamnesa' => ['nullable', 'string'],
-            'terapi' => ['nullable', 'string'],
-            'diagnosa' => ['nullable', 'array'],
-            'diagnosa.*.kode_penyakit' => ['required_with:diagnosa', 'string', 'exists:daftar_penyakit,ICD10'],
-            'obat' => ['nullable', 'array'],
-            'obat.*.id_obat' => ['required_with:obat', 'integer', 'exists:barang_medis,id_obat'],
-            'obat.*.jumlah' => ['required_with:obat', 'integer', 'min:1'],
-            'obat.*.dosis' => ['nullable', 'string', 'max:255'], // [BARU] Validasi untuk dosis obat
-            'nama_sa' => ['nullable', 'string', 'max:255'],
-            'jenis_kelamin_sa' => ['nullable', 'string', 'max:20'],
+            'anamnesa' => ['required', 'string'],
+            'terapi' => ['required', 'string'],
+            'diagnosa' => ['required', 'array', 'min:1'],
+            'diagnosa.*.kode_penyakit' => ['required', 'string', 'exists:daftar_penyakit,ICD10'],
+            'obat' => ['required', 'array', 'min:1'],
+            'obat.*.id_obat' => ['required', 'integer', 'exists:barang_medis,id_obat'],
+            'obat.*.jumlah' => ['required', 'integer', 'min:1'],
+            'obat.*.dosis' => ['nullable', 'string', 'max:255'],
         ]);
 
         DB::beginTransaction();
         try {
             $tanggalKunjungan = Carbon::parse($validated['tanggal_kunjungan'], config('app.timezone'));
+            
+            // Ambil snapshot kantor/lokasi gedung saat kunjungan
+            $kantorSaatKunjungan = null;
+            $lokasiGedungSaatKunjungan = null;
+            
+            if ($user->nip && $user->karyawan) {
+                $kantorSaatKunjungan = $user->karyawan->kantor;
+            } elseif ($user->nik && $user->nonKaryawan) {
+                $lokasiGedungSaatKunjungan = $user->nonKaryawan->lokasi_gedung;
+            }
+            
             $rekamMedis = RekamMedis::create([
                 'nip_pasien' => $user->nip,
                 'nik_pasien' => $user->nik,
                 'id_dokter' => Auth::id(),
+                'id_lokasi' => Auth::user()->id_lokasi,
+                'kantor_saat_kunjungan' => $kantorSaatKunjungan,
+                'lokasi_gedung_saat_kunjungan' => $lokasiGedungSaatKunjungan,
                 'tanggal_kunjungan' => $tanggalKunjungan,
                 'anamnesa' => $validated['anamnesa'] ?? null,
-                'terapi' => $validated['terapi'] ?? null,
-                'nama_sa' => $validated['nama_sa'] ?? null,
-                'jenis_kelamin_sa' => $validated['jenis_kelamin_sa'] ?? null,
+                'treatment' => $validated['terapi'] ?? null,
             ]);
 
             if (!empty($validated['diagnosa'])) {

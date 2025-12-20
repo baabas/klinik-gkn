@@ -29,10 +29,14 @@
         <div class="card-body p-5">
             <h2 class="card-title text-center mb-3">Lupa Password</h2>
             <p class="text-center text-muted small mb-4">
-                Masukkan alamat email Anda dan kami akan mengirimkan link untuk mereset password Anda.
+                Masukkan NIP Anda dan kami akan mengirimkan link untuk mereset password Anda ke email yang terdaftar.
             </p>
 
-            <x-auth-session-status class="alert alert-success mb-4" :status="session('status')" />
+            @if (session('status'))
+                <div class="alert alert-success mb-4">
+                    {{ session('status') }}
+                </div>
+            @endif
 
             @if ($errors->any())
                 <div class="alert alert-danger">
@@ -47,8 +51,8 @@
             <form action="{{ route('password.email') }}" method="POST">
                 @csrf
                 <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" class="form-control" id="email" name="email" value="{{ old('email') }}" required autofocus>
+                    <label for="nip" class="form-label">NIP</label>
+                    <input type="text" class="form-control" id="nip" name="nip" value="{{ old('nip') }}" required autofocus placeholder="Masukkan NIP Anda">
                 </div>
 
                 <div class="d-grid mt-4">

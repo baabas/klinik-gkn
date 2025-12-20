@@ -15,6 +15,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
         ]);
+        
+        // Exclude route feedback dari CSRF verification
+        // Karena tablet feedback berjalan tanpa auth dan session bisa expired
+        $middleware->validateCsrfTokens(except: [
+            'feedback',
+            'feedback/*',
+            'api/feedback/*',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

@@ -97,7 +97,8 @@
                 </div>
             </div>
 
-            <div class="card shadow-sm mb-4">
+            {{-- Keterangan Tambahan - HIDDEN --}}
+            <div class="card shadow-sm mb-4" style="display: none;">
                 <div class="card-header"><h5 class="mb-0">Keterangan Tambahan</h5></div>
                 <div class="card-body">
                     <p class="form-text mt-0 mb-2">Isi jika check-up untuk keluarga.</p>

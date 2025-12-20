@@ -172,7 +172,65 @@
                 </div>
             @endif
 
-            <!-- Multiple Barang Input Section (Hidden by default) -->
+            <!-- Mode Toggle Buttons -->
+            <div class="mb-4 d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-outline-primary active" id="btn-single-mode">
+                    <i class="bi bi-box me-1"></i> Input Satuan
+                </button>
+                <button type="button" class="btn btn-outline-success" id="btn-manual-multi-mode">
+                    <i class="bi bi-boxes me-1"></i> Input Multi Barang (Tanpa Permintaan)
+                </button>
+            </div>
+
+            <!-- Manual Multi-Input Section (Hidden by default) - Tanpa Permintaan Dokter -->
+            <div id="manual-multi-section" class="d-none">
+                <div class="alert alert-success">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-boxes me-2"></i>
+                            <strong>Mode Input Multi Barang (Tanpa Permintaan)</strong>
+                            <p class="mb-0 mt-1">Input beberapa barang sekaligus dengan lokasi penyimpanan berbeda untuk setiap batch.</p>
+                            <div class="mt-2">
+                                <span class="badge bg-secondary" id="manual-items-count-badge">0 Item</span>
+                                <span class="badge bg-info ms-1" id="manual-total-batches-badge">0 Total Batch</span>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="cancel-manual-multi-mode">
+                            <i class="bi bi-x-lg"></i> Batal
+                        </button>
+                    </div>
+                </div>
+                
+                <form action="{{ route('barang-masuk.store-manual-multiple') }}" method="POST" id="manual-multi-form">
+                    @csrf
+                    
+                    <!-- Add Item Button -->
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-success" id="add-manual-item-btn">
+                            <i class="bi bi-plus-circle me-1"></i> Tambah Barang
+                        </button>
+                    </div>
+                    
+                    <!-- Manual Multi Items Container with Scroll -->
+                    <div class="manual-multi-items-wrapper" style="max-height: 70vh; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 1rem; background-color: #f8f9fa;">
+                        <div id="manual-multi-items-container">
+                            <!-- Items will be added dynamically -->
+                            <div class="text-center text-muted py-5" id="manual-empty-state">
+                                <i class="bi bi-inbox display-4"></i>
+                                <p class="mt-2">Belum ada barang ditambahkan. Klik "Tambah Barang" untuk mulai.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end mt-3 sticky-bottom bg-white p-3 border-top">
+                        <button type="submit" class="btn btn-primary btn-lg" id="submit-manual-multi" disabled>
+                            <i class="bi bi-save me-2"></i>Simpan Semua Barang
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Multiple Barang Input Section (Hidden by default) - Dari Permintaan -->
             <div id="multiple-barang-section" class="d-none">
                 <div class="alert alert-info">
                     <div class="d-flex justify-content-between align-items-center">
@@ -476,16 +534,79 @@
     }
     
     /* Item cards in multiple mode */
-    #multiple-items-container .card {
+    #multiple-items-container .card,
+    #manual-multi-items-container .card {
         margin-bottom: 1.5rem;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         border: 1px solid #dee2e6;
     }
     
-    #multiple-items-container .card:last-child {
+    #multiple-items-container .card:last-child,
+    #manual-multi-items-container .card:last-child {
         margin-bottom: 0.5rem;
     }
     
+    /* Manual multi items wrapper */
+    .manual-multi-items-wrapper {
+        scrollbar-width: thin;
+        scrollbar-color: #198754 #f8f9fa;
+    }
+    
+    .manual-multi-items-wrapper::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .manual-multi-items-wrapper::-webkit-scrollbar-track {
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+    
+    .manual-multi-items-wrapper::-webkit-scrollbar-thumb {
+        background: #198754;
+        border-radius: 4px;
+    }
+    
+    .manual-multi-items-wrapper::-webkit-scrollbar-thumb:hover {
+        background: #157347;
+    }
+    
+    /* Manual item card styling */
+    .manual-item-card {
+        border-left: 4px solid #198754 !important;
+        transition: all 0.3s ease;
+    }
+    
+    .manual-item-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+    }
+    
+    .manual-item-card .card-header {
+        background-color: #f8f9fa;
+    }
+    
+    /* Mode toggle buttons */
+    #btn-single-mode.active,
+    #btn-manual-multi-mode.active {
+        font-weight: bold;
+    }
+    
+    #btn-manual-multi-mode.active {
+        background-color: #198754;
+        border-color: #198754;
+        color: white;
+    }
+    
+    /* Dropdown in manual multi mode */
+    .manual-dropdown-barang {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 1050;
+        border: 1px solid #dee2e6;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+
     /* Enhanced batch summary styling */
     .batch-summary.text-success {
         background-color: #d1e7dd;
@@ -522,6 +643,435 @@
         // Check completion status for all items
         checkItemCompletionStatus();
         
+        // ========================================
+        // MODE TOGGLE FUNCTIONALITY
+        // ========================================
+        const btnSingleMode = document.getElementById('btn-single-mode');
+        const btnManualMultiMode = document.getElementById('btn-manual-multi-mode');
+        const singleBarangSection = document.getElementById('single-barang-section');
+        const manualMultiSection = document.getElementById('manual-multi-section');
+        const cancelManualMultiMode = document.getElementById('cancel-manual-multi-mode');
+        
+        // Toggle to single mode
+        btnSingleMode.addEventListener('click', function() {
+            btnSingleMode.classList.add('active');
+            btnManualMultiMode.classList.remove('active');
+            singleBarangSection.classList.remove('d-none');
+            manualMultiSection.classList.add('d-none');
+            document.getElementById('multiple-barang-section').classList.add('d-none');
+        });
+        
+        // Toggle to manual multi mode
+        btnManualMultiMode.addEventListener('click', function() {
+            btnManualMultiMode.classList.add('active');
+            btnSingleMode.classList.remove('active');
+            manualMultiSection.classList.remove('d-none');
+            singleBarangSection.classList.add('d-none');
+            document.getElementById('multiple-barang-section').classList.add('d-none');
+        });
+        
+        // Cancel manual multi mode
+        cancelManualMultiMode.addEventListener('click', function() {
+            btnSingleMode.click();
+            // Clear all manual items
+            document.getElementById('manual-multi-items-container').innerHTML = `
+                <div class="text-center text-muted py-5" id="manual-empty-state">
+                    <i class="bi bi-inbox display-4"></i>
+                    <p class="mt-2">Belum ada barang ditambahkan. Klik "Tambah Barang" untuk mulai.</p>
+                </div>
+            `;
+            manualItemIndex = 0;
+            updateManualMultiStatistics();
+            showToast('Mode multi input dibatalkan.', 'info');
+        });
+        
+        // ========================================
+        // MANUAL MULTI-INPUT FUNCTIONALITY
+        // ========================================
+        let manualItemIndex = 0;
+        const barangData = @json($barang);
+        const lokasiData = @json($lokasi);
+        
+        // Add manual item button
+        document.getElementById('add-manual-item-btn').addEventListener('click', function() {
+            addManualItem();
+        });
+        
+        function addManualItem() {
+            // Hide empty state
+            const emptyState = document.getElementById('manual-empty-state');
+            if (emptyState) {
+                emptyState.style.display = 'none';
+            }
+            
+            const container = document.getElementById('manual-multi-items-container');
+            const itemHtml = generateManualItemHtml(manualItemIndex);
+            container.insertAdjacentHTML('beforeend', itemHtml);
+            
+            // Initialize search for this item
+            initializeItemSearch(manualItemIndex);
+            
+            manualItemIndex++;
+            updateManualMultiStatistics();
+            updateSubmitButton();
+            
+            showToast('Barang baru ditambahkan. Silakan pilih barang dan isi detailnya.', 'success');
+        }
+        
+        function generateManualItemHtml(index) {
+            const lokasiOptions = lokasiData.map(loc => 
+                `<option value="${loc.id}">${loc.nama_lokasi}</option>`
+            ).join('');
+            
+            return `
+                <div class="card mb-3 manual-item-card" data-item-index="${index}">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i class="bi bi-box me-2"></i>
+                            <span class="item-title">Barang #${index + 1}</span>
+                        </h6>
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-manual-item-btn" data-item-index="${index}">
+                            <i class="bi bi-trash"></i> Hapus
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <!-- Barang Search -->
+                            <div class="col-md-6">
+                                <label class="form-label">Nama Barang <span class="text-danger">*</span></label>
+                                <div class="position-relative">
+                                    <input type="text" class="form-control manual-search-barang" 
+                                           data-item-index="${index}"
+                                           placeholder="Ketik untuk mencari barang..."
+                                           autocomplete="off">
+                                    <input type="hidden" name="items[${index}][id_barang]" class="manual-id-barang" required>
+                                    <div class="manual-dropdown-barang dropdown-menu w-100" data-item-index="${index}" style="max-height: 300px; overflow-y: auto; display: none;">
+                                        ${generateBarangOptions(index)}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tanggal Masuk -->
+                            <div class="col-md-6">
+                                <label class="form-label">Tanggal Masuk</label>
+                                <input type="date" name="items[${index}][tanggal_masuk]" class="form-control" 
+                                       value="{{ date('Y-m-d') }}" required readonly>
+                            </div>
+                            
+                            <!-- Info Barang -->
+                            <div class="col-12 manual-item-info d-none" data-item-index="${index}">
+                                <div class="p-2 bg-light rounded">
+                                    <div class="row text-sm">
+                                        <div class="col-md-3"><strong>Kemasan:</strong> <span class="info-kemasan">-</span></div>
+                                        <div class="col-md-3"><strong>Isi per Kemasan:</strong> <span class="info-isi-kemasan">-</span></div>
+                                        <div class="col-md-3"><strong>Isi per Satuan:</strong> <span class="info-isi-per-satuan">-</span></div>
+                                        <div class="col-md-3"><strong>Satuan Terkecil:</strong> <span class="info-satuan-terkecil">-</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Batch Section -->
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label mb-0 fw-bold">Detail Batch (dengan Lokasi)</label>
+                                    <button type="button" class="btn btn-outline-primary btn-sm add-manual-batch-btn" 
+                                            data-item-index="${index}">
+                                        <i class="bi bi-plus-circle me-1"></i>Tambah Batch
+                                    </button>
+                                </div>
+                                <div class="manual-batch-container" data-item-index="${index}">
+                                    ${generateManualBatchHtml(index, 0, lokasiOptions)}
+                                </div>
+                            </div>
+                            
+                            <!-- Keterangan Umum -->
+                            <div class="col-12">
+                                <label class="form-label">Keterangan Umum (Opsional)</label>
+                                <input type="text" name="items[${index}][keterangan_umum]" class="form-control"
+                                       placeholder="Keterangan yang berlaku untuk semua batch barang ini">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function generateBarangOptions(itemIndex) {
+            return barangData.map(item => `
+                <a href="#" class="dropdown-item manual-barang-option" 
+                   data-item-index="${itemIndex}"
+                   data-id="${item.id_obat}"
+                   data-kemasan="${item.kemasan || 'Box'}"
+                   data-isi-kemasan="${item.isi_kemasan_jumlah || 1}"
+                   data-satuan-kemasan="${item.isi_kemasan_satuan || ''}"
+                   data-isi-per-satuan="${item.isi_per_satuan || 1}"
+                   data-satuan-terkecil="${item.satuan_terkecil || ''}"
+                   data-text="${item.nama_obat} (${item.kode_obat}) - ${item.kategori_barang}">
+                    <div class="fw-semibold">${item.nama_obat}</div>
+                    <small class="text-muted">${item.kode_obat} - ${item.kategori_barang}</small>
+                </a>
+            `).join('');
+        }
+        
+        function generateManualBatchHtml(itemIndex, batchIndex, lokasiOptions) {
+            return `
+                <div class="batch-row mb-3 p-3 border rounded manual-batch-row" data-batch-index="${batchIndex}">
+                    <div class="row align-items-end g-2">
+                        <div class="col-md-2">
+                            <label class="form-label">Jumlah</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" name="items[${itemIndex}][batches][${batchIndex}][jumlah_kemasan]" 
+                                       class="form-control manual-batch-jumlah" min="1" required placeholder="Jml" value="1">
+                                <span class="input-group-text manual-kemasan-unit">Box</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Lokasi Penyimpanan <span class="text-danger">*</span></label>
+                            <select name="items[${itemIndex}][batches][${batchIndex}][id_lokasi]" class="form-select form-select-sm" required>
+                                <option value="" disabled selected>Pilih Lokasi</option>
+                                ${lokasiOptions}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Tgl Kadaluwarsa <span class="text-danger">*</span></label>
+                            <input type="date" name="items[${itemIndex}][batches][${batchIndex}][expired_at]" 
+                                   class="form-control form-control-sm" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Keterangan</label>
+                            <input type="text" name="items[${itemIndex}][batches][${batchIndex}][keterangan]" 
+                                   class="form-control form-control-sm" placeholder="Batch ${String.fromCharCode(65 + batchIndex)}">
+                        </div>
+                        <div class="col-md-1">
+                            <button type="button" class="btn btn-outline-danger btn-sm remove-manual-batch-btn d-none">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function initializeItemSearch(itemIndex) {
+            const card = document.querySelector(`[data-item-index="${itemIndex}"].manual-item-card`);
+            const searchInput = card.querySelector('.manual-search-barang');
+            const dropdown = card.querySelector('.manual-dropdown-barang');
+            const hiddenInput = card.querySelector('.manual-id-barang');
+            const options = card.querySelectorAll('.manual-barang-option');
+            
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                let hasVisible = false;
+                
+                if (searchTerm.length > 0) {
+                    options.forEach(opt => {
+                        const text = opt.dataset.text.toLowerCase();
+                        if (text.includes(searchTerm)) {
+                            opt.style.display = 'block';
+                            hasVisible = true;
+                        } else {
+                            opt.style.display = 'none';
+                        }
+                    });
+                    dropdown.style.display = hasVisible ? 'block' : 'none';
+                } else {
+                    dropdown.style.display = 'none';
+                }
+            });
+            
+            searchInput.addEventListener('focus', function() {
+                if (this.value.length > 0) {
+                    dropdown.style.display = 'block';
+                }
+            });
+            
+            options.forEach(opt => {
+                opt.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const id = this.dataset.id;
+                    const text = this.dataset.text;
+                    const kemasan = this.dataset.kemasan;
+                    const isiKemasan = this.dataset.isiKemasan;
+                    const satuanKemasan = this.dataset.satuanKemasan;
+                    const isiPerSatuan = this.dataset.isiPerSatuan;
+                    const satuanTerkecil = this.dataset.satuanTerkecil;
+                    
+                    searchInput.value = text;
+                    hiddenInput.value = id;
+                    dropdown.style.display = 'none';
+                    
+                    // Update item info
+                    const infoDiv = card.querySelector('.manual-item-info');
+                    infoDiv.classList.remove('d-none');
+                    infoDiv.querySelector('.info-kemasan').textContent = kemasan || '-';
+                    infoDiv.querySelector('.info-isi-kemasan').textContent = `${isiKemasan} ${satuanKemasan}`;
+                    infoDiv.querySelector('.info-isi-per-satuan').textContent = isiPerSatuan || '-';
+                    infoDiv.querySelector('.info-satuan-terkecil').textContent = satuanTerkecil || '-';
+                    
+                    // Update kemasan unit in batches
+                    card.querySelectorAll('.manual-kemasan-unit').forEach(unit => {
+                        unit.textContent = kemasan || 'Box';
+                    });
+                    
+                    // Update item title
+                    const namaBarang = text.split(' (')[0];
+                    card.querySelector('.item-title').textContent = namaBarang;
+                    
+                    // Store kemasan info on card
+                    card.dataset.kemasan = kemasan || 'Box';
+                    
+                    updateSubmitButton();
+                });
+            });
+        }
+        
+        // Event delegation for remove item, add batch, remove batch
+        document.addEventListener('click', function(e) {
+            // Remove manual item
+            if (e.target.classList.contains('remove-manual-item-btn') || e.target.closest('.remove-manual-item-btn')) {
+                const btn = e.target.classList.contains('remove-manual-item-btn') ? e.target : e.target.closest('.remove-manual-item-btn');
+                const card = btn.closest('.manual-item-card');
+                card.remove();
+                updateManualMultiStatistics();
+                updateSubmitButton();
+                
+                // Show empty state if no items
+                const container = document.getElementById('manual-multi-items-container');
+                if (!container.querySelector('.manual-item-card')) {
+                    container.innerHTML = `
+                        <div class="text-center text-muted py-5" id="manual-empty-state">
+                            <i class="bi bi-inbox display-4"></i>
+                            <p class="mt-2">Belum ada barang ditambahkan. Klik "Tambah Barang" untuk mulai.</p>
+                        </div>
+                    `;
+                }
+                
+                showToast('Barang berhasil dihapus.', 'info');
+            }
+            
+            // Add batch to manual item
+            if (e.target.classList.contains('add-manual-batch-btn') || e.target.closest('.add-manual-batch-btn')) {
+                const btn = e.target.classList.contains('add-manual-batch-btn') ? e.target : e.target.closest('.add-manual-batch-btn');
+                const itemIndex = btn.dataset.itemIndex;
+                addManualBatch(itemIndex);
+            }
+            
+            // Remove batch from manual item
+            if (e.target.classList.contains('remove-manual-batch-btn') || e.target.closest('.remove-manual-batch-btn')) {
+                const btn = e.target.classList.contains('remove-manual-batch-btn') ? e.target : e.target.closest('.remove-manual-batch-btn');
+                const batchRow = btn.closest('.manual-batch-row');
+                const container = batchRow.closest('.manual-batch-container');
+                
+                if (container.querySelectorAll('.manual-batch-row').length > 1) {
+                    batchRow.remove();
+                    updateManualBatchRemoveButtons(container);
+                    updateManualMultiStatistics();
+                    showToast('Batch berhasil dihapus.', 'info');
+                } else {
+                    showToast('Minimal harus ada 1 batch per barang.', 'warning');
+                }
+            }
+            
+            // Close dropdowns when clicking outside
+            if (!e.target.closest('.position-relative')) {
+                document.querySelectorAll('.manual-dropdown-barang').forEach(dd => {
+                    dd.style.display = 'none';
+                });
+            }
+        });
+        
+        function addManualBatch(itemIndex) {
+            const card = document.querySelector(`[data-item-index="${itemIndex}"].manual-item-card`);
+            const container = card.querySelector('.manual-batch-container');
+            const existingBatches = container.querySelectorAll('.manual-batch-row');
+            const newBatchIndex = existingBatches.length;
+            const kemasan = card.dataset.kemasan || 'Box';
+            
+            const lokasiOptions = lokasiData.map(loc => 
+                `<option value="${loc.id}">${loc.nama_lokasi}</option>`
+            ).join('');
+            
+            const batchHtml = `
+                <div class="batch-row mb-3 p-3 border rounded manual-batch-row" data-batch-index="${newBatchIndex}">
+                    <div class="row align-items-end g-2">
+                        <div class="col-md-2">
+                            <label class="form-label">Jumlah</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" name="items[${itemIndex}][batches][${newBatchIndex}][jumlah_kemasan]" 
+                                       class="form-control manual-batch-jumlah" min="1" required placeholder="Jml" value="1">
+                                <span class="input-group-text manual-kemasan-unit">${kemasan}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Lokasi <span class="text-danger">*</span></label>
+                            <select name="items[${itemIndex}][batches][${newBatchIndex}][id_lokasi]" class="form-select form-select-sm" required>
+                                <option value="" disabled selected>Pilih</option>
+                                ${lokasiOptions}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Kadaluwarsa <span class="text-danger">*</span></label>
+                            <input type="date" name="items[${itemIndex}][batches][${newBatchIndex}][expired_at]" 
+                                   class="form-control form-control-sm" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Keterangan</label>
+                            <input type="text" name="items[${itemIndex}][batches][${newBatchIndex}][keterangan]" 
+                                   class="form-control form-control-sm" placeholder="Batch ${String.fromCharCode(65 + newBatchIndex)}">
+                        </div>
+                        <div class="col-md-1">
+                            <button type="button" class="btn btn-outline-danger btn-sm remove-manual-batch-btn">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', batchHtml);
+            updateManualBatchRemoveButtons(container);
+            updateManualMultiStatistics();
+            showToast('Batch baru ditambahkan.', 'success');
+        }
+        
+        function updateManualBatchRemoveButtons(container) {
+            const batches = container.querySelectorAll('.manual-batch-row');
+            batches.forEach(batch => {
+                const removeBtn = batch.querySelector('.remove-manual-batch-btn');
+                if (batches.length > 1) {
+                    removeBtn.classList.remove('d-none');
+                } else {
+                    removeBtn.classList.add('d-none');
+                }
+            });
+        }
+        
+        function updateManualMultiStatistics() {
+            const itemsCount = document.querySelectorAll('.manual-item-card').length;
+            const batchesCount = document.querySelectorAll('.manual-batch-row').length;
+            
+            document.getElementById('manual-items-count-badge').textContent = `${itemsCount} Item${itemsCount !== 1 ? 's' : ''}`;
+            document.getElementById('manual-total-batches-badge').textContent = `${batchesCount} Total Batch${batchesCount !== 1 ? 'es' : ''}`;
+        }
+        
+        function updateSubmitButton() {
+            const submitBtn = document.getElementById('submit-manual-multi');
+            const items = document.querySelectorAll('.manual-item-card');
+            let isValid = items.length > 0;
+            
+            items.forEach(item => {
+                const idBarang = item.querySelector('.manual-id-barang').value;
+                if (!idBarang) {
+                    isValid = false;
+                }
+            });
+            
+            submitBtn.disabled = !isValid;
+        }
+        
+        // ========================================
+        // EXISTING SINGLE INPUT FUNCTIONALITY
+        // ========================================
         const searchInput = document.getElementById('search_barang');
         const hiddenInput = document.getElementById('id_barang');
         const dropdown = document.getElementById('dropdown_barang');

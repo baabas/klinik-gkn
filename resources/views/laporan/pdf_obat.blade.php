@@ -153,6 +153,35 @@
                 @empty
                     <tr><td colspan="{{ ($filter['jumlah_hari'] - 16) + 3 }}">Tidak ada data.</td></tr>
                 @endforelse
+                {{-- Grand Total Row --}}
+                @if($daftar_obat->isNotEmpty())
+                <tr style="background-color: #d3d3d3; font-weight: bold;">
+                    <td class="text-left">TOTAL KESELURUHAN:</td>
+                    @for ($i = 17; $i <= $filter['jumlah_hari']; $i++)
+                        @php
+                            $total_hari = 0;
+                            foreach($daftar_obat as $obat) {
+                                $total_hari += $data_pemakaian_harian->get($obat->nama_obat) ? $data_pemakaian_harian->get($obat->nama_obat)->where('hari', $i)->sum('jumlah') : 0;
+                            }
+                        @endphp
+                        <td>{{ $total_hari ?: '' }}</td>
+                    @endfor
+                    @php
+                        $grand_total_jml = 0;
+                        $grand_total_bulan = 0;
+                        foreach($daftar_obat as $obat) {
+                            for ($i = 17; $i <= $filter['jumlah_hari']; $i++) {
+                                $grand_total_jml += $data_pemakaian_harian->get($obat->nama_obat) ? $data_pemakaian_harian->get($obat->nama_obat)->where('hari', $i)->sum('jumlah') : 0;
+                            }
+                            for ($i = 1; $i <= $filter['jumlah_hari']; $i++) {
+                                $grand_total_bulan += $data_pemakaian_harian->get($obat->nama_obat) ? $data_pemakaian_harian->get($obat->nama_obat)->where('hari', $i)->sum('jumlah') : 0;
+                            }
+                        }
+                    @endphp
+                    <td>{{ $grand_total_jml }}</td>
+                    <td>{{ $grand_total_bulan }}</td>
+                </tr>
+                @endif
             </tbody>
         </table>
     </div>

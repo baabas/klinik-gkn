@@ -276,6 +276,29 @@
             background: #fee;
             color: #c33;
         }
+
+        .error-text {
+            color: #c33;
+            font-size: 12px;
+            margin-top: 6px;
+        }
+
+        .helper-text {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 6px;
+        }
+
+        /* Style untuk input error */
+        .input-error {
+            border-color: #dc3545 !important;
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.15) !important;
+        }
+
+        .input-error:focus {
+            border-color: #dc3545 !important;
+            box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.2) !important;
+        }
         
         /* Animations */
         @keyframes slideIn {
@@ -383,6 +406,7 @@
                             <input type="text" id="login" name="login" value="{{ old('login') }}" 
                                    placeholder="Masukkan NIP atau Email" required autofocus>
                         </div>
+                        <p class="helper-text">Masukkan NIP (18 digit) atau alamat Email.</p>
                     </div>
                     
                     <!-- Password Input -->
@@ -644,8 +668,95 @@
             icon.classList.add('bi-eye');
         }
     }
+
+    // Validasi form sebelum submit
+    document.querySelector('form').addEventListener('submit', function(e) {
+        let errors = [];
+        
+        const login = document.getElementById('login');
+        const password = document.getElementById('password');
+        
+        // Reset error state
+        login.classList.remove('input-error');
+        password.classList.remove('input-error');
+        
+        // Validasi Login (NIP atau Email)
+        const loginValue = login.value.trim();
+        if (!loginValue || loginValue === '') {
+            errors.push('NIP atau Email wajib diisi');
+            login.classList.add('input-error');
+        } else {
+            // Cek apakah input adalah email atau NIP
+            const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginValue);
+            const isNIP = /^\d{18}$/.test(loginValue);
+            
+            if (!isEmail && !isNIP) {
+                // Jika bukan email valid dan bukan NIP 18 digit
+                if (loginValue.includes('@')) {
+                    errors.push('Format Email tidak valid');
+                } else if (/^\d+$/.test(loginValue)) {
+                    errors.push('NIP harus terdiri dari 18 digit angka');
+                } else {
+                    errors.push('Masukkan NIP (18 digit) atau Email yang valid');
+                }
+                login.classList.add('input-error');
+            }
+        }
+        
+        // Validasi Password
+        const passwordValue = password.value;
+        if (!passwordValue || passwordValue === '') {
+            errors.push('Password wajib diisi');
+            password.classList.add('input-error');
+        }
+        
+        if (errors.length > 0) {
+            e.preventDefault();
+            alert('Mohon lengkapi form dengan benar:\n\n• ' + errors.join('\n• '));
+            
+            // Focus ke field pertama yang error
+            const firstErrorField = document.querySelector('.input-error');
+            if (firstErrorField) {
+                firstErrorField.focus();
+            }
+        }
+    });
+
+    // Hapus class error saat user mulai mengisi
+    document.querySelectorAll('input').forEach(function(element) {
+        element.addEventListener('input', function() {
+            this.classList.remove('input-error');
+        });
+    });
+
+    // Event listener untuk Enter pada semua input dalam form
+    const formInputs = document.querySelectorAll('input[type="text"], input[type="email"], input[type="password"]');
+    formInputs.forEach(function(input) {
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                // Submit form
+                const submitButton = document.querySelector('button[type="submit"]');
+                submitButton.click();
+            }
+        });
+    });
     
     document.addEventListener('DOMContentLoaded', function() {
+        // Auto hide alert setelah 2 detik
+        const alerts = document.querySelectorAll('.alert');
+        if (alerts.length > 0) {
+            alerts.forEach(function(alert) {
+                setTimeout(function() {
+                    alert.style.transition = 'opacity 0.5s ease';
+                    alert.style.opacity = '0';
+                    setTimeout(function() {
+                        alert.style.display = 'none';
+                    }, 500);
+                }, 2000);
+            });
+        }
+
         const btnFeedback = document.getElementById('btnFeedback');
         const feedbackDropdown = document.getElementById('feedbackDropdown');
         

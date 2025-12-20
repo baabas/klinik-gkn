@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\BarangMedis;
+use App\Models\FeedbackPasien;
 use App\Models\PermintaanBarang;
+use App\Models\RekamMedis;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -76,6 +78,13 @@ class DashboardController extends Controller
      */
     private function dashboardPengadaan(): \Illuminate\View\View
     {
+        // Statistik kunjungan bulan ini
+        $bulanIni = now()->month;
+        $tahunIni = now()->year;
+        $kunjunganBulanIni = RekamMedis::whereMonth('tanggal_kunjungan', $bulanIni)
+            ->whereYear('tanggal_kunjungan', $tahunIni)
+            ->count();
+        
         // Statistik permintaan berdasarkan status
         $permintaanPending = PermintaanBarang::where('status', 'PENDING')->count();
         $permintaanApproved = PermintaanBarang::where('status', 'APPROVED')->count();
@@ -139,10 +148,45 @@ class DashboardController extends Controller
             ->whereYear('pb.tanggal_permintaan', now()->year)
             ->count();
 
+        // ===== DATA FEEDBACK PASIEN (Bulan Ini - Seluruh Lokasi) =====
+        $bulanIni = now()->month;
+        $tahunIni = now()->year;
+        
+        $feedbackQuery = DB::table('feedback_pasien as fp')
+            ->whereMonth('fp.waktu_feedback', $bulanIni)
+            ->whereYear('fp.waktu_feedback', $tahunIni);
+
+        // Total feedback bulan ini
+        $totalFeedback = (clone $feedbackQuery)->count();
+
+        // Statistik rating (1=Tidak Puas, 2=Cukup, 3=Puas)
+        $feedbackPuas = (clone $feedbackQuery)->where('fp.rating', 3)->count();
+        $feedbackCukup = (clone $feedbackQuery)->where('fp.rating', 2)->count();
+        $feedbackTidakPuas = (clone $feedbackQuery)->where('fp.rating', 1)->count();
+
+        // Statistik kesesuaian obat
+        $obatSesuai = (clone $feedbackQuery)->where('fp.jumlah_obat_sesuai', true)->count();
+        $obatTidakSesuai = (clone $feedbackQuery)->where('fp.jumlah_obat_sesuai', false)->count();
+
+        // Hitung persentase
+        $feedbackStats = [
+            'total' => $totalFeedback,
+            'puas' => $feedbackPuas,
+            'cukup' => $feedbackCukup,
+            'tidak_puas' => $feedbackTidakPuas,
+            'obat_sesuai' => $obatSesuai,
+            'obat_tidak_sesuai' => $obatTidakSesuai,
+            'persentase_puas' => $totalFeedback > 0 ? round(($feedbackPuas / $totalFeedback) * 100, 1) : 0,
+            'persentase_cukup' => $totalFeedback > 0 ? round(($feedbackCukup / $totalFeedback) * 100, 1) : 0,
+            'persentase_tidak_puas' => $totalFeedback > 0 ? round(($feedbackTidakPuas / $totalFeedback) * 100, 1) : 0,
+            'persentase_obat_sesuai' => $totalFeedback > 0 ? round(($obatSesuai / $totalFeedback) * 100, 1) : 0,
+            'persentase_obat_tidak_sesuai' => $totalFeedback > 0 ? round(($obatTidakSesuai / $totalFeedback) * 100, 1) : 0,
+        ];
+
         return view('dashboard-pengadaan', compact(
-            'permintaanPending', 'permintaanApproved', 'permintaanCompleted', 'permintaanRejected',
+            'kunjunganBulanIni', 'permintaanPending', 'permintaanApproved', 'permintaanCompleted', 'permintaanRejected',
             'stokMenipis', 'totalMasterBarang', 'permintaanTerbaru', 'stokTerendah',
-            'trendingBarang', 'distribusiLokasi', 'barangTerdaftar', 'barangBaru'
+            'trendingBarang', 'distribusiLokasi', 'barangTerdaftar', 'barangBaru', 'feedbackStats'
         ));
     }
 
@@ -155,6 +199,16 @@ class DashboardController extends Controller
         $bulanIni = now()->month;
         $tahunIni = now()->year;
         $idLokasi = $user->id_lokasi; // Filter berdasarkan lokasi dokter
+        
+        // Jumlah kunjungan bulan ini (filter berdasarkan lokasi dokter)
+        $kunjunganBulanIni = DB::table('rekam_medis as rm')
+            ->join('users as u', 'rm.id_dokter', '=', 'u.id')
+            ->when($idLokasi, function ($query) use ($idLokasi) {
+                return $query->where('u.id_lokasi', $idLokasi);
+            })
+            ->whereMonth('rm.tanggal_kunjungan', $bulanIni)
+            ->whereYear('rm.tanggal_kunjungan', $tahunIni)
+            ->count();
 
         // [DIPERBAIKI] Kueri diubah untuk menggunakan kolom ICD10 dan filter lokasi melalui dokter
         $data_penyakit = DB::table('detail_diagnosa as dd')
@@ -203,7 +257,7 @@ class DashboardController extends Controller
             ->whereDate('tanggal_kunjungan', today())->count();
 
         return view('dashboard', compact(
-            'data_penyakit', 'total_kasus_penyakit', 'data_obat', 'total_pemakaian_obat', 'kasus_hari_ini'
+            'kunjunganBulanIni', 'data_penyakit', 'total_kasus_penyakit', 'data_obat', 'total_pemakaian_obat', 'kasus_hari_ini'
         ));
     }
 }

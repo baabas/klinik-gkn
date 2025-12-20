@@ -61,11 +61,21 @@ class BarangMedis extends Model
     }
 
     /**
-     * Riwayat stok masuk (nilai perubahan positif).
+     * Riwayat stok masuk (nilai perubahan positif dari input pengadaan).
+     * Hanya menghitung barang masuk yang diinput oleh pengadaan,
+     * exclude distribusi antar klinik dan penggunaan obat.
      */
     public function stokMasuk(): HasMany
     {
-        return $this->stokHistories()->where('perubahan', '>', 0);
+        return $this->stokHistories()
+            ->where('perubahan', '>', 0)
+            ->where(function ($query) {
+                $query->where('keterangan', 'not like', '%Distribusi ke%')
+                      ->where('keterangan', 'not like', '%Distribusi dari%')
+                      ->where('keterangan', 'not like', '%Resep%')
+                      ->where('keterangan', 'not like', '%Digunakan%')
+                      ->where('keterangan', 'not like', '%Koreksi%');
+            });
     }
 
     /**
@@ -75,6 +85,13 @@ class BarangMedis extends Model
     {
         return $this->hasOne(StokHistory::class, 'id_barang', 'id_obat')
             ->where('perubahan', '>', 0)
+            ->where(function ($query) {
+                $query->where('keterangan', 'not like', '%Distribusi ke%')
+                      ->where('keterangan', 'not like', '%Distribusi dari%')
+                      ->where('keterangan', 'not like', '%Resep%')
+                      ->where('keterangan', 'not like', '%Digunakan%')
+                      ->where('keterangan', 'not like', '%Koreksi%');
+            })
             ->orderByDesc('tanggal_transaksi')
             ->orderByDesc('created_at');
     }
@@ -89,11 +106,19 @@ class BarangMedis extends Model
 
     /**
      * Riwayat stok masuk untuk bulan ini.
+     * Hanya menghitung barang masuk yang diinput oleh pengadaan.
      */
     public function stokMasukBulanIni(): HasMany
     {
         return $this->hasMany(StokHistory::class, 'id_barang', 'id_obat')
             ->where('perubahan', '>', 0)
+            ->where(function ($query) {
+                $query->where('keterangan', 'not like', '%Distribusi ke%')
+                      ->where('keterangan', 'not like', '%Distribusi dari%')
+                      ->where('keterangan', 'not like', '%Resep%')
+                      ->where('keterangan', 'not like', '%Digunakan%')
+                      ->where('keterangan', 'not like', '%Koreksi%');
+            })
             ->whereYear('tanggal_transaksi', now()->year)
             ->whereMonth('tanggal_transaksi', now()->month);
     }

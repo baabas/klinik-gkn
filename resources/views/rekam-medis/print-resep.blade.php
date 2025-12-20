@@ -195,7 +195,7 @@
 
     {{-- Header Klinik --}}
     <div class="header">
-        <h2>KLINIK GKN</h2>
+        <h2>KLINIK GKN SEMARANG</h2>
         <div class="subtitle">RESEP OBAT</div>
     </div>
 
@@ -281,6 +281,17 @@
         </div>
     </div>
 
+    {{-- Advice --}}
+    @if($rekamMedis->treatment)
+    <div class="separator"></div>
+    <div class="info-section">
+        <div style="font-weight: bold; margin-bottom: 3px; font-size: 9px;">Advice:</div>
+        <div style="font-size: 8px; line-height: 1.5; text-align: justify;">
+            {{ $rekamMedis->treatment }}
+        </div>
+    </div>
+    @endif
+
     {{-- List Obat --}}
     <div class="obat-section">
         @forelse($rekamMedis->resepObat as $index => $resep)
@@ -310,7 +321,7 @@
     <div class="footer">
         <p class="note">Tempelkan struk ini pada kemasan obat</p>
         <div class="separator"></div>
-        <p>Semoga lekas sembuh!</p>
+        <p>Semoga lekas sembuh 😊😊😊</p>
         <p style="margin-top: 8px; font-size: 9px;">
             Dicetak: {{ now()->format('d/m/Y H:i:s') }}
         </p>

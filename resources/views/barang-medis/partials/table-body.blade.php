@@ -4,7 +4,12 @@
         $stokGkn2 = (int) ($item->stok_gkn2 ?? 0);
         $totalStok = (int) ($item->stok_sum_jumlah ?? 0);
     @endphp
-    <tr class="align-middle">
+    <tr class="align-middle" data-id="{{ $item->id_obat }}" data-nama="{{ $item->nama_obat }}" data-stok-gkn1="{{ $stokGkn1 }}" data-stok-gkn2="{{ $stokGkn2 }}" data-satuan="{{ $item->satuan_terkecil ?? 'Pcs' }}">
+        @if(Auth::user()->hasRole('DOKTER') || Auth::user()->hasRole('PENGADAAN'))
+        <td class="text-center">
+            <input type="checkbox" class="form-check-input barang-checkbox" value="{{ $item->id_obat }}" data-nama="{{ $item->nama_obat }}" data-stok-gkn1="{{ $stokGkn1 }}" data-stok-gkn2="{{ $stokGkn2 }}" data-satuan="{{ $item->satuan_terkecil ?? 'Pcs' }}">
+        </td>
+        @endif
         <td class="text-center">{{ $loop->iteration + $barang->firstItem() - 1 }}</td>
         <td class="text-center"><code>{{ $item->kode_obat }}</code></td>
         <td>
@@ -78,19 +83,12 @@
         <td class="text-center"><strong class="text-dark">{{ number_format($totalStok) }}</strong></td>
         <td class="text-center sticky-action-column">
             <div class="d-flex flex-wrap gap-1 justify-content-center">
-                {{-- Tombol yang bisa diakses semua role terkait (Dokter & Pengadaan) --}}
+                {{-- Tombol Lihat Detail - bisa diakses semua role --}}
                 <a href="{{ route('barang-medis.show', $item->id_obat) }}" class="btn btn-info btn-sm" title="Lihat Detail Stok"><i class="bi bi-eye"></i></a>
 
-                {{-- Tombol Distribusi sekarang bisa diakses oleh Dokter dan Pengadaan --}}
-                @if(Auth::user()->hasRole('DOKTER') || Auth::user()->hasRole('PENGADAAN'))
-                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#distribusiModal-{{ $item->id_obat }}" title="Distribusi Stok">
-                        <i class="bi bi-truck"></i>
-                    </button>
-                @endif
-
-                {{-- Tombol yang HANYA bisa diakses oleh Pengadaan --}}
+                {{-- Tombol Edit & Hapus - HANYA untuk role PENGADAAN --}}
                 @if(Auth::user()->hasRole('PENGADAAN'))
-                    <a href="{{ route('barang-medis.edit', $item->id_obat) }}" class="btn btn-warning btn-sm" title="Edit Barang"><i class="bi bi-pencil-square"></i></a>
+                    <a href="{{ route('barang-medis.edit', $item->id_obat) }}" class="btn btn-warning btn-sm" title="Edit Barang & Koreksi Stok"><i class="bi bi-pencil-square"></i></a>
                     <form action="{{ route('barang-medis.destroy', $item->id_obat) }}" method="POST" class="d-inline" 
                           onsubmit="return confirm('⚠️ HAPUS BARANG: {{ $item->nama_obat }}\n\nPeringatan:\n• Barang dengan stok ({{ number_format($totalStok) }}) tidak dapat dihapus\n• Barang dalam permintaan aktif tidak dapat dihapus\n• Penghapusan akan menghilangkan semua data secara permanen\n\nLanjutkan hapus?');">
                         @csrf
@@ -103,7 +101,7 @@
     </tr>
 @empty
     <tr>
-        <td colspan="14" class="text-center text-muted py-4">
+        <td colspan="@if(Auth::user()->hasRole('DOKTER') || Auth::user()->hasRole('PENGADAAN'))15 @else 14 @endif" class="text-center text-muted py-4">
             <i class="bi bi-search mb-2" style="font-size: 2rem;"></i>
             <div>Tidak ada data barang medis ditemukan.</div>
         </td>

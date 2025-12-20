@@ -34,7 +34,7 @@ class FeedbackPasien extends Model
         'nip_pasien',
         'nik_pasien',
         'rating',
-        'komentar',
+        'jumlah_obat_sesuai',
         'waktu_feedback',
     ];
 
@@ -46,6 +46,7 @@ class FeedbackPasien extends Model
     protected $casts = [
         'waktu_feedback' => 'datetime',
         'rating' => 'integer',
+        'jumlah_obat_sesuai' => 'boolean',
     ];
 
     /**
