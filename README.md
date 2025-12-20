@@ -428,3 +428,230 @@ php artisan serve
 ```
 
 Aplikasi akan berjalan di `http://localhost:8000`
+
+---
+
+## Setup Mailer untuk Reset Password
+
+Fitur reset password memerlukan konfigurasi email server. Berikut langkah-langkah setup mailer:
+
+### 1. **Konfigurasi Email di .env**
+
+Pilih salah satu dari opsi berikut sesuai email provider Anda:
+
+#### Option A: Menggunakan Gmail SMTP
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_FROM_ADDRESS=your-email@gmail.com
+MAIL_FROM_NAME="Klinik GKN"
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-app-password
+MAIL_ENCRYPTION=tls
+```
+
+**Catatan Gmail:**
+- Gunakan [Google App Password](https://myaccount.google.com/apppasswords) bukan password biasa
+- Aktifkan "Less secure app access" jika menggunakan 2FA
+- Password yang diisi di `MAIL_PASSWORD` adalah App Password dari Google, bukan password Gmail Anda
+
+#### Option B: Menggunakan Mailtrap (untuk development)
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=live.smtp.mailtrap.io
+MAIL_PORT=587
+MAIL_FROM_ADDRESS=your-email@example.com
+MAIL_FROM_NAME="Klinik GKN"
+MAIL_USERNAME=your-mailtrap-username
+MAIL_PASSWORD=your-mailtrap-password
+MAIL_ENCRYPTION=tls
+```
+
+#### Option C: Menggunakan SMTP Server Lokal (Laragon)
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=localhost
+MAIL_PORT=1025
+MAIL_FROM_ADDRESS=clinic@localhost
+MAIL_FROM_NAME="Klinik GKN"
+MAIL_USERNAME=
+MAIL_PASSWORD=
+MAIL_ENCRYPTION=
+```
+
+### 2. **Clear Cache Setelah Update .env**
+```bash
+php artisan config:cache
+```
+
+### 3. **Test Email Configuration**
+
+Buat file test di project root untuk memastikan mailer berfungsi:
+
+```bash
+php artisan tinker
+```
+
+Kemudian di dalam Tinker, jalankan:
+```php
+Mail::raw('Test Email', function($message) {
+    $message->to('test@example.com')->subject('Test Email from Klinik GKN');
+});
+```
+
+Jika berhasil, seharusnya email terkirim ke inbox yang terdaftar.
+
+### 4. **Fitur Reset Password**
+
+Setelah mailer dikonfigurasi, user yang lupa password dapat:
+1. Ke halaman login dan klik "Forgot Password?"
+2. Masukkan email mereka
+3. Sistem akan mengirim link reset password ke email
+4. User membuka link dan membuat password baru
+5. Password berhasil direset dan dapat login kembali
+
+---
+
+## Setup Role Admin (Dokter & Pengadaan)
+
+Sistem ini memiliki data seeder untuk membuat akun admin (dokter dan pengadaan) secara otomatis. Namun, jika ingin menambah atau memodifikasi role admin secara manual, berikut panduannya:
+
+### 1. **Membuat Admin Dokter**
+
+#### Via Database Seeding (Otomatis)
+Seeder `AdminUserSeeder.php` sudah membuat 3 akun default:
+- Admin Dokter (email: admin@example.com, password: 12345678)
+- Admin Dokter 2 (email: admin2@example.com, password: 12345678)
+- Admin Pengadaan (email: admin3@example.com, password: 12345678)
+
+Jalankan seeding jika belum:
+```bash
+php artisan db:seed --class=AdminUserSeeder
+```
+
+#### Via Tinker (Manual)
+Jika ingin menambah dokter manual, buka Tinker:
+```bash
+php artisan tinker
+```
+
+Kemudian jalankan:
+```php
+use App\Models\User;
+use App\Models\Role;
+use Illuminate\Support\Facades\Hash;
+
+// 1. Cari role DOKTER
+$dokterRole = Role::where('name', 'DOKTER')->first();
+
+// 2. Buat user dokter baru
+$user = User::create([
+    'nip' => '123456789012345678',
+    'nama_karyawan' => 'Dr. Nama Dokter',
+    'email' => 'dokter@example.com',
+    'password' => Hash::make('password-dokter'),
+    'akses' => 'DOKTER',
+    'id_lokasi' => 1, // ID lokasi klinik (1 = lokasi pertama)
+]);
+
+// 3. Attach role DOKTER ke user
+$user->roles()->attach($dokterRole->id);
+
+exit;
+```
+
+### 2. **Membuat Admin Pengadaan**
+
+#### Via Tinker
+```php
+use App\Models\User;
+use App\Models\Role;
+use Illuminate\Support\Facades\Hash;
+
+// 1. Cari role PENGADAAN
+$pengadaanRole = Role::where('name', 'PENGADAAN')->first();
+
+// 2. Buat user pengadaan baru
+$user = User::create([
+    'nip' => '987654321098765432',
+    'nama_karyawan' => 'Staf Pengadaan',
+    'email' => 'pengadaan@example.com',
+    'password' => Hash::make('password-pengadaan'),
+    'akses' => 'PENGADAAN',
+    'id_lokasi' => null, // Pengadaan tidak perlu id_lokasi
+]);
+
+// 3. Attach role PENGADAAN ke user
+$user->roles()->attach($pengadaanRole->id);
+
+exit;
+```
+
+### 3. **Modifikasi Role Existing Admin**
+
+#### Mengubah Password Admin
+```php
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+
+$user = User::where('email', 'admin@example.com')->first();
+$user->password = Hash::make('password-baru');
+$user->save();
+```
+
+#### Mengubah Email Admin
+```php
+$user = User::where('email', 'admin@example.com')->first();
+$user->email = 'admin-baru@example.com';
+$user->save();
+```
+
+#### Menambah Role Tambahan ke User
+Jika ingin satu user memiliki multiple roles (misalnya DOKTER dan PENGADAAN):
+```php
+use App\Models\User;
+use App\Models\Role;
+
+$user = User::where('email', 'admin@example.com')->first();
+$pengadaanRole = Role::where('name', 'PENGADAAN')->first();
+
+// Tambah role tanpa remove role existing
+$user->roles()->attach($pengadaanRole->id);
+```
+
+### 4. **Daftar Lokasi Klinik**
+
+Saat membuat dokter, perlu set `id_lokasi` ke lokasi klinik yang valid. Lihat daftar lokasi:
+
+```php
+use App\Models\LokasiKlinik;
+
+// Lihat semua lokasi
+LokasiKlinik::all();
+```
+
+### 5. **Menghapus Admin**
+
+```php
+use App\Models\User;
+
+$user = User::where('email', 'admin@example.com')->first();
+$user->delete();
+```
+
+---
+
+## Struktur Database untuk Role & Permission
+
+### Tabel yang Terlibat:
+- **users**: Menyimpan akun user (dokter, pengadaan, pasien)
+- **roles**: Menyimpan definisi role (PASIEN, DOKTER, PENGADAAN)
+- **role_user**: Tabel junction untuk relasi many-to-many antara users dan roles
+- **lokasi_klinik**: Menyimpan lokasi/cabang klinik
+
+### Catatan Penting:
+- **Setiap user bisa memiliki multiple roles** melalui tabel role_user
+- **Dokter harus punya id_lokasi** (lokasi tempat bekerja)
+- **Pengadaan tidak perlu id_lokasi** (mengelola seluruh lokasi)
+- **Pasien tidak boleh punya id_lokasi** (field diisi null)
