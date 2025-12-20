@@ -114,6 +114,12 @@ class PasienController extends Controller
     public function myCard()
     {
         $user = Auth::user();
+
+        // ⚠️ VALIDASI: Hanya karyawan (dengan NIP) yang bisa akses kartu pasien digital
+        if (!$user->karyawan || !$user->nip) {
+            return redirect()->route('dashboard')->with('error', 'Kartu pasien digital hanya tersedia untuk karyawan. Data Anda telah tercatat di sistem dokter.');
+        }
+
         $kantors = MasterKantor::where('is_active', true)->orderBy('nama_kantor')->get();
         return view('pasien.my-card', compact('user', 'kantors'));
     }
@@ -127,7 +133,7 @@ class PasienController extends Controller
         ]);
 
         $user = Auth::user();
-        
+
         if ($user->karyawan) {
             $user->karyawan->update([
                 'kantor' => $request->kantor

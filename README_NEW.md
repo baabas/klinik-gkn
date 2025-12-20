@@ -107,6 +107,9 @@ Tim pengadaan/procurement yang dapat:
 ### **Dashboard**
 Setiap role memiliki dashboard yang disesuaikan dengan kebutuhan mereka:
 
+![Dashboard Comparison Placeholder](./docs/images/dashboard-comparison.png)
+*Placeholder: Perbandingan dashboard antara pasien, dokter, dan pengadaan*
+
 #### Dashboard Pasien
 - Total kunjungan ke klinik
 - Total pemeriksaan (check-up)
@@ -167,9 +170,15 @@ Karyawan yang telah login dapat melihat kartu pasien digital mereka melalui menu
 - Navigation menu hanya menampilkan link "Kartu Pasien Saya" untuk user dengan `$user->karyawan` relation
 - Sistem ini memastikan privacy dan compliance - non-karyawan hanya mendapat akses yang sesuai kebutuhan mereka
 
+![Kartu Pasien Digital Placeholder](./docs/images/patient-card.png)
+*Placeholder: Contoh tampilan kartu pasien digital untuk karyawan*
+
 ---
 
 ### **Rekam Medis & Check-up** (Role: DOKTER)
+
+![Rekam Medis Interface Placeholder](./docs/images/medical-record.png)
+*Placeholder: Interface pembuatan rekam medis dan input diagnosis*
 
 #### 1. **Membuat Rekam Medis**
 Dokter dapat mencatat kunjungan pasien dengan detail:
@@ -197,9 +206,15 @@ Dokter dapat mencatat hasil pemeriksaan vital pasien:
 - Cocok untuk resep di apotek klinik
 - Berisi nama pasien, dokter, obat, dan tanda tangan dokter
 
+![Resep Obat Template Placeholder](./docs/images/prescription-print.png)
+*Placeholder: Template resep obat yang siap dicetak*
+
 ---
 
 ### **Pengadaan Barang Medis** (Role: DOKTER & PENGADAAN)
+
+![Pengadaan Workflow Placeholder](./docs/images/procurement-workflow.png)
+*Placeholder: Alur pengadaan dari permintaan hingga distribusi barang*
 
 #### 1. **Permintaan Barang** (Role: DOKTER)
 Dokter dapat membuat permintaan barang medis kepada bagian pengadaan:
@@ -271,6 +286,9 @@ Pengadaan dapat mengelola data master yang mendukung operasional:
 
 ### **Laporan & Analisis** (Role: DOKTER)
 
+![Laporan Analytics Placeholder](./docs/images/reports-analytics.png)
+*Placeholder: Dashboard laporan dengan grafik dan statistik penyakit*
+
 #### 1. **Laporan Harian**
 - Daftar kunjungan hari ini
 - Total kunjungan per hari
@@ -298,6 +316,9 @@ Pengadaan dapat mengelola data master yang mendukung operasional:
 ---
 
 ### **Feedback Pasien** (Role: PENGADAAN)
+
+![Feedback Form Placeholder](./docs/images/feedback-tablet.png)
+*Placeholder: Interface tablet untuk feedback pasien dengan rating emoji*
 
 #### Fitur Feedback:
 - **Tablet Perawat**: Pasien memberikan feedback setelah konsultasi (bisa tanpa login)
