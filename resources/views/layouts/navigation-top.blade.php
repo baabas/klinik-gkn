@@ -639,7 +639,7 @@
         const obatMedisMenu = document.getElementById('obat-medis-menu');
         const obatMedisNav = document.getElementById('obat-medis-nav');
 
-        if (obatMedisButton && obatMedisMenu && obatMedisNav) {
+        if (obatMedisButton && obatMedisMenu) {
             obatMedisButton.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -657,11 +657,13 @@
             });
 
             // Prevent link navigation when clicking in the nav area
-            obatMedisNav.addEventListener('click', function(e) {
-                if (obatMedisButton.contains(e.target) || e.target === obatMedisButton) {
-                    e.preventDefault();
-                }
-            });
+            if (obatMedisNav) {
+                obatMedisNav.addEventListener('click', function(e) {
+                    if (obatMedisButton.contains(e.target)) {
+                        e.preventDefault();
+                    }
+                });
+            }
         }
 
         // Handle Master Data dropdown
@@ -669,7 +671,7 @@
         const masterDataMenu = document.getElementById('master-data-menu');
         const masterDataNav = document.getElementById('master-data-nav');
 
-        if (masterDataButton && masterDataMenu && masterDataNav) {
+        if (masterDataButton && masterDataMenu) {
             masterDataButton.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -687,11 +689,13 @@
             });
 
             // Prevent link navigation when clicking in the nav area
-            masterDataNav.addEventListener('click', function(e) {
-                if (masterDataButton.contains(e.target) || e.target === masterDataButton) {
-                    e.preventDefault();
-                }
-            });
+            if (masterDataNav) {
+                masterDataNav.addEventListener('click', function(e) {
+                    if (masterDataButton.contains(e.target)) {
+                        e.preventDefault();
+                    }
+                });
+            }
         }
 
         // Handle User Profile Dropdown
