@@ -656,15 +656,10 @@
                 }
             });
 
-            // Also allow clicking the nav container to toggle (except the link itself)
+            // Prevent link navigation when clicking in the nav area
             obatMedisNav.addEventListener('click', function(e) {
-                // Only handle if clicking the dropdown button area
-                if (e.target !== obatMedisNav.querySelector('a')) {
-                    const rect = obatMedisButton.getBoundingClientRect();
-                    if (e.clientX >= rect.left && e.clientX <= rect.right && 
-                        e.clientY >= rect.top && e.clientY <= rect.bottom) {
-                        obatMedisButton.click();
-                    }
+                if (obatMedisButton.contains(e.target) || e.target === obatMedisButton) {
+                    e.preventDefault();
                 }
             });
         }
@@ -691,15 +686,10 @@
                 }
             });
 
-            // Also allow clicking the nav container to toggle (except the link itself)
+            // Prevent link navigation when clicking in the nav area
             masterDataNav.addEventListener('click', function(e) {
-                // Only handle if clicking the dropdown button area
-                if (e.target !== masterDataNav.querySelector('a')) {
-                    const rect = masterDataButton.getBoundingClientRect();
-                    if (e.clientX >= rect.left && e.clientX <= rect.right && 
-                        e.clientY >= rect.top && e.clientY <= rect.bottom) {
-                        masterDataButton.click();
-                    }
+                if (masterDataButton.contains(e.target) || e.target === masterDataButton) {
+                    e.preventDefault();
                 }
             });
         }
@@ -731,15 +721,18 @@
 
         // Close all dropdowns when clicking outside
         document.addEventListener('click', function(e) {
-            // Check if click is outside all dropdown areas
-            const isOutsideObatMedis = obatMedisNav && !obatMedisNav.contains(e.target) && 
-                                        obatMedisMenu && !obatMedisMenu.contains(e.target);
-            const isOutsideMasterData = masterDataNav && !masterDataNav.contains(e.target) && 
-                                         masterDataMenu && !masterDataMenu.contains(e.target);
-            const isOutsideUser = userDropdownToggle && !userDropdownToggle.contains(e.target) && 
-                                   userDropdownMenu && !userDropdownMenu.contains(e.target);
+            // Check if click is inside any dropdown area
+            const clickedInDropdown = [
+                { nav: obatMedisNav, menu: obatMedisMenu },
+                { nav: masterDataNav, menu: masterDataMenu },
+                { toggle: userDropdownToggle, menu: userDropdownMenu }
+            ].some(dropdown => {
+                const nav = dropdown.nav || dropdown.toggle;
+                return (nav && nav.contains(e.target)) || 
+                       (dropdown.menu && dropdown.menu.contains(e.target));
+            });
 
-            if (isOutsideObatMedis && isOutsideMasterData && isOutsideUser) {
+            if (!clickedInDropdown) {
                 closeAllDropdowns();
             }
         });
