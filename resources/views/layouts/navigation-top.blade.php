@@ -608,231 +608,159 @@
     updateDateTime();
     setInterval(updateDateTime, 1000);
 
-    // Fix dropdown positioning issues
+    // Enhanced dropdown handling with proper event management
     document.addEventListener('DOMContentLoaded', function() {
-        const dropdownToggle = document.querySelector('.nav-item.dropdown .dropdown-toggle');
-        const dropdownMenu = document.querySelector('.nav-item.dropdown .dropdown-menu');
-
-        if (dropdownToggle && dropdownMenu) {
-            dropdownToggle.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-
-                // Close obat medis dropdown if open
-                const obatMedisMenu = document.getElementById('obat-medis-menu');
-                const obatMedisButton = document.getElementById('obat-medis-dropdown');
-                if (obatMedisMenu) {
-                    obatMedisMenu.style.display = 'none';
-                    if (obatMedisButton) {
-                        obatMedisButton.setAttribute('aria-expanded', 'false');
-                    }
-                }
-
-                // Toggle dropdown manually with proper positioning
-                const isOpen = dropdownMenu.classList.contains('show');
-
-                if (isOpen) {
-                    dropdownMenu.classList.remove('show');
-                } else {
-                    // Ensure proper positioning
-                    dropdownMenu.style.position = 'absolute';
-                    dropdownMenu.style.top = '100%';
-                    dropdownMenu.style.right = '0';
-                    dropdownMenu.style.left = 'auto';
-                    dropdownMenu.style.zIndex = '10000';
-                    dropdownMenu.style.marginTop = '0.125rem';
-
-                    dropdownMenu.classList.add('show');
-                }
-            });
-
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!dropdownToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
-                    dropdownMenu.classList.remove('show');
-                }
-            });
-
-            // Prevent dropdown from closing when clicking inside it
-            dropdownMenu.addEventListener('click', function(e) {
-                e.stopPropagation();
+        // Close all dropdowns function
+        function closeAllDropdowns() {
+            // Close custom style-based dropdowns
+            const obatMedisMenu = document.getElementById('obat-medis-menu');
+            const masterDataMenu = document.getElementById('master-data-menu');
+            
+            if (obatMedisMenu) {
+                obatMedisMenu.style.display = 'none';
+                const obatBtn = document.getElementById('obat-medis-dropdown');
+                if (obatBtn) obatBtn.setAttribute('aria-expanded', 'false');
+            }
+            
+            if (masterDataMenu) {
+                masterDataMenu.style.display = 'none';
+                const masterBtn = document.getElementById('master-data-dropdown');
+                if (masterBtn) masterBtn.setAttribute('aria-expanded', 'false');
+            }
+            
+            // Close Bootstrap-style dropdowns
+            document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                menu.classList.remove('show');
             });
         }
 
-        // Handle Obat & Alat Medis dropdown separately
+        // Handle Obat & Alat Medis dropdown
         const obatMedisButton = document.getElementById('obat-medis-dropdown');
         const obatMedisMenu = document.getElementById('obat-medis-menu');
+        const obatMedisNav = document.getElementById('obat-medis-nav');
 
-        if (obatMedisButton && obatMedisMenu) {
+        if (obatMedisButton && obatMedisMenu && obatMedisNav) {
             obatMedisButton.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
 
-                // Close user profile dropdown if open
-                const userDropdown = document.querySelector('.nav-item.dropdown .dropdown-menu');
-                if (userDropdown) {
-                    userDropdown.classList.remove('show');
-                }
-
-                // Close Master Data dropdown if open
-                const masterDataMenu = document.getElementById('master-data-menu');
-                if (masterDataMenu) {
-                    masterDataMenu.style.display = 'none';
-                    const masterDataButton = document.getElementById('master-data-dropdown');
-                    if (masterDataButton) {
-                        masterDataButton.setAttribute('aria-expanded', 'false');
-                    }
-                }
-
-                // Toggle obat medis dropdown
                 const isOpen = obatMedisMenu.style.display === 'block';
 
-                if (isOpen) {
-                    obatMedisMenu.style.display = 'none';
-                    obatMedisButton.setAttribute('aria-expanded', 'false');
-                } else {
+                // Close all other dropdowns
+                closeAllDropdowns();
+
+                // Toggle this dropdown
+                if (!isOpen) {
                     obatMedisMenu.style.display = 'block';
-                    obatMedisMenu.style.position = 'absolute';
-                    obatMedisMenu.style.top = '100%';
-                    obatMedisMenu.style.left = '0';
-                    obatMedisMenu.style.zIndex = '9999';
                     obatMedisButton.setAttribute('aria-expanded', 'true');
                 }
             });
 
-            // Close obat medis dropdown when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!obatMedisButton.contains(e.target) && !obatMedisMenu.contains(e.target)) {
-                    obatMedisMenu.style.display = 'none';
-                    obatMedisButton.setAttribute('aria-expanded', 'false');
+            // Also allow clicking the nav container to toggle (except the link itself)
+            obatMedisNav.addEventListener('click', function(e) {
+                // Only handle if clicking the dropdown button area
+                if (e.target !== obatMedisNav.querySelector('a')) {
+                    const rect = obatMedisButton.getBoundingClientRect();
+                    if (e.clientX >= rect.left && e.clientX <= rect.right && 
+                        e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                        obatMedisButton.click();
+                    }
                 }
-            });
-
-            // Prevent dropdown from closing when clicking inside it
-            obatMedisMenu.addEventListener('click', function(e) {
-                e.stopPropagation();
             });
         }
 
         // Handle Master Data dropdown
         const masterDataButton = document.getElementById('master-data-dropdown');
         const masterDataMenu = document.getElementById('master-data-menu');
+        const masterDataNav = document.getElementById('master-data-nav');
 
-        if (masterDataButton && masterDataMenu) {
+        if (masterDataButton && masterDataMenu && masterDataNav) {
             masterDataButton.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
 
-                // Close user profile dropdown if open
-                const userDropdown = document.querySelector('.nav-item.dropdown .dropdown-menu');
-                if (userDropdown) {
-                    userDropdown.classList.remove('show');
-                }
-
-                // Close Obat Medis dropdown if open
-                const obatMedisMenu = document.getElementById('obat-medis-menu');
-                if (obatMedisMenu) {
-                    obatMedisMenu.style.display = 'none';
-                    const obatMedisButton = document.getElementById('obat-medis-dropdown');
-                    if (obatMedisButton) {
-                        obatMedisButton.setAttribute('aria-expanded', 'false');
-                    }
-                }
-
-                // Toggle master data dropdown
                 const isOpen = masterDataMenu.style.display === 'block';
 
-                if (isOpen) {
-                    masterDataMenu.style.display = 'none';
-                    masterDataButton.setAttribute('aria-expanded', 'false');
-                } else {
+                // Close all other dropdowns
+                closeAllDropdowns();
+
+                // Toggle this dropdown
+                if (!isOpen) {
                     masterDataMenu.style.display = 'block';
-                    masterDataMenu.style.position = 'absolute';
-                    masterDataMenu.style.top = '100%';
-                    masterDataMenu.style.left = '0';
-                    masterDataMenu.style.zIndex = '9999';
                     masterDataButton.setAttribute('aria-expanded', 'true');
                 }
             });
 
-            // Close master data dropdown when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!masterDataButton.contains(e.target) && !masterDataMenu.contains(e.target)) {
-                    masterDataMenu.style.display = 'none';
-                    masterDataButton.setAttribute('aria-expanded', 'false');
+            // Also allow clicking the nav container to toggle (except the link itself)
+            masterDataNav.addEventListener('click', function(e) {
+                // Only handle if clicking the dropdown button area
+                if (e.target !== masterDataNav.querySelector('a')) {
+                    const rect = masterDataButton.getBoundingClientRect();
+                    if (e.clientX >= rect.left && e.clientX <= rect.right && 
+                        e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                        masterDataButton.click();
+                    }
                 }
             });
+        }
 
-            // Prevent dropdown from closing when clicking inside it
+        // Handle User Profile Dropdown
+        const userDropdownToggle = document.getElementById('userDropdown');
+        const userDropdownMenu = userDropdownToggle ? userDropdownToggle.nextElementSibling : null;
+
+        if (userDropdownToggle && userDropdownMenu) {
+            userDropdownToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const isOpen = userDropdownMenu.classList.contains('show');
+
+                // Close all other dropdowns
+                closeAllDropdowns();
+
+                // Toggle user dropdown
+                if (!isOpen) {
+                    userDropdownMenu.classList.add('show');
+                    userDropdownToggle.setAttribute('aria-expanded', 'true');
+                } else {
+                    userDropdownMenu.classList.remove('show');
+                    userDropdownToggle.setAttribute('aria-expanded', 'false');
+                }
+            });
+        }
+
+        // Close all dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            // Check if click is outside all dropdown areas
+            const isOutsideObatMedis = obatMedisNav && !obatMedisNav.contains(e.target) && 
+                                        obatMedisMenu && !obatMedisMenu.contains(e.target);
+            const isOutsideMasterData = masterDataNav && !masterDataNav.contains(e.target) && 
+                                         masterDataMenu && !masterDataMenu.contains(e.target);
+            const isOutsideUser = userDropdownToggle && !userDropdownToggle.contains(e.target) && 
+                                   userDropdownMenu && !userDropdownMenu.contains(e.target);
+
+            if (isOutsideObatMedis && isOutsideMasterData && isOutsideUser) {
+                closeAllDropdowns();
+            }
+        });
+
+        // Prevent dropdown menus from closing when clicking inside them
+        if (obatMedisMenu) {
+            obatMedisMenu.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        }
+        
+        if (masterDataMenu) {
             masterDataMenu.addEventListener('click', function(e) {
                 e.stopPropagation();
             });
         }
-
-        // Handle User Profile Dropdown - ALWAYS INITIALIZE
-        const userDropdownToggle = document.getElementById('userDropdown');
-        const userDropdownMenu = userDropdownToggle ? userDropdownToggle.nextElementSibling : null;
-
-        console.log('User Dropdown Elements:', {
-            toggle: userDropdownToggle,
-            menu: userDropdownMenu
-        });
-
-        if (userDropdownToggle && userDropdownMenu) {
-            // Remove any existing listeners to prevent duplicates
-            const newToggle = userDropdownToggle.cloneNode(true);
-            userDropdownToggle.parentNode.replaceChild(newToggle, userDropdownToggle);
-            
-            const refreshedToggle = document.getElementById('userDropdown');
-            const refreshedMenu = refreshedToggle.nextElementSibling;
-
-            refreshedToggle.addEventListener('click', function(e) {
-                e.preventDefault();
+        
+        if (userDropdownMenu) {
+            userDropdownMenu.addEventListener('click', function(e) {
                 e.stopPropagation();
-
-                console.log('User dropdown clicked!');
-
-                // Close obat medis dropdown if open
-                if (obatMedisMenu && obatMedisMenu.style) {
-                    obatMedisMenu.style.display = 'none';
-                }
-
-                // Close master data dropdown if open
-                const masterDataMenu = document.getElementById('master-data-menu');
-                if (masterDataMenu && masterDataMenu.style) {
-                    masterDataMenu.style.display = 'none';
-                }
-
-                // Toggle user dropdown
-                const isOpen = refreshedMenu.classList.contains('show');
-
-                // Close all dropdowns first
-                document.querySelectorAll('.dropdown-menu').forEach(menu => {
-                    if (menu !== refreshedMenu) {
-                        menu.classList.remove('show');
-                    }
-                });
-
-                if (!isOpen) {
-                    refreshedMenu.classList.add('show');
-                    refreshedToggle.setAttribute('aria-expanded', 'true');
-                    console.log('User dropdown opened');
-                } else {
-                    refreshedMenu.classList.remove('show');
-                    refreshedToggle.setAttribute('aria-expanded', 'false');
-                    console.log('User dropdown closed');
-                }
             });
-
-            // Close user dropdown when clicking outside
-            document.addEventListener('click', function(e) {
-                if (refreshedMenu && !refreshedToggle.contains(e.target) && !refreshedMenu.contains(e.target)) {
-                    refreshedMenu.classList.remove('show');
-                    refreshedToggle.setAttribute('aria-expanded', 'false');
-                }
-            });
-        } else {
-            console.error('User dropdown elements not found!');
         }
     });
 </script>
