@@ -30,15 +30,6 @@
         @if($showNavigation && $showPengadaanNavigation && ($activeRole === 'PENGADAAN') && Auth::check() && Auth::user()->hasRole('PENGADAAN'))
             <div class="d-flex align-items-center">
                 <ul class="navbar-nav flex-row align-items-center gap-1 ms-4">
-                    {{-- Dashboard Menu --}}
-                    <li class="nav-item">
-                        <a class="nav-link text-white px-3 py-2 rounded {{ request()->routeIs('dashboard') ? 'bg-primary' : '' }}"
-                           href="{{ route('dashboard') }}"
-                           style="transition: all 0.3s ease; font-weight: 500; text-decoration: none;">
-                            <i class="bi bi-speedometer2 me-2"></i>Dashboard Pengadaan
-                        </a>
-                    </li>
-
                     {{-- Obat & Alat Medis Dropdown Menu --}}
                     <li class="nav-item dropdown">
                         <div class="d-flex align-items-center" id="obat-medis-nav">
@@ -109,6 +100,60 @@
                                 </a>
                             </li>
                         </ul>
+                    </li>
+
+                    {{-- Master Data Dropdown Menu --}}
+                    <li class="nav-item dropdown">
+                        <div class="d-flex align-items-center" id="master-data-nav">
+                            <a class="nav-link text-white px-2 py-2 rounded {{ request()->routeIs('master-kantor.*') || request()->routeIs('master-isi-kemasan.*') || request()->routeIs('master-satuan.*') || request()->routeIs('master-whatsapp-validator.*') ? 'bg-primary' : '' }}"
+                               href="{{ route('master-kantor.index') }}"
+                               style="transition: all 0.3s ease; font-weight: 500; text-decoration: none;">
+                                <i class="bi bi-database-fill me-2"></i>Master Data
+                            </a>
+                            <button class="btn btn-sm text-white p-1 ms-1" type="button" id="master-data-dropdown" aria-expanded="false"
+                                    style="background: none; border: none; font-size: 0.8rem;">
+                                <i class="bi bi-chevron-down"></i>
+                            </button>
+                        </div>
+                        <ul class="dropdown-menu shadow-lg border-0" id="master-data-menu" style="min-width: 220px; display: none;">
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center {{ request()->routeIs('master-kantor.*') ? 'active' : '' }}"
+                                   href="{{ route('master-kantor.index') }}">
+                                    <i class="bi bi-building me-2 text-primary"></i>
+                                    Master Kantor
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center {{ request()->routeIs('master-isi-kemasan.*') ? 'active' : '' }}"
+                                   href="{{ route('master-isi-kemasan.index') }}">
+                                    <i class="bi bi-box-seam me-2 text-success"></i>
+                                    Master Isi Kemasan
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center {{ request()->routeIs('master-satuan.*') ? 'active' : '' }}"
+                                   href="{{ route('master-satuan.index') }}">
+                                    <i class="bi bi-rulers me-2 text-info"></i>
+                                    Master Satuan Terkecil
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center {{ request()->routeIs('master-whatsapp-validator.*') ? 'active' : '' }}"
+                                   href="{{ route('master-whatsapp-validator.index') }}">
+                                    <i class="bi bi-whatsapp me-2 text-success"></i>
+                                    Master WA Validator
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    {{-- Log Distribusi Menu --}}
+                    <li class="nav-item">
+                        <a class="nav-link text-white px-3 py-2 rounded {{ request()->routeIs('distribusi-barang.*') ? 'bg-primary' : '' }}"
+                           href="{{ route('distribusi-barang.index') }}"
+                           style="transition: all 0.3s ease; font-weight: 500; text-decoration: none;">
+                            <i class="bi bi-arrow-left-right me-2"></i>Log Distribusi
+                        </a>
                     </li>
                 </ul>
             </div>
@@ -367,6 +412,38 @@
         border-bottom: 6px solid rgba(255,255,255,0.98);
         z-index: 10000;
     }
+
+    /* Specific styling for Master Data dropdown */
+    #master-data-nav {
+        position: relative;
+    }
+
+    #master-data-menu {
+        position: absolute !important;
+        top: 100% !important;
+        left: 0 !important;
+        z-index: 9999 !important;
+        min-width: 220px;
+        background-color: rgba(255,255,255,0.98) !important;
+        backdrop-filter: blur(10px);
+        border-radius: 10px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        padding: 0.5rem 0;
+        margin-top: 0.5rem;
+    }
+
+    #master-data-menu::before {
+        content: '';
+        position: absolute;
+        top: -6px;
+        left: 20px;
+        width: 0;
+        height: 0;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-bottom: 6px solid rgba(255,255,255,0.98);
+        z-index: 10000;
+    }
     #current-datetime {
         font-family: 'Courier New', monospace;
         font-size: 0.8rem;
@@ -597,6 +674,16 @@
                     userDropdown.classList.remove('show');
                 }
 
+                // Close Master Data dropdown if open
+                const masterDataMenu = document.getElementById('master-data-menu');
+                if (masterDataMenu) {
+                    masterDataMenu.style.display = 'none';
+                    const masterDataButton = document.getElementById('master-data-dropdown');
+                    if (masterDataButton) {
+                        masterDataButton.setAttribute('aria-expanded', 'false');
+                    }
+                }
+
                 // Toggle obat medis dropdown
                 const isOpen = obatMedisMenu.style.display === 'block';
 
@@ -627,6 +714,61 @@
             });
         }
 
+        // Handle Master Data dropdown
+        const masterDataButton = document.getElementById('master-data-dropdown');
+        const masterDataMenu = document.getElementById('master-data-menu');
+
+        if (masterDataButton && masterDataMenu) {
+            masterDataButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Close user profile dropdown if open
+                const userDropdown = document.querySelector('.nav-item.dropdown .dropdown-menu');
+                if (userDropdown) {
+                    userDropdown.classList.remove('show');
+                }
+
+                // Close Obat Medis dropdown if open
+                const obatMedisMenu = document.getElementById('obat-medis-menu');
+                if (obatMedisMenu) {
+                    obatMedisMenu.style.display = 'none';
+                    const obatMedisButton = document.getElementById('obat-medis-dropdown');
+                    if (obatMedisButton) {
+                        obatMedisButton.setAttribute('aria-expanded', 'false');
+                    }
+                }
+
+                // Toggle master data dropdown
+                const isOpen = masterDataMenu.style.display === 'block';
+
+                if (isOpen) {
+                    masterDataMenu.style.display = 'none';
+                    masterDataButton.setAttribute('aria-expanded', 'false');
+                } else {
+                    masterDataMenu.style.display = 'block';
+                    masterDataMenu.style.position = 'absolute';
+                    masterDataMenu.style.top = '100%';
+                    masterDataMenu.style.left = '0';
+                    masterDataMenu.style.zIndex = '9999';
+                    masterDataButton.setAttribute('aria-expanded', 'true');
+                }
+            });
+
+            // Close master data dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!masterDataButton.contains(e.target) && !masterDataMenu.contains(e.target)) {
+                    masterDataMenu.style.display = 'none';
+                    masterDataButton.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            // Prevent dropdown from closing when clicking inside it
+            masterDataMenu.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        }
+
         // Handle User Profile Dropdown - ALWAYS INITIALIZE
         const userDropdownToggle = document.getElementById('userDropdown');
         const userDropdownMenu = userDropdownToggle ? userDropdownToggle.nextElementSibling : null;
@@ -653,6 +795,12 @@
                 // Close obat medis dropdown if open
                 if (obatMedisMenu && obatMedisMenu.style) {
                     obatMedisMenu.style.display = 'none';
+                }
+
+                // Close master data dropdown if open
+                const masterDataMenu = document.getElementById('master-data-menu');
+                if (masterDataMenu && masterDataMenu.style) {
+                    masterDataMenu.style.display = 'none';
                 }
 
                 // Toggle user dropdown
