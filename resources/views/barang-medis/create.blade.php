@@ -327,6 +327,14 @@
                             
                         </div>
                     </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="stok_minimal" class="form-label">Stok Minimal</label>
+                        <input type="number" name="stok_minimal" class="form-control" id="stok_minimal" 
+                               placeholder="Contoh: 50" 
+                               value="{{ old('stok_minimal', 0) }}" 
+                               min="0">
+                        <small class="text-muted">Stok tidak boleh kurang dari nilai ini</small>
+                    </div>
                 </div>
                 <div class="mt-3">
                     <button type="submit" class="btn btn-primary">Simpan Barang</button>

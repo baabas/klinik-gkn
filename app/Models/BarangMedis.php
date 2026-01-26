@@ -40,6 +40,7 @@ class BarangMedis extends Model
         'isi_kemasan_satuan',
         'isi_per_satuan',
         'satuan_terkecil',
+        'stok_minimal',
     ];
 
     // --- RELASI ---
@@ -71,10 +72,10 @@ class BarangMedis extends Model
             ->where('perubahan', '>', 0)
             ->where(function ($query) {
                 $query->where('keterangan', 'not like', '%Distribusi ke%')
-                      ->where('keterangan', 'not like', '%Distribusi dari%')
-                      ->where('keterangan', 'not like', '%Resep%')
-                      ->where('keterangan', 'not like', '%Digunakan%')
-                      ->where('keterangan', 'not like', '%Koreksi%');
+                    ->where('keterangan', 'not like', '%Distribusi dari%')
+                    ->where('keterangan', 'not like', '%Resep%')
+                    ->where('keterangan', 'not like', '%Digunakan%')
+                    ->where('keterangan', 'not like', '%Koreksi%');
             });
     }
 
@@ -87,10 +88,10 @@ class BarangMedis extends Model
             ->where('perubahan', '>', 0)
             ->where(function ($query) {
                 $query->where('keterangan', 'not like', '%Distribusi ke%')
-                      ->where('keterangan', 'not like', '%Distribusi dari%')
-                      ->where('keterangan', 'not like', '%Resep%')
-                      ->where('keterangan', 'not like', '%Digunakan%')
-                      ->where('keterangan', 'not like', '%Koreksi%');
+                    ->where('keterangan', 'not like', '%Distribusi dari%')
+                    ->where('keterangan', 'not like', '%Resep%')
+                    ->where('keterangan', 'not like', '%Digunakan%')
+                    ->where('keterangan', 'not like', '%Koreksi%');
             })
             ->orderByDesc('tanggal_transaksi')
             ->orderByDesc('created_at');
@@ -114,10 +115,10 @@ class BarangMedis extends Model
             ->where('perubahan', '>', 0)
             ->where(function ($query) {
                 $query->where('keterangan', 'not like', '%Distribusi ke%')
-                      ->where('keterangan', 'not like', '%Distribusi dari%')
-                      ->where('keterangan', 'not like', '%Resep%')
-                      ->where('keterangan', 'not like', '%Digunakan%')
-                      ->where('keterangan', 'not like', '%Koreksi%');
+                    ->where('keterangan', 'not like', '%Distribusi dari%')
+                    ->where('keterangan', 'not like', '%Resep%')
+                    ->where('keterangan', 'not like', '%Digunakan%')
+                    ->where('keterangan', 'not like', '%Koreksi%');
             })
             ->whereYear('tanggal_transaksi', now()->year)
             ->whereMonth('tanggal_transaksi', now()->month);

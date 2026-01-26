@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\RekamMedis;
-use App\Models\User;
-use App\Models\DaftarPenyakit;
-use App\Models\StokBarang;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\View\View;
-use Illuminate\Http\RedirectResponse;
 use App\Models\BarangMedis;
+use App\Models\DaftarPenyakit;
+use App\Models\RekamMedis;
+use App\Models\StokBarang;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class RekamMedisController extends Controller
 {
@@ -20,10 +20,10 @@ class RekamMedisController extends Controller
     {
         $user = $pasien;
         $lokasiId = Auth::user()->id_lokasi;
-        $obat = BarangMedis::whereHas('stok', fn($q) => $q->where('id_lokasi', $lokasiId)->where('jumlah', '>', 0))
-                ->with(['stok' => fn($q) => $q->where('id_lokasi', $lokasiId)])
-                ->orderBy('nama_obat')
-                ->get();
+        $obat = BarangMedis::whereHas('stok', fn ($q) => $q->where('id_lokasi', $lokasiId)->where('jumlah', '>', 0))
+            ->with(['stok' => fn ($q) => $q->where('id_lokasi', $lokasiId)])
+            ->orderBy('nama_obat')
+            ->get();
 
         return view('rekam-medis.create', compact('user', 'obat'));
     }
@@ -46,17 +46,17 @@ class RekamMedisController extends Controller
         DB::beginTransaction();
         try {
             $tanggalKunjungan = Carbon::parse($validated['tanggal_kunjungan'], config('app.timezone'));
-            
+
             // Ambil snapshot kantor/lokasi gedung saat kunjungan
             $kantorSaatKunjungan = null;
             $lokasiGedungSaatKunjungan = null;
-            
+
             if ($user->nip && $user->karyawan) {
                 $kantorSaatKunjungan = $user->karyawan->kantor;
             } elseif ($user->nik && $user->nonKaryawan) {
                 $lokasiGedungSaatKunjungan = $user->nonKaryawan->lokasi_gedung;
             }
-            
+
             $rekamMedis = RekamMedis::create([
                 'nip_pasien' => $user->nip,
                 'nik_pasien' => $user->nik,
@@ -69,24 +69,39 @@ class RekamMedisController extends Controller
                 'treatment' => $validated['terapi'] ?? null,
             ]);
 
-            if (!empty($validated['diagnosa'])) {
+            if (! empty($validated['diagnosa'])) {
                 foreach ($validated['diagnosa'] as $diag) {
-                    if (!empty($diag['kode_penyakit'])) {
+                    if (! empty($diag['kode_penyakit'])) {
                         $rekamMedis->detailDiagnosa()->create(['ICD10' => $diag['kode_penyakit']]);
                     }
                 }
             }
 
-            if (!empty($validated['obat'])) {
+            if (! empty($validated['obat'])) {
                 $idLokasiDokter = Auth::user()->id_lokasi;
                 foreach ($validated['obat'] as $resep) {
-                    if (!empty($resep['id_obat']) && !empty($resep['jumlah'])) {
+                    if (! empty($resep['id_obat']) && ! empty($resep['jumlah'])) {
                         $stok = StokBarang::where('id_barang', $resep['id_obat'])->where('id_lokasi', $idLokasiDokter)->first();
-                        if (!$stok || $stok->jumlah < $resep['jumlah']) {
+                        $barangMedis = BarangMedis::find($resep['id_obat']);
+
+                        if (! $stok || $stok->jumlah < $resep['jumlah']) {
                             DB::rollBack();
-                            $namaObat = BarangMedis::find($resep['id_obat'])->nama_obat ?? 'Obat';
-                            return redirect()->back()->withInput()->with('error', "Stok untuk {$namaObat} tidak mencukupi. Stok tersedia: " . ($stok->jumlah ?? 0));
+                            $namaObat = $barangMedis->nama_obat ?? 'Obat';
+
+                            return redirect()->back()->withInput()->with('error', "Stok untuk {$namaObat} tidak mencukupi. Stok tersedia: ".($stok->jumlah ?? 0));
                         }
+
+                        // Validasi stok minimal
+                        $stokSetelahResep = $stok->jumlah - $resep['jumlah'];
+                        $stokMinimal = $barangMedis->stok_minimal ?? 0;
+
+                        if ($stokSetelahResep < $stokMinimal) {
+                            DB::rollBack();
+                            $namaObat = $barangMedis->nama_obat ?? 'Obat';
+
+                            return redirect()->back()->withInput()->with('error', "Resep tidak dapat diproses. Stok {$namaObat} akan berada di bawah batas minimal ({$stokMinimal}). Stok tersedia: {$stok->jumlah}, setelah resep: {$stokSetelahResep}");
+                        }
+
                         $rekamMedis->resepObat()->create([
                             'id_obat' => $resep['id_obat'],
                             'jumlah' => $resep['jumlah'],
@@ -98,18 +113,20 @@ class RekamMedisController extends Controller
             }
 
             DB::commit();
-            
+
             // [BARU] Redirect ke halaman print resep jika ada resep obat
-            if (!empty($validated['obat'])) {
+            if (! empty($validated['obat'])) {
                 return redirect()->route('rekam-medis.print-resep', $rekamMedis->id_rekam_medis)
                     ->with('success', 'Rekam medis berhasil ditambahkan. Silakan print resep untuk pasien.');
             }
-            
+
             $redirectRoute = $user->nip ? route('pasien.show', $user->nip) : route('pasien.show_non_karyawan', $user->nik);
+
             return redirect($redirectRoute)->with('success', 'Rekam medis berhasil ditambahkan.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->withInput()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+
+            return redirect()->back()->withInput()->with('error', 'Terjadi kesalahan: '.$e->getMessage());
         }
     }
 
@@ -119,28 +136,29 @@ class RekamMedisController extends Controller
         if ($penyakit) {
             return response()->json(['success' => true, 'nama_penyakit' => $penyakit->nama_penyakit, 'kode_penyakit' => $penyakit->ICD10]);
         }
+
         return response()->json(['success' => false, 'nama_penyakit' => 'Kode ICD-10 tidak ditemukan.'], 404);
     }
 
     public function searchPenyakit(Request $request)
     {
         $query = $request->get('q');
-        
+
         if (strlen($query) < 2) {
             return response()->json(['success' => false, 'data' => []]);
         }
 
         // Search by name or ICD10 code, limit to 3 results
-        $penyakit = DaftarPenyakit::where(function($q) use ($query) {
-                $q->where('nama_penyakit', 'LIKE', "%{$query}%")
-                  ->orWhere('ICD10', 'LIKE', "%{$query}%");
-            })
+        $penyakit = DaftarPenyakit::where(function ($q) use ($query) {
+            $q->where('nama_penyakit', 'LIKE', "%{$query}%")
+                ->orWhere('ICD10', 'LIKE', "%{$query}%");
+        })
             ->limit(3)
             ->get(['ICD10 as kode_penyakit', 'nama_penyakit']);
 
         return response()->json([
             'success' => true,
-            'data' => $penyakit
+            'data' => $penyakit,
         ]);
     }
 
@@ -148,43 +166,43 @@ class RekamMedisController extends Controller
     {
         $query = $request->get('q');
         $lokasiId = Auth::user()->id_lokasi;
-        
+
         if (strlen($query) < 2) {
             return response()->json(['success' => false, 'data' => []]);
         }
 
         // Search medicines by name or code, limit to 3 results, only with stock
-        $obat = BarangMedis::whereHas('stok', function($q) use ($lokasiId) {
-                $q->where('id_lokasi', $lokasiId)->where('jumlah', '>', 0);
-            })
-            ->where(function($q) use ($query) {
+        $obat = BarangMedis::whereHas('stok', function ($q) use ($lokasiId) {
+            $q->where('id_lokasi', $lokasiId)->where('jumlah', '>', 0);
+        })
+            ->where(function ($q) use ($query) {
                 $q->where('nama_obat', 'LIKE', "%{$query}%")
-                  ->orWhere('kode_obat', 'LIKE', "%{$query}%");
+                    ->orWhere('kode_obat', 'LIKE', "%{$query}%");
             })
-            ->with(['stok' => function($q) use ($lokasiId) {
+            ->with(['stok' => function ($q) use ($lokasiId) {
                 $q->where('id_lokasi', $lokasiId);
             }])
             ->limit(3)
             ->get(['id_obat', 'nama_obat', 'kode_obat'])
-            ->map(function($item) {
+            ->map(function ($item) {
                 return [
                     'id_obat' => $item->id_obat,
                     'nama_obat' => $item->nama_obat,
                     'kode_obat' => $item->kode_obat,
-                    'stok' => $item->stok->first()->jumlah ?? 0
+                    'stok' => $item->stok->first()->jumlah ?? 0,
                 ];
             });
 
         return response()->json([
             'success' => true,
-            'data' => $obat
+            'data' => $obat,
         ]);
     }
 
     /**
      * [BARU] Menampilkan halaman print resep obat untuk struk thermal 80mm.
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\View\View
      */
     public function printResep($id)
@@ -193,7 +211,7 @@ class RekamMedisController extends Controller
             'resepObat.obat',
             'dokter.karyawan',
             'pasien.karyawan',
-            'pasienNonKaryawan.user'  // Load user untuk nama non-karyawan
+            'pasienNonKaryawan.user',  // Load user untuk nama non-karyawan
         ])->findOrFail($id);
 
         return view('rekam-medis.print-resep', compact('rekamMedis'));

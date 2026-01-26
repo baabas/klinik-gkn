@@ -3,21 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\BarangMedis;
-use App\Models\LokasiKlinik;
-use App\Models\DistribusiBarang;
-use App\Models\SuratDistribusi;
 use App\Models\DetailSuratDistribusi;
-use App\Models\MasterWhatsappValidator;
-use App\Models\MasterSatuan;
+use App\Models\DistribusiBarang;
+use App\Models\LokasiKlinik;
 use App\Models\MasterIsiKemasan;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use App\Models\StokHistory;
+use App\Models\MasterSatuan;
+use App\Models\MasterWhatsappValidator;
 use App\Models\StokBarang;
+use App\Models\StokHistory;
+use App\Models\SuratDistribusi;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class BarangMedisController extends Controller
 {
@@ -66,8 +65,8 @@ class BarangMedisController extends Controller
             }])
             ->with(['stokMasukBulanIni' => function ($query) use ($idLokasi) {
                 $query->whereYear('tanggal_transaksi', now()->year)
-                      ->whereMonth('tanggal_transaksi', now()->month)
-                      ->where('perubahan', '>', 0);
+                    ->whereMonth('tanggal_transaksi', now()->month)
+                    ->where('perubahan', '>', 0);
                 if ($idLokasi) {
                     $query->where('id_lokasi', $idLokasi);
                 }
@@ -76,8 +75,8 @@ class BarangMedisController extends Controller
             ->when($search, function ($query, $search) {
                 return $query->where(function ($q) use ($search) {
                     $q->where('nama_obat', 'like', "%{$search}%")
-                      ->orWhere('kode_obat', 'like', "%{$search}%")
-                      ->orWhere('kategori_barang', 'like', "%{$search}%");
+                        ->orWhere('kode_obat', 'like', "%{$search}%")
+                        ->orWhere('kategori_barang', 'like', "%{$search}%");
                 });
             })
             ->orderBy('nama_obat')
@@ -136,8 +135,8 @@ class BarangMedisController extends Controller
                 }])
                 ->with(['stokMasukBulanIni' => function ($query) use ($idLokasi) {
                     $query->whereYear('tanggal_transaksi', now()->year)
-                          ->whereMonth('tanggal_transaksi', now()->month)
-                          ->where('perubahan', '>', 0);
+                        ->whereMonth('tanggal_transaksi', now()->month)
+                        ->where('perubahan', '>', 0);
                     if ($idLokasi) {
                         $query->where('id_lokasi', $idLokasi);
                     }
@@ -146,8 +145,8 @@ class BarangMedisController extends Controller
                 ->when($search, function ($query, $search) {
                     return $query->where(function ($q) use ($search) {
                         $q->where('nama_obat', 'like', "%{$search}%")
-                          ->orWhere('kode_obat', 'like', "%{$search}%")
-                          ->orWhere('kategori_barang', 'like', "%{$search}%");
+                            ->orWhere('kode_obat', 'like', "%{$search}%")
+                            ->orWhere('kategori_barang', 'like', "%{$search}%");
                     });
                 })
                 ->orderBy('nama_obat')
@@ -161,21 +160,21 @@ class BarangMedisController extends Controller
                     'pagination' => (string) $barang->appends($request->query())->links(),
                     'total' => $barang->total(),
                     'current_page' => $barang->currentPage(),
-                    'last_page' => $barang->lastPage()
+                    'last_page' => $barang->lastPage(),
                 ]);
             }
 
             return view('barang-medis.index', compact('barang', 'search'));
 
         } catch (\Exception $e) {
-            Log::error('Error in BarangMedisController@search: ' . $e->getMessage());
+            Log::error('Error in BarangMedisController@search: '.$e->getMessage());
 
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Terjadi kesalahan saat mencari data: ' . $e->getMessage(),
+                    'message' => 'Terjadi kesalahan saat mencari data: '.$e->getMessage(),
                     'table_body' => '<tr><td colspan="14" class="text-center text-danger py-4"><i class="bi bi-exclamation-triangle mb-2" style="font-size: 2rem;"></i><div>Terjadi kesalahan saat mencari data. Silakan refresh halaman.</div></td></tr>',
-                    'pagination' => ''
+                    'pagination' => '',
                 ], 500);
             }
 
@@ -188,7 +187,7 @@ class BarangMedisController extends Controller
      */
     public function create()
     {
-        if (!Auth::user()->hasRole('PENGADAAN')) {
+        if (! Auth::user()->hasRole('PENGADAAN')) {
             abort(403, 'Anda tidak memiliki hak akses.');
         }
 
@@ -219,7 +218,7 @@ class BarangMedisController extends Controller
      */
     public function store(Request $request)
     {
-        if (!Auth::user()->hasRole('PENGADAAN')) {
+        if (! Auth::user()->hasRole('PENGADAAN')) {
             abort(403, 'Anda tidak memiliki hak akses.');
         }
 
@@ -228,15 +227,15 @@ class BarangMedisController extends Controller
             ->pluck('nama_satuan')
             ->toArray();
         $activeSatuanList[] = 'lainnya'; // Add 'lainnya' option
-        $satuanValidation = 'required|string|in:' . implode(',', $activeSatuanList);
+        $satuanValidation = 'required|string|in:'.implode(',', $activeSatuanList);
 
         // Get active isi kemasan from MasterIsiKemasan table (convert to lowercase for validation)
         $activeIsiKemasanList = MasterIsiKemasan::where('is_active', true)
             ->pluck('nama_isi_kemasan')
-            ->map(fn($item) => strtolower($item))
+            ->map(fn ($item) => strtolower($item))
             ->toArray();
         $activeIsiKemasanList[] = 'lainnya'; // Add 'lainnya' option
-        $isiKemasanValidation = 'required|string|in:' . implode(',', $activeIsiKemasanList);
+        $isiKemasanValidation = 'required|string|in:'.implode(',', $activeIsiKemasanList);
 
         $validated = $request->validate([
             'kategori_barang' => 'required|string|in:Obat,BMHP,Alkes,APD',
@@ -247,6 +246,7 @@ class BarangMedisController extends Controller
             'isi_per_satuan' => 'required|integer|min:1',
             'satuan_terkecil' => $satuanValidation,
             'satuan_terkecil_custom' => 'required_if:satuan_terkecil,lainnya|nullable|string|max:50',
+            'stok_minimal' => 'nullable|integer|min:0',
         ]);
 
         // Process custom values
@@ -273,7 +273,7 @@ class BarangMedisController extends Controller
         if ($existingBarang) {
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Obat/Alat Medis dengan nama "' . $validated['nama_obat'] . '", kemasan "' . $validated['isi_kemasan_satuan'] . '", dan satuan terkecil "' . $validated['satuan_terkecil'] . '" sudah terdaftar dalam sistem. Jika Anda ingin menambahkan varian berbeda, gunakan kemasan atau satuan terkecil yang berbeda.');
+                ->with('error', 'Obat/Alat Medis dengan nama "'.$validated['nama_obat'].'", kemasan "'.$validated['isi_kemasan_satuan'].'", dan satuan terkecil "'.$validated['satuan_terkecil'].'" sudah terdaftar dalam sistem. Jika Anda ingin menambahkan varian berbeda, gunakan kemasan atau satuan terkecil yang berbeda.');
         }
 
         // Generate kode otomatis berdasarkan kategori
@@ -294,7 +294,7 @@ class BarangMedisController extends Controller
             foreach ($lokasi as $loc) {
                 $barangBaru->stok()->create([
                     'id_lokasi' => $loc->id,
-                    'jumlah' => 0
+                    'jumlah' => 0,
                 ]);
             }
 
@@ -308,10 +308,12 @@ class BarangMedisController extends Controller
                 ->update(['dpb.id_barang' => $barangBaru->id_obat]);
 
             DB::commit();
-            return redirect()->route('barang-medis.create')->with('success', 'Barang baru berhasil ditambahkan dengan kode: ' . $kodeObat . '. Item ini telah dihubungkan dengan permintaan yang relevan.');
+
+            return redirect()->route('barang-medis.create')->with('success', 'Barang baru berhasil ditambahkan dengan kode: '.$kodeObat.'. Item ini telah dihubungkan dengan permintaan yang relevan.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Gagal menambahkan barang baru: ' . $e->getMessage())->withInput();
+
+            return redirect()->back()->with('error', 'Gagal menambahkan barang baru: '.$e->getMessage())->withInput();
         }
     }
 
@@ -324,15 +326,15 @@ class BarangMedisController extends Controller
             'Obat' => 'OBT',
             'BMHP' => 'BHP',
             'Alkes' => 'ALS',
-            'APD' => 'APD'
+            'APD' => 'APD',
         ];
 
         $prefix = $prefixMap[$kategori] ?? 'OBT';
 
         // Ambil nomor urut terakhir untuk kategori ini
-        $lastCode = BarangMedis::where('kode_obat', 'like', $prefix . '%')
-                               ->orderBy('kode_obat', 'desc')
-                               ->first();
+        $lastCode = BarangMedis::where('kode_obat', 'like', $prefix.'%')
+            ->orderBy('kode_obat', 'desc')
+            ->first();
 
         if ($lastCode) {
             // Extract nomor dari kode terakhir (misal: OBT001 -> 001)
@@ -343,7 +345,7 @@ class BarangMedisController extends Controller
         }
 
         // Format dengan padding 3 digit
-        return $prefix . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+        return $prefix.str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -366,7 +368,7 @@ class BarangMedisController extends Controller
      */
     public function edit(BarangMedis $barangMedi)
     {
-        if (!Auth::user()->hasRole('PENGADAAN')) {
+        if (! Auth::user()->hasRole('PENGADAAN')) {
             abort(403, 'Anda tidak memiliki hak akses.');
         }
 
@@ -378,7 +380,7 @@ class BarangMedisController extends Controller
      */
     public function update(Request $request, BarangMedis $barangMedi)
     {
-        if (!Auth::user()->hasRole('PENGADAAN')) {
+        if (! Auth::user()->hasRole('PENGADAAN')) {
             abort(403, 'Anda tidak memiliki hak akses.');
         }
 
@@ -387,15 +389,15 @@ class BarangMedisController extends Controller
             ->pluck('nama_satuan')
             ->toArray();
         $activeSatuanList[] = 'lainnya'; // Add 'lainnya' option
-        $satuanValidation = 'required|string|in:' . implode(',', $activeSatuanList);
+        $satuanValidation = 'required|string|in:'.implode(',', $activeSatuanList);
 
         // Get active isi kemasan from MasterIsiKemasan table (convert to lowercase for validation)
         $activeIsiKemasanList = MasterIsiKemasan::where('is_active', true)
             ->pluck('nama_isi_kemasan')
-            ->map(fn($item) => strtolower($item))
+            ->map(fn ($item) => strtolower($item))
             ->toArray();
         $activeIsiKemasanList[] = 'lainnya'; // Add 'lainnya' option
-        $isiKemasanValidation = 'required|string|in:' . implode(',', $activeIsiKemasanList);
+        $isiKemasanValidation = 'required|string|in:'.implode(',', $activeIsiKemasanList);
 
         $validated = $request->validate([
             'kategori_barang' => 'required|string|in:Obat,BMHP,Alkes,APD',
@@ -406,6 +408,7 @@ class BarangMedisController extends Controller
             'isi_per_satuan' => 'required|integer|min:1',
             'satuan_terkecil' => $satuanValidation,
             'satuan_terkecil_custom' => 'required_if:satuan_terkecil,lainnya|nullable|string|max:50',
+            'stok_minimal' => 'nullable|integer|min:0',
         ]);
 
         // Process custom values
@@ -433,7 +436,7 @@ class BarangMedisController extends Controller
         if ($existingBarang) {
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Obat/Alat Medis dengan nama "' . $validated['nama_obat'] . '", kemasan "' . $validated['isi_kemasan_satuan'] . '", dan satuan terkecil "' . $validated['satuan_terkecil'] . '" sudah terdaftar dalam sistem.');
+                ->with('error', 'Obat/Alat Medis dengan nama "'.$validated['nama_obat'].'", kemasan "'.$validated['isi_kemasan_satuan'].'", dan satuan terkecil "'.$validated['satuan_terkecil'].'" sudah terdaftar dalam sistem.');
         }
 
         // Set kemasan ke "Box" secara otomatis
@@ -455,11 +458,11 @@ class BarangMedisController extends Controller
                     $jumlahKemasan = (int) ($koreksi['kemasan'] ?? 0);
                     $jumlahIsiKemasan = (int) ($koreksi['isi_kemasan'] ?? 0);
                     $jumlahSatuan = (int) ($koreksi['satuan'] ?? 0);
-                    
+
                     // Hitung total dalam satuan terkecil
                     // Formula: (kemasan × isi_kemasan_jumlah × isi_per_satuan) + (isi_kemasan × isi_per_satuan) + satuan
-                    $totalSatuan = ($jumlahKemasan * $barangMedi->isi_kemasan_jumlah * $barangMedi->isi_per_satuan) 
-                                 + ($jumlahIsiKemasan * $barangMedi->isi_per_satuan) 
+                    $totalSatuan = ($jumlahKemasan * $barangMedi->isi_kemasan_jumlah * $barangMedi->isi_per_satuan)
+                                 + ($jumlahIsiKemasan * $barangMedi->isi_per_satuan)
                                  + $jumlahSatuan;
 
                     // Skip jika total 0
@@ -471,7 +474,7 @@ class BarangMedisController extends Controller
                     $stok = StokBarang::firstOrCreate(
                         [
                             'id_barang' => $barangMedi->id_obat,
-                            'id_lokasi' => $idLokasi
+                            'id_lokasi' => $idLokasi,
                         ],
                         ['jumlah' => 0]
                     );
@@ -483,9 +486,25 @@ class BarangMedisController extends Controller
                     if ($koreksi['type'] === 'kurang' && $stok->jumlah < $totalSatuan) {
                         DB::rollBack();
                         $lokasiNama = LokasiKlinik::find($idLokasi)->nama_lokasi ?? 'Lokasi';
+
                         return redirect()->back()
                             ->with('error', "Stok di {$lokasiNama} tidak mencukupi. Stok saat ini: {$stok->jumlah} {$barangMedi->satuan_terkecil}")
                             ->withInput();
+                    }
+
+                    // Validasi stok minimal jika mengurangi
+                    if ($koreksi['type'] === 'kurang') {
+                        $stokSetelahKoreksi = $stok->jumlah - $totalSatuan;
+                        $stokMinimal = $barangMedi->stok_minimal ?? 0;
+
+                        if ($stokSetelahKoreksi < $stokMinimal) {
+                            DB::rollBack();
+                            $lokasiNama = LokasiKlinik::find($idLokasi)->nama_lokasi ?? 'Lokasi';
+
+                            return redirect()->back()
+                                ->with('error', "Koreksi tidak dapat dilakukan. Stok di {$lokasiNama} akan berada di bawah batas minimal ({$stokMinimal}). Stok saat ini: {$stok->jumlah}, setelah koreksi: {$stokSetelahKoreksi}")
+                                ->withInput();
+                        }
                     }
 
                     // Update stok
@@ -502,8 +521,8 @@ class BarangMedisController extends Controller
                         'stok_sesudah' => $stok->jumlah,
                         'jumlah_kemasan' => $jumlahKemasan,
                         'tanggal_transaksi' => now(),
-                        'expired_at' => !empty($koreksi['expired_at']) ? $koreksi['expired_at'] : null,
-                        'keterangan' => 'Koreksi Stok: ' . ($koreksi['keterangan'] ?? ($koreksi['type'] === 'tambah' ? 'Penambahan' : 'Pengurangan') . " {$totalSatuan} {$barangMedi->satuan_terkecil}")
+                        'expired_at' => ! empty($koreksi['expired_at']) ? $koreksi['expired_at'] : null,
+                        'keterangan' => 'Koreksi Stok: '.($koreksi['keterangan'] ?? ($koreksi['type'] === 'tambah' ? 'Penambahan' : 'Pengurangan')." {$totalSatuan} {$barangMedi->satuan_terkecil}"),
                     ]);
                 }
 
@@ -513,9 +532,10 @@ class BarangMedisController extends Controller
                 return redirect()->route('barang-medis.index')->with('success', 'Data barang dan koreksi stok berhasil diperbarui.');
             } catch (\Exception $e) {
                 DB::rollBack();
-                Log::error('Error updating barang with stock correction: ' . $e->getMessage());
+                Log::error('Error updating barang with stock correction: '.$e->getMessage());
+
                 return redirect()->back()
-                    ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
+                    ->with('error', 'Terjadi kesalahan: '.$e->getMessage())
                     ->withInput();
             }
         }
@@ -530,7 +550,7 @@ class BarangMedisController extends Controller
      */
     public function destroy(BarangMedis $barangMedi)
     {
-        if (!Auth::user()->hasRole('PENGADAAN')) {
+        if (! Auth::user()->hasRole('PENGADAAN')) {
             abort(403, 'Anda tidak memiliki hak akses.');
         }
 
@@ -554,18 +574,18 @@ class BarangMedisController extends Controller
             });
 
             return redirect()->route('barang-medis.index')->with('success',
-                'Barang "' . $namaBarang . '" berhasil dihapus beserta semua data terkait.'
+                'Barang "'.$namaBarang.'" berhasil dihapus beserta semua data terkait.'
             );
 
         } catch (\Exception $e) {
-            Log::error('Error deleting barang medis: ' . $e->getMessage(), [
+            Log::error('Error deleting barang medis: '.$e->getMessage(), [
                 'barang_id' => $barangMedi->id_obat,
                 'barang_nama' => $namaBarang,
-                'user_id' => Auth::id()
+                'user_id' => Auth::id(),
             ]);
 
             return redirect()->back()->with('error',
-                'Gagal menghapus barang "' . $namaBarang . '": ' . $e->getMessage()
+                'Gagal menghapus barang "'.$namaBarang.'": '.$e->getMessage()
             );
         }
     }
@@ -598,16 +618,16 @@ class BarangMedisController extends Controller
         $user = Auth::user();
 
         // Izinkan PENGADAAN dan DOKTER untuk melakukan distribusi
-        if (!$user->hasRole('PENGADAAN') && !$user->hasRole('DOKTER')) {
+        if (! $user->hasRole('PENGADAAN') && ! $user->hasRole('DOKTER')) {
             abort(403, 'Anda tidak memiliki hak akses.');
         }
 
         $validated = $request->validate([
             'lokasi_asal' => 'required|exists:lokasi_klinik,id',
             'lokasi_tujuan' => 'required|exists:lokasi_klinik,id|different:lokasi_asal',
-            'jumlah' => 'required|integer|min:1'
+            'jumlah' => 'required|integer|min:1',
         ], [
-            'lokasi_tujuan.different' => 'Lokasi tujuan tidak boleh sama dengan lokasi asal.'
+            'lokasi_tujuan.different' => 'Lokasi tujuan tidak boleh sama dengan lokasi asal.',
         ]);
 
         $jumlahDistribusi = $validated['jumlah'];
@@ -637,6 +657,14 @@ class BarangMedisController extends Controller
                     throw new \Exception("Stok tidak mencukupi di lokasi asal. Stok tersedia: {$stokSebelumAsal}");
                 }
 
+                // Validasi stok minimal
+                $stokSetelahDistribusi = $stokSebelumAsal - $jumlahDistribusi;
+                $stokMinimal = $barang->stok_minimal ?? 0;
+
+                if ($stokMinimal > 0 && $stokSetelahDistribusi < $stokMinimal) {
+                    throw new \Exception("Distribusi tidak dapat dilakukan. Stok akan berada di bawah batas minimal ({$stokMinimal}). Stok tersedia: {$stokSebelumAsal}, setelah distribusi: {$stokSetelahDistribusi}");
+                }
+
                 // Kurangi stok di lokasi asal
                 $stokAsal->decrement('jumlah', $jumlahDistribusi);
 
@@ -648,8 +676,8 @@ class BarangMedisController extends Controller
                     'stok_sebelum' => $stokSebelumAsal,
                     'stok_sesudah' => $stokSebelumAsal - $jumlahDistribusi,
                     'tanggal_transaksi' => now(),
-                    'keterangan' => 'Distribusi ke ' . LokasiKlinik::find($idLokasiTujuan)->nama_lokasi,
-                    'user_id' => Auth::id()
+                    'keterangan' => 'Distribusi ke '.LokasiKlinik::find($idLokasiTujuan)->nama_lokasi,
+                    'user_id' => Auth::id(),
                 ]);
 
                 // --- PROSES LOKASI TUJUAN ---
@@ -669,8 +697,8 @@ class BarangMedisController extends Controller
                     'stok_sebelum' => $stokSebelumTujuan,
                     'stok_sesudah' => $stokSebelumTujuan + $jumlahDistribusi,
                     'tanggal_transaksi' => now(),
-                    'keterangan' => 'Distribusi dari ' . LokasiKlinik::find($idLokasiAsal)->nama_lokasi,
-                    'user_id' => Auth::id()
+                    'keterangan' => 'Distribusi dari '.LokasiKlinik::find($idLokasiAsal)->nama_lokasi,
+                    'user_id' => Auth::id(),
                 ]);
 
                 // [BARU] LOG DISTRIBUSI UNTUK AUDIT PENGADAAN
@@ -695,7 +723,7 @@ class BarangMedisController extends Controller
             );
 
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Gagal melakukan distribusi: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal melakukan distribusi: '.$e->getMessage());
         }
     }
 
@@ -707,7 +735,7 @@ class BarangMedisController extends Controller
         $user = Auth::user();
 
         // Izinkan PENGADAAN dan DOKTER untuk melakukan distribusi
-        if (!$user->hasRole('PENGADAAN') && !$user->hasRole('DOKTER')) {
+        if (! $user->hasRole('PENGADAAN') && ! $user->hasRole('DOKTER')) {
             abort(403, 'Anda tidak memiliki hak akses.');
         }
 
@@ -718,7 +746,7 @@ class BarangMedisController extends Controller
             'catatan' => 'nullable|string|max:500',
             'items' => 'required|array|min:1',
             'items.*.id_barang' => 'required|exists:barang_medis,id_obat',
-            'items.*.jumlah' => 'required|integer|min:1'
+            'items.*.jumlah' => 'required|integer|min:1',
         ], [
             'lokasi_tujuan.different' => 'Lokasi tujuan tidak boleh sama dengan lokasi asal.',
             'items.required' => 'Pilih minimal satu obat untuk didistribusikan.',
@@ -749,7 +777,7 @@ class BarangMedisController extends Controller
 
         try {
             DB::transaction(function () use ($items, $idLokasiAsal, $idLokasiTujuan, $nomorWaValidator, $catatan, &$successCount, &$failedItems, &$successItems, &$suratDistribusi) {
-                
+
                 // Buat Surat Distribusi terlebih dahulu
                 $suratDistribusi = SuratDistribusi::create([
                     'nomor_surat' => SuratDistribusi::generateNomorSurat(),
@@ -768,8 +796,9 @@ class BarangMedisController extends Controller
                     $jumlahDistribusi = $item['jumlah'];
 
                     $barang = BarangMedis::find($idBarang);
-                    if (!$barang) {
+                    if (! $barang) {
                         $failedItems[] = "Barang ID {$idBarang} tidak ditemukan";
+
                         continue;
                     }
 
@@ -783,6 +812,7 @@ class BarangMedisController extends Controller
 
                     if ($stokSebelumAsal < $jumlahDistribusi) {
                         $failedItems[] = "{$barang->nama_obat} (stok tidak cukup: {$stokSebelumAsal})";
+
                         continue;
                     }
 
@@ -797,8 +827,8 @@ class BarangMedisController extends Controller
                         'stok_sebelum' => $stokSebelumAsal,
                         'stok_sesudah' => $stokSebelumAsal - $jumlahDistribusi,
                         'tanggal_transaksi' => now(),
-                        'keterangan' => 'Distribusi ke ' . LokasiKlinik::find($idLokasiTujuan)->nama_lokasi,
-                        'user_id' => Auth::id()
+                        'keterangan' => 'Distribusi ke '.LokasiKlinik::find($idLokasiTujuan)->nama_lokasi,
+                        'user_id' => Auth::id(),
                     ]);
 
                     // --- PROSES LOKASI TUJUAN ---
@@ -818,8 +848,8 @@ class BarangMedisController extends Controller
                         'stok_sebelum' => $stokSebelumTujuan,
                         'stok_sesudah' => $stokSebelumTujuan + $jumlahDistribusi,
                         'tanggal_transaksi' => now(),
-                        'keterangan' => 'Distribusi dari ' . LokasiKlinik::find($idLokasiAsal)->nama_lokasi,
-                        'user_id' => Auth::id()
+                        'keterangan' => 'Distribusi dari '.LokasiKlinik::find($idLokasiAsal)->nama_lokasi,
+                        'user_id' => Auth::id(),
                     ]);
 
                     // LOG DISTRIBUSI UNTUK AUDIT PENGADAAN
@@ -829,7 +859,7 @@ class BarangMedisController extends Controller
                         'id_lokasi_tujuan' => $idLokasiTujuan,
                         'id_user' => Auth::id(),
                         'jumlah' => $jumlahDistribusi,
-                        'keterangan' => 'Surat: ' . $suratDistribusi->nomor_surat,
+                        'keterangan' => 'Surat: '.$suratDistribusi->nomor_surat,
                         'status' => 'approved',
                         'validated_by' => null,
                         'validated_at' => null,
@@ -857,21 +887,21 @@ class BarangMedisController extends Controller
             $lokasiTujuan = LokasiKlinik::find($idLokasiTujuan)->nama_lokasi;
 
             $message = "Berhasil mendistribusikan {$successCount} jenis obat dari {$lokasiAsal} ke {$lokasiTujuan}.";
-            
+
             if (count($failedItems) > 0) {
-                $message .= " Gagal: " . implode(', ', $failedItems);
+                $message .= ' Gagal: '.implode(', ', $failedItems);
             }
 
             // Jika surat berhasil dibuat, redirect ke halaman cetak surat
             if ($suratDistribusi) {
                 return redirect()->route('surat-distribusi.show', $suratDistribusi->id_surat)
-                    ->with('success', $message . ' Silakan cetak surat distribusi.');
+                    ->with('success', $message.' Silakan cetak surat distribusi.');
             }
 
             return redirect()->back()->with('success', $message);
 
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Gagal melakukan distribusi: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal melakukan distribusi: '.$e->getMessage());
         }
     }
 
@@ -880,7 +910,7 @@ class BarangMedisController extends Controller
         try {
             $user = Auth::user();
 
-            if (!$user->hasRole('PENGADAAN')) {
+            if (! $user->hasRole('PENGADAAN')) {
                 abort(403, 'Anda tidak memiliki hak akses.');
             }
 
@@ -933,13 +963,13 @@ class BarangMedisController extends Controller
 
             $pdf = Pdf::loadView('barang-medis.pdf', $data)->setPaper('A4', 'landscape');
 
-            return $pdf->download('Daftar_Obat_Alat_Medis_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+            return $pdf->download('Daftar_Obat_Alat_Medis_'.now()->format('Y-m-d_H-i-s').'.pdf');
 
         } catch (\Exception $e) {
-            Log::error('PDF Generation Error: ' . $e->getMessage());
-            Log::error('PDF Generation Stack Trace: ' . $e->getTraceAsString());
+            Log::error('PDF Generation Error: '.$e->getMessage());
+            Log::error('PDF Generation Stack Trace: '.$e->getTraceAsString());
 
-            return response('Error generating PDF: ' . $e->getMessage(), 500);
+            return response('Error generating PDF: '.$e->getMessage(), 500);
         }
     }
 }
