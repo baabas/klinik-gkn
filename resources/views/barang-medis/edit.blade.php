@@ -69,6 +69,18 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
+
+                                <div class="mb-3">
+                                    <label for="stok_minimal" class="form-label">Stok Minimal</label>
+                                    <input type="number" class="form-control @error('stok_minimal') is-invalid @enderror" 
+                                           id="stok_minimal" name="stok_minimal" 
+                                           value="{{ old('stok_minimal', $barangMedi->stok_minimal ?? 0) }}" 
+                                           min="0">
+                                    <div class="form-text">Stok tidak boleh kurang dari nilai ini</div>
+                                    @error('stok_minimal')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             </div>
 
                             <!-- Kolom Kanan - Koreksi Stok -->

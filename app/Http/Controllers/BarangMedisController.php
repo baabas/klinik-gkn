@@ -247,6 +247,7 @@ class BarangMedisController extends Controller
             'isi_per_satuan' => 'required|integer|min:1',
             'satuan_terkecil' => $satuanValidation,
             'satuan_terkecil_custom' => 'required_if:satuan_terkecil,lainnya|nullable|string|max:50',
+            'stok_minimal' => 'nullable|integer|min:0',
         ]);
 
         // Process custom values
@@ -406,6 +407,7 @@ class BarangMedisController extends Controller
             'isi_per_satuan' => 'required|integer|min:1',
             'satuan_terkecil' => $satuanValidation,
             'satuan_terkecil_custom' => 'required_if:satuan_terkecil,lainnya|nullable|string|max:50',
+            'stok_minimal' => 'nullable|integer|min:0',
         ]);
 
         // Process custom values
@@ -486,6 +488,20 @@ class BarangMedisController extends Controller
                         return redirect()->back()
                             ->with('error', "Stok di {$lokasiNama} tidak mencukupi. Stok saat ini: {$stok->jumlah} {$barangMedi->satuan_terkecil}")
                             ->withInput();
+                    }
+
+                    // Validasi stok minimal jika mengurangi
+                    if ($koreksi['type'] === 'kurang') {
+                        $stokSetelahKoreksi = $stok->jumlah - $totalSatuan;
+                        $stokMinimal = $barangMedi->stok_minimal ?? 0;
+                        
+                        if ($stokSetelahKoreksi < $stokMinimal) {
+                            DB::rollBack();
+                            $lokasiNama = LokasiKlinik::find($idLokasi)->nama_lokasi ?? 'Lokasi';
+                            return redirect()->back()
+                                ->with('error', "Koreksi tidak dapat dilakukan. Stok di {$lokasiNama} akan berada di bawah batas minimal ({$stokMinimal}). Stok saat ini: {$stok->jumlah}, setelah koreksi: {$stokSetelahKoreksi}")
+                                ->withInput();
+                        }
                     }
 
                     // Update stok
@@ -635,6 +651,14 @@ class BarangMedisController extends Controller
 
                 if ($stokSebelumAsal < $jumlahDistribusi) {
                     throw new \Exception("Stok tidak mencukupi di lokasi asal. Stok tersedia: {$stokSebelumAsal}");
+                }
+
+                // Validasi stok minimal
+                $stokSetelahDistribusi = $stokSebelumAsal - $jumlahDistribusi;
+                $stokMinimal = $barang->stok_minimal ?? 0;
+                
+                if ($stokSetelahDistribusi < $stokMinimal) {
+                    throw new \Exception("Distribusi tidak dapat dilakukan. Stok akan berada di bawah batas minimal ({$stokMinimal}). Stok tersedia: {$stokSebelumAsal}, setelah distribusi: {$stokSetelahDistribusi}");
                 }
 
                 // Kurangi stok di lokasi asal

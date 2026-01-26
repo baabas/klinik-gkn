@@ -3,6 +3,8 @@
         $stokGkn1 = (int) ($item->stok_gkn1 ?? 0);
         $stokGkn2 = (int) ($item->stok_gkn2 ?? 0);
         $totalStok = (int) ($item->stok_sum_jumlah ?? 0);
+        $stokMinimal = (int) ($item->stok_minimal ?? 0);
+        $isBelowMinimum = $stokMinimal > 0 && $totalStok < $stokMinimal;
     @endphp
     <tr class="align-middle" data-id="{{ $item->id_obat }}" data-nama="{{ $item->nama_obat }}" data-stok-gkn1="{{ $stokGkn1 }}" data-stok-gkn2="{{ $stokGkn2 }}" data-satuan="{{ $item->satuan_terkecil ?? 'Pcs' }}">
         @if(Auth::user()->hasRole('DOKTER') || Auth::user()->hasRole('PENGADAAN'))
@@ -80,7 +82,16 @@
         </td>
         <td class="text-center"><strong class="text-primary">{{ number_format($stokGkn1) }}</strong></td>
         <td class="text-center"><strong class="text-success">{{ number_format($stokGkn2) }}</strong></td>
-        <td class="text-center"><strong class="text-dark">{{ number_format($totalStok) }}</strong></td>
+        <td class="text-center">
+            <strong class="text-dark">{{ number_format($totalStok) }}</strong>
+            @if($isBelowMinimum)
+                <div class="text-danger small">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Di bawah minimal ({{ number_format($stokMinimal) }})
+                </div>
+            @elseif($stokMinimal > 0)
+                <div class="text-muted small">Min: {{ number_format($stokMinimal) }}</div>
+            @endif
+        </td>
         <td class="text-center sticky-action-column">
             <div class="d-flex flex-wrap gap-1 justify-content-center">
                 {{-- Tombol Lihat Detail - bisa diakses semua role --}}

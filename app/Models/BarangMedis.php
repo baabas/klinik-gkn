@@ -40,6 +40,7 @@ class BarangMedis extends Model
         'isi_kemasan_satuan',
         'isi_per_satuan',
         'satuan_terkecil',
+        'stok_minimal',
     ];
 
     // --- RELASI ---

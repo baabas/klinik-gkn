@@ -82,11 +82,24 @@ class RekamMedisController extends Controller
                 foreach ($validated['obat'] as $resep) {
                     if (!empty($resep['id_obat']) && !empty($resep['jumlah'])) {
                         $stok = StokBarang::where('id_barang', $resep['id_obat'])->where('id_lokasi', $idLokasiDokter)->first();
+                        $barangMedis = BarangMedis::find($resep['id_obat']);
+                        
                         if (!$stok || $stok->jumlah < $resep['jumlah']) {
                             DB::rollBack();
-                            $namaObat = BarangMedis::find($resep['id_obat'])->nama_obat ?? 'Obat';
+                            $namaObat = $barangMedis->nama_obat ?? 'Obat';
                             return redirect()->back()->withInput()->with('error', "Stok untuk {$namaObat} tidak mencukupi. Stok tersedia: " . ($stok->jumlah ?? 0));
                         }
+
+                        // Validasi stok minimal
+                        $stokSetelahResep = $stok->jumlah - $resep['jumlah'];
+                        $stokMinimal = $barangMedis->stok_minimal ?? 0;
+                        
+                        if ($stokSetelahResep < $stokMinimal) {
+                            DB::rollBack();
+                            $namaObat = $barangMedis->nama_obat ?? 'Obat';
+                            return redirect()->back()->withInput()->with('error', "Resep tidak dapat diproses. Stok {$namaObat} akan berada di bawah batas minimal ({$stokMinimal}). Stok tersedia: {$stok->jumlah}, setelah resep: {$stokSetelahResep}");
+                        }
+
                         $rekamMedis->resepObat()->create([
                             'id_obat' => $resep['id_obat'],
                             'jumlah' => $resep['jumlah'],
