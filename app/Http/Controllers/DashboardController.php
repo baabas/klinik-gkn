@@ -104,13 +104,13 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
             
-        // Stok terendah dengan informasi kemasan - konversi ke satuan terkecil
+        // Stok terendah dengan informasi kemasan
+        // Note: stok_sum_jumlah sudah dalam satuan terkecil (dari tabel stok_barang)
         $stokTerendah = BarangMedis::withSum('stok as stok_sum_jumlah', 'jumlah')
             ->get()
             ->map(function ($barang) {
-                // Hitung stok dalam satuan terkecil menggunakan model method
-                $totalStok = (int)($barang->stok_sum_jumlah ?? 0);
-                $barang->stok_terkecil = $barang->konversiKeStokTerkecil($totalStok);
+                // stok_sum_jumlah sudah dalam satuan terkecil, tidak perlu konversi
+                $barang->stok_terkecil = (int)($barang->stok_sum_jumlah ?? 0);
                 return $barang;
             })
             ->sortBy('stok_terkecil')

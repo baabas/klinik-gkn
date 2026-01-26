@@ -213,14 +213,14 @@
                         <div class="card-body p-3" style="max-height: 320px; overflow-y: auto;">
                             @forelse ($stokTerendah as $barang)
                                 @php
-                                    $totalStok = (int)($barang->stok_sum_jumlah ?? 0);
+                                    // stok_terkecil sudah dalam satuan terkecil (dari stok_barang.jumlah)
                                     $stokTerkecil = $barang->stok_terkecil ?? 0;
                                     $satuanTerkecil = $barang->satuan_terkecil ?? $barang->satuan ?? 'Unit';
+                                    // stok_minimal juga sudah dalam satuan terkecil
                                     $stokMinimal = (int)($barang->stok_minimal ?? 0);
-                                    $stokMinimalTerkecil = $barang->konversiKeStokTerkecil($stokMinimal);
                                     
-                                    // Tentukan warna berdasarkan level stok
-                                    $stockLevel = $barang->getStokLevel($totalStok);
+                                    // Tentukan warna berdasarkan level stok (parameter sudah dalam satuan terkecil)
+                                    $stockLevel = $barang->getStokLevel($stokTerkecil);
                                     $colorClass = match($stockLevel) {
                                         'critical' => 'text-danger',
                                         'warning' => 'text-warning',
@@ -236,8 +236,8 @@
                                 <div class="flex-grow-1">
                                     <div class="fw-bold">{{ Str::limit($barang->nama_obat, 22) }}</div>
                                     <small class="text-muted">{{ $barang->kategori_barang }}</small>
-                                    @if($stokMinimalTerkecil > 0)
-                                        <small class="d-block text-muted">Min: {{ $stokMinimalTerkecil }} {{ $satuanTerkecil }}</small>
+                                    @if($stokMinimal > 0)
+                                        <small class="d-block text-muted">Min: {{ $stokMinimal }} {{ $satuanTerkecil }}</small>
                                     @endif
                                 </div>
                                 <div class="text-end">
