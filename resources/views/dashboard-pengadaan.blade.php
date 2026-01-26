@@ -212,23 +212,56 @@
                         </div>
                         <div class="card-body p-3" style="max-height: 320px; overflow-y: auto;">
                             @forelse ($stokTerendah as $barang)
-                                <tr>
+                                @php
+                                    $stokTerkecil = $barang->stok_terkecil ?? 0;
+                                    $satuanTerkecil = $barang->satuan_terkecil ?? $barang->satuan ?? 'Unit';
+                                    $stokMinimal = (int)($barang->stok_minimal ?? 0);
+                                    $isiPerKemasan = ($barang->isi_kemasan_jumlah ?? 1) * ($barang->isi_per_satuan ?? 1);
+                                    $stokMinimalTerkecil = $stokMinimal * $isiPerKemasan;
+                                    
+                                    // Tentukan warna berdasarkan perbandingan dengan stok minimal
+                                    if ($stokMinimalTerkecil > 0) {
+                                        if ($stokTerkecil <= $stokMinimalTerkecil) {
+                                            $colorClass = 'text-danger';
+                                            $iconClass = 'bi bi-exclamation-triangle-fill text-danger';
+                                        } elseif ($stokTerkecil <= $stokMinimalTerkecil * 1.5) {
+                                            $colorClass = 'text-warning';
+                                            $iconClass = 'bi bi-exclamation-circle-fill text-warning';
+                                        } else {
+                                            $colorClass = 'text-success';
+                                            $iconClass = '';
+                                        }
+                                    } else {
+                                        // Fallback ke threshold default jika tidak ada stok minimal
+                                        if ($stokTerkecil < 50) {
+                                            $colorClass = 'text-danger';
+                                            $iconClass = 'bi bi-exclamation-triangle-fill text-danger';
+                                        } elseif ($stokTerkecil < 100) {
+                                            $colorClass = 'text-warning';
+                                            $iconClass = 'bi bi-exclamation-circle-fill text-warning';
+                                        } else {
+                                            $colorClass = 'text-success';
+                                            $iconClass = '';
+                                        }
+                                    }
+                                @endphp
                             <div class="d-flex justify-content-between align-items-center py-3 border-bottom">
                                 <div class="flex-grow-1">
                                     <div class="fw-bold">{{ Str::limit($barang->nama_obat, 22) }}</div>
                                     <small class="text-muted">{{ $barang->kategori_barang }}</small>
+                                    @if($stokMinimalTerkecil > 0)
+                                        <small class="d-block text-muted">Min: {{ $stokMinimalTerkecil }} {{ $satuanTerkecil }}</small>
+                                    @endif
                                 </div>
                                 <div class="text-end">
                                     <div class="d-flex align-items-center">
-                                        <span class="fw-bold fs-5 me-2 {{ (int)$barang->stok_sum_jumlah < 10 ? 'text-danger' : ((int)$barang->stok_sum_jumlah < 30 ? 'text-warning' : 'text-success') }}">
-                                            {{ (int)$barang->stok_sum_jumlah }}
+                                        <span class="fw-bold fs-5 me-2 {{ $colorClass }}">
+                                            {{ $stokTerkecil }}
                                         </span>
                                         <div class="text-center">
-                                            <small class="text-muted d-block">{{ $barang->kemasan ?? 'Box' }}</small>
-                                            @if((int)$barang->stok_sum_jumlah < 10)
-                                                <i class="bi bi-exclamation-triangle-fill text-danger"></i>
-                                            @elseif((int)$barang->stok_sum_jumlah < 30)
-                                                <i class="bi bi-exclamation-circle-fill text-warning"></i>
+                                            <small class="text-muted d-block">{{ $satuanTerkecil }}</small>
+                                            @if($iconClass)
+                                                <i class="{{ $iconClass }}"></i>
                                             @endif
                                         </div>
                                     </div>

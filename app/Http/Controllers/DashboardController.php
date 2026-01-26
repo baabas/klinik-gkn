@@ -91,9 +91,22 @@ class DashboardController extends Controller
         $permintaanCompleted = PermintaanBarang::where('status', 'COMPLETED')->count();
         $permintaanRejected = PermintaanBarang::where('status', 'REJECTED')->count();
         
-        // Statistik stok
-        $stokMenipis = BarangMedis::withSum('stok as stok_sum_jumlah', 'jumlah')
-            ->get()->where('stok_sum_jumlah', '<', 50)->count();
+        // Statistik stok - hitung barang dengan stok kritis (di bawah atau sama dengan stok minimal)
+        $barangList = BarangMedis::withSum('stok as stok_sum_jumlah', 'jumlah')->get();
+        
+        $stokMenipis = $barangList->filter(function ($barang) {
+            $totalStok = (int)($barang->stok_sum_jumlah ?? 0);
+            $stokMinimal = (int)($barang->stok_minimal ?? 0);
+            
+            // Hitung stok dalam satuan terkecil untuk perbandingan yang lebih akurat
+            $isiPerKemasan = ($barang->isi_kemasan_jumlah ?? 1) * ($barang->isi_per_satuan ?? 1);
+            $totalStokTerkecil = $totalStok * $isiPerKemasan;
+            $stokMinimalTerkecil = $stokMinimal * $isiPerKemasan;
+            
+            // Hanya hitung jika stok_minimal > 0 dan totalStok <= stokMinimal
+            return $stokMinimalTerkecil > 0 && $totalStokTerkecil <= $stokMinimalTerkecil;
+        })->count();
+        
         $totalMasterBarang = BarangMedis::count();
         
         // Permintaan terbaru yang masih pending
@@ -103,10 +116,16 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
             
-        // Stok terendah dengan informasi kemasan
+        // Stok terendah dengan informasi kemasan - konversi ke satuan terkecil
         $stokTerendah = BarangMedis::withSum('stok as stok_sum_jumlah', 'jumlah')
             ->get()
-            ->sortBy('stok_sum_jumlah')
+            ->map(function ($barang) {
+                // Hitung stok dalam satuan terkecil
+                $isiPerKemasan = ($barang->isi_kemasan_jumlah ?? 1) * ($barang->isi_per_satuan ?? 1);
+                $barang->stok_terkecil = ((int)($barang->stok_sum_jumlah ?? 0)) * $isiPerKemasan;
+                return $barang;
+            })
+            ->sortBy('stok_terkecil')
             ->take(5);
 
         // Trending barang yang paling sering diminta (bulan ini)

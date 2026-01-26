@@ -24,6 +24,7 @@ class PengadaanNotificationComposer
                 'pending_requests' => 0,
                 'new_items_to_add' => 0,
                 'approved_for_input' => 0,
+                'critical_stock' => 0,
                 'total' => 0,
             ]);
         }

@@ -48,10 +48,15 @@
                         </div>
                         <ul class="dropdown-menu shadow-lg border-0" id="obat-medis-menu" style="min-width: 220px; display: none;">
                             <li>
-                                <a class="dropdown-item d-flex align-items-center {{ request()->routeIs('barang-medis.index') ? 'active' : '' }}"
+                                <a class="dropdown-item d-flex align-items-center justify-content-between {{ request()->routeIs('barang-medis.index') ? 'active' : '' }}"
                                    href="{{ route('barang-medis.index') }}">
-                                    <i class="bi bi-grid-fill me-2 text-primary"></i>
-                                    Daftar Obat & Alat Medis
+                                    <span>
+                                        <i class="bi bi-grid-fill me-2 text-primary"></i>
+                                        Daftar Obat & Alat Medis
+                                    </span>
+                                    @if(isset($pengadaanNotifications) && $pengadaanNotifications['critical_stock'] > 0)
+                                        <span class="badge bg-danger rounded-pill">{{ $pengadaanNotifications['critical_stock'] }}</span>
+                                    @endif
                                 </a>
                             </li>
                             <li><hr class="dropdown-divider"></li>
