@@ -108,9 +108,9 @@ class DashboardController extends Controller
         $stokTerendah = BarangMedis::withSum('stok as stok_sum_jumlah', 'jumlah')
             ->get()
             ->map(function ($barang) {
-                // Hitung stok dalam satuan terkecil
-                $isiPerKemasan = ($barang->isi_kemasan_jumlah ?? 1) * ($barang->isi_per_satuan ?? 1);
-                $barang->stok_terkecil = ((int)($barang->stok_sum_jumlah ?? 0)) * $isiPerKemasan;
+                // Hitung stok dalam satuan terkecil menggunakan model method
+                $totalStok = (int)($barang->stok_sum_jumlah ?? 0);
+                $barang->stok_terkecil = $barang->konversiKeStokTerkecil($totalStok);
                 return $barang;
             })
             ->sortBy('stok_terkecil')

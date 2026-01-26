@@ -131,4 +131,68 @@ class BarangMedis extends Model
     {
         return $this->hasMany(DetailPermintaanBarang::class, 'id_barang', 'id_obat');
     }
+
+    /**
+     * Hitung jumlah stok dalam satuan terkecil.
+     * 
+     * @param int $stokKemasan Jumlah stok dalam kemasan utama
+     * @return int Jumlah stok dalam satuan terkecil
+     */
+    public function konversiKeStokTerkecil($stokKemasan)
+    {
+        $isiPerKemasan = ($this->isi_kemasan_jumlah ?? 1) * ($this->isi_per_satuan ?? 1);
+        return $stokKemasan * $isiPerKemasan;
+    }
+
+    /**
+     * Cek apakah stok termasuk kritis (di bawah atau sama dengan stok minimal).
+     * 
+     * @param int $stokKemasan Jumlah stok dalam kemasan utama
+     * @return bool True jika stok kritis
+     */
+    public function isStokKritis($stokKemasan)
+    {
+        $stokMinimal = (int)($this->stok_minimal ?? 0);
+        
+        if ($stokMinimal <= 0) {
+            return false;
+        }
+        
+        $totalStokTerkecil = $this->konversiKeStokTerkecil($stokKemasan);
+        $stokMinimalTerkecil = $this->konversiKeStokTerkecil($stokMinimal);
+        
+        return $totalStokTerkecil <= $stokMinimalTerkecil;
+    }
+
+    /**
+     * Dapatkan level stok (critical, warning, ok) berdasarkan stok minimal.
+     * 
+     * @param int $stokKemasan Jumlah stok dalam kemasan utama
+     * @return string 'critical', 'warning', atau 'ok'
+     */
+    public function getStokLevel($stokKemasan)
+    {
+        $stokMinimal = (int)($this->stok_minimal ?? 0);
+        
+        if ($stokMinimal > 0) {
+            $totalStokTerkecil = $this->konversiKeStokTerkecil($stokKemasan);
+            $stokMinimalTerkecil = $this->konversiKeStokTerkecil($stokMinimal);
+            
+            if ($totalStokTerkecil <= $stokMinimalTerkecil) {
+                return 'critical';
+            } elseif ($totalStokTerkecil <= $stokMinimalTerkecil * 1.5) {
+                return 'warning';
+            }
+        } else {
+            // Fallback threshold jika stok_minimal tidak diset
+            $totalStokTerkecil = $this->konversiKeStokTerkecil($stokKemasan);
+            if ($totalStokTerkecil < 50) {
+                return 'critical';
+            } elseif ($totalStokTerkecil < 100) {
+                return 'warning';
+            }
+        }
+        
+        return 'ok';
+    }
 }

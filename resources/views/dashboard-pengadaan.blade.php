@@ -211,44 +211,26 @@
                             <a href="{{ route('barang-medis.index') }}" class="btn btn-outline-danger btn-sm">Kelola</a>
                         </div>
                         <div class="card-body p-3" style="max-height: 320px; overflow-y: auto;">
-                            @php
-                                // Threshold constants for fallback when stok_minimal is not set
-                                const FALLBACK_CRITICAL_THRESHOLD = 50;
-                                const FALLBACK_WARNING_THRESHOLD = 100;
-                            @endphp
                             @forelse ($stokTerendah as $barang)
                                 @php
+                                    $totalStok = (int)($barang->stok_sum_jumlah ?? 0);
                                     $stokTerkecil = $barang->stok_terkecil ?? 0;
                                     $satuanTerkecil = $barang->satuan_terkecil ?? $barang->satuan ?? 'Unit';
                                     $stokMinimal = (int)($barang->stok_minimal ?? 0);
-                                    $isiPerKemasan = ($barang->isi_kemasan_jumlah ?? 1) * ($barang->isi_per_satuan ?? 1);
-                                    $stokMinimalTerkecil = $stokMinimal * $isiPerKemasan;
+                                    $stokMinimalTerkecil = $barang->konversiKeStokTerkecil($stokMinimal);
                                     
-                                    // Tentukan warna berdasarkan perbandingan dengan stok minimal
-                                    if ($stokMinimalTerkecil > 0) {
-                                        if ($stokTerkecil <= $stokMinimalTerkecil) {
-                                            $colorClass = 'text-danger';
-                                            $iconClass = 'bi bi-exclamation-triangle-fill text-danger';
-                                        } elseif ($stokTerkecil <= $stokMinimalTerkecil * 1.5) {
-                                            $colorClass = 'text-warning';
-                                            $iconClass = 'bi bi-exclamation-circle-fill text-warning';
-                                        } else {
-                                            $colorClass = 'text-success';
-                                            $iconClass = '';
-                                        }
-                                    } else {
-                                        // Fallback ke threshold default jika tidak ada stok minimal
-                                        if ($stokTerkecil < FALLBACK_CRITICAL_THRESHOLD) {
-                                            $colorClass = 'text-danger';
-                                            $iconClass = 'bi bi-exclamation-triangle-fill text-danger';
-                                        } elseif ($stokTerkecil < FALLBACK_WARNING_THRESHOLD) {
-                                            $colorClass = 'text-warning';
-                                            $iconClass = 'bi bi-exclamation-circle-fill text-warning';
-                                        } else {
-                                            $colorClass = 'text-success';
-                                            $iconClass = '';
-                                        }
-                                    }
+                                    // Tentukan warna berdasarkan level stok
+                                    $stockLevel = $barang->getStokLevel($totalStok);
+                                    $colorClass = match($stockLevel) {
+                                        'critical' => 'text-danger',
+                                        'warning' => 'text-warning',
+                                        default => 'text-success'
+                                    };
+                                    $iconClass = match($stockLevel) {
+                                        'critical' => 'bi bi-exclamation-triangle-fill text-danger',
+                                        'warning' => 'bi bi-exclamation-circle-fill text-warning',
+                                        default => ''
+                                    };
                                 @endphp
                             <div class="d-flex justify-content-between align-items-center py-3 border-bottom">
                                 <div class="flex-grow-1">

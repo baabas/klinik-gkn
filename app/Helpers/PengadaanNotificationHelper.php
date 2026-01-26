@@ -53,15 +53,7 @@ class PengadaanNotificationHelper
             ->get()
             ->filter(function ($barang) {
                 $totalStok = (int)($barang->stok_sum_jumlah ?? 0);
-                $stokMinimal = (int)($barang->stok_minimal ?? 0);
-                
-                // Konversi ke satuan terkecil untuk perbandingan yang akurat
-                $isiPerKemasan = ($barang->isi_kemasan_jumlah ?? 1) * ($barang->isi_per_satuan ?? 1);
-                $totalStokTerkecil = $totalStok * $isiPerKemasan;
-                $stokMinimalTerkecil = $stokMinimal * $isiPerKemasan;
-                
-                // Hanya hitung jika stok_minimal > 0 dan totalStok <= stokMinimal
-                return $stokMinimalTerkecil > 0 && $totalStokTerkecil <= $stokMinimalTerkecil;
+                return $barang->isStokKritis($totalStok);
             })
             ->count();
     }
