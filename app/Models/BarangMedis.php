@@ -12,6 +12,16 @@ class BarangMedis extends Model
     use HasFactory;
 
     /**
+     * Threshold untuk stok kritis jika stok_minimal tidak diset (dalam satuan terkecil).
+     */
+    const FALLBACK_CRITICAL_THRESHOLD = 50;
+
+    /**
+     * Threshold untuk stok warning jika stok_minimal tidak diset (dalam satuan terkecil).
+     */
+    const FALLBACK_WARNING_THRESHOLD = 100;
+
+    /**
      * Nama tabel yang terhubung dengan model.
      *
      * @var string
@@ -186,9 +196,9 @@ class BarangMedis extends Model
         } else {
             // Fallback threshold jika stok_minimal tidak diset
             $totalStokTerkecil = $this->konversiKeStokTerkecil($stokKemasan);
-            if ($totalStokTerkecil < 50) {
+            if ($totalStokTerkecil < self::FALLBACK_CRITICAL_THRESHOLD) {
                 return 'critical';
-            } elseif ($totalStokTerkecil < 100) {
+            } elseif ($totalStokTerkecil < self::FALLBACK_WARNING_THRESHOLD) {
                 return 'warning';
             }
         }
