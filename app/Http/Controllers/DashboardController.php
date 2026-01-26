@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\PengadaanNotificationHelper;
 use App\Models\BarangMedis;
 use App\Models\FeedbackPasien;
 use App\Models\PermintaanBarang;
@@ -91,21 +92,8 @@ class DashboardController extends Controller
         $permintaanCompleted = PermintaanBarang::where('status', 'COMPLETED')->count();
         $permintaanRejected = PermintaanBarang::where('status', 'REJECTED')->count();
         
-        // Statistik stok - hitung barang dengan stok kritis (di bawah atau sama dengan stok minimal)
-        $barangList = BarangMedis::withSum('stok as stok_sum_jumlah', 'jumlah')->get();
-        
-        $stokMenipis = $barangList->filter(function ($barang) {
-            $totalStok = (int)($barang->stok_sum_jumlah ?? 0);
-            $stokMinimal = (int)($barang->stok_minimal ?? 0);
-            
-            // Hitung stok dalam satuan terkecil untuk perbandingan yang lebih akurat
-            $isiPerKemasan = ($barang->isi_kemasan_jumlah ?? 1) * ($barang->isi_per_satuan ?? 1);
-            $totalStokTerkecil = $totalStok * $isiPerKemasan;
-            $stokMinimalTerkecil = $stokMinimal * $isiPerKemasan;
-            
-            // Hanya hitung jika stok_minimal > 0 dan totalStok <= stokMinimal
-            return $stokMinimalTerkecil > 0 && $totalStokTerkecil <= $stokMinimalTerkecil;
-        })->count();
+        // Statistik stok - hitung barang dengan stok kritis menggunakan helper
+        $stokMenipis = PengadaanNotificationHelper::countCriticalStock();
         
         $totalMasterBarang = BarangMedis::count();
         

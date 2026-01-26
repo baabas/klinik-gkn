@@ -211,6 +211,11 @@
                             <a href="{{ route('barang-medis.index') }}" class="btn btn-outline-danger btn-sm">Kelola</a>
                         </div>
                         <div class="card-body p-3" style="max-height: 320px; overflow-y: auto;">
+                            @php
+                                // Threshold constants for fallback when stok_minimal is not set
+                                const FALLBACK_CRITICAL_THRESHOLD = 50;
+                                const FALLBACK_WARNING_THRESHOLD = 100;
+                            @endphp
                             @forelse ($stokTerendah as $barang)
                                 @php
                                     $stokTerkecil = $barang->stok_terkecil ?? 0;
@@ -233,10 +238,10 @@
                                         }
                                     } else {
                                         // Fallback ke threshold default jika tidak ada stok minimal
-                                        if ($stokTerkecil < 50) {
+                                        if ($stokTerkecil < FALLBACK_CRITICAL_THRESHOLD) {
                                             $colorClass = 'text-danger';
                                             $iconClass = 'bi bi-exclamation-triangle-fill text-danger';
-                                        } elseif ($stokTerkecil < 100) {
+                                        } elseif ($stokTerkecil < FALLBACK_WARNING_THRESHOLD) {
                                             $colorClass = 'text-warning';
                                             $iconClass = 'bi bi-exclamation-circle-fill text-warning';
                                         } else {
