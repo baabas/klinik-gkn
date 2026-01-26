@@ -56,9 +56,9 @@ class MinimumStockTest extends TestCase
         ]);
 
         $response = $this->actingAs($user)->post(route('barang-medis.distribusi', $barang->id_obat), [
-            'jumlah_distribusi' => 15,
-            'id_lokasi_asal' => $lokasi1->id,
-            'id_lokasi_tujuan' => $lokasi2->id,
+            'jumlah' => 15,
+            'lokasi_asal' => $lokasi1->id,
+            'lokasi_tujuan' => $lokasi2->id,
         ]);
 
         // Should redirect back with error
@@ -92,9 +92,9 @@ class MinimumStockTest extends TestCase
         ]);
 
         $response = $this->actingAs($user)->post(route('barang-medis.distribusi', $barang->id_obat), [
-            'jumlah_distribusi' => 55,
-            'id_lokasi_asal' => $lokasi1->id,
-            'id_lokasi_tujuan' => $lokasi2->id,
+            'jumlah' => 55,
+            'lokasi_asal' => $lokasi1->id,
+            'lokasi_tujuan' => $lokasi2->id,
         ]);
 
         // Should succeed

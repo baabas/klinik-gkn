@@ -661,7 +661,7 @@ class BarangMedisController extends Controller
                 $stokSetelahDistribusi = $stokSebelumAsal - $jumlahDistribusi;
                 $stokMinimal = $barang->stok_minimal ?? 0;
 
-                if ($stokSetelahDistribusi < $stokMinimal) {
+                if ($stokMinimal > 0 && $stokSetelahDistribusi < $stokMinimal) {
                     throw new \Exception("Distribusi tidak dapat dilakukan. Stok akan berada di bawah batas minimal ({$stokMinimal}). Stok tersedia: {$stokSebelumAsal}, setelah distribusi: {$stokSetelahDistribusi}");
                 }
 
