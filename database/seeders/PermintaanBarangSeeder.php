@@ -177,22 +177,22 @@ class PermintaanBarangSeeder extends Seeder
 
         // Buat beberapa permintaan APPROVED dan COMPLETED bulan ini untuk trending
         $trendingData = [
-            // Paracetamol - trending #1
-            ['obat_index' => 0, 'jumlah' => 300, 'status' => 'COMPLETED', 'hari_lalu' => 15],
-            ['obat_index' => 0, 'jumlah' => 250, 'status' => 'COMPLETED', 'hari_lalu' => 10],
-            ['obat_index' => 0, 'jumlah' => 200, 'status' => 'APPROVED', 'hari_lalu' => 5],
-            
-            // Amoxicillin - trending #2
+            // Amoxicillin - trending #1
+            ['obat_index' => 1, 'jumlah' => 250, 'status' => 'COMPLETED', 'hari_lalu' => 15],
             ['obat_index' => 1, 'jumlah' => 200, 'status' => 'COMPLETED', 'hari_lalu' => 12],
             ['obat_index' => 1, 'jumlah' => 150, 'status' => 'COMPLETED', 'hari_lalu' => 8],
             
-            // Vitamin C - trending #3
+            // Vitamin C - trending #2
             ['obat_index' => 3, 'jumlah' => 180, 'status' => 'COMPLETED', 'hari_lalu' => 14],
             ['obat_index' => 3, 'jumlah' => 120, 'status' => 'APPROVED', 'hari_lalu' => 6],
             
-            // Omeprazole - trending #4
-            ['obat_index' => 4, 'jumlah' => 100, 'status' => 'COMPLETED', 'hari_lalu' => 18],
-            ['obat_index' => 4, 'jumlah' => 90, 'status' => 'COMPLETED', 'hari_lalu' => 4],
+            // Omeprazole - trending #3
+            ['obat_index' => 4, 'jumlah' => 150, 'status' => 'COMPLETED', 'hari_lalu' => 18],
+            ['obat_index' => 4, 'jumlah' => 100, 'status' => 'COMPLETED', 'hari_lalu' => 10],
+            
+            // Ibuprofen - trending #4
+            ['obat_index' => 6, 'jumlah' => 120, 'status' => 'COMPLETED', 'hari_lalu' => 16],
+            ['obat_index' => 6, 'jumlah' => 80, 'status' => 'APPROVED', 'hari_lalu' => 4],
         ];
 
         foreach ($trendingData as $index => $data) {
@@ -226,9 +226,9 @@ class PermintaanBarangSeeder extends Seeder
         $this->command->info('Ringkasan:');
         $this->command->info('- 5 permintaan dengan status PENDING (untuk notifikasi)');
         $this->command->info('- 9 permintaan bulan ini (untuk trending items)');
-        $this->command->info('- Trending #1: Paracetamol (750 total)');
-        $this->command->info('- Trending #2: Amoxicillin (350 total)');
-        $this->command->info('- Trending #3: Vitamin C (300 total)');
-        $this->command->info('- Trending #4: Omeprazole (190 total)');
+        $this->command->info('- Trending #1: Amoxicillin (600 total)');
+        $this->command->info('- Trending #2: Vitamin C (300 total)');
+        $this->command->info('- Trending #3: Omeprazole (250 total)');
+        $this->command->info('- Trending #4: Ibuprofen (200 total)');
     }
 }

@@ -60,22 +60,22 @@ php artisan db:seed --class=PermintaanBarangSeeder
 
 Permintaan dengan status APPROVED/COMPLETED untuk trending chart:
 
-**Trending #1: Paracetamol** (750 total)
-- 300 tablet (15 hari lalu) - COMPLETED
-- 250 tablet (10 hari lalu) - COMPLETED
-- 200 tablet (5 hari lalu) - APPROVED
-
-**Trending #2: Amoxicillin** (350 total)
+**Trending #1: Amoxicillin** (600 total)
+- 250 kaplet (15 hari lalu) - COMPLETED
 - 200 kaplet (12 hari lalu) - COMPLETED
 - 150 kaplet (8 hari lalu) - COMPLETED
 
-**Trending #3: Vitamin C** (300 total)
+**Trending #2: Vitamin C** (300 total)
 - 180 tablet (14 hari lalu) - COMPLETED
 - 120 tablet (6 hari lalu) - APPROVED
 
-**Trending #4: Omeprazole** (190 total)
-- 100 kapsul (18 hari lalu) - COMPLETED
-- 90 kapsul (4 hari lalu) - COMPLETED
+**Trending #3: Omeprazole** (250 total)
+- 150 kapsul (18 hari lalu) - COMPLETED
+- 100 kapsul (10 hari lalu) - COMPLETED
+
+**Trending #4: Ibuprofen** (200 total)
+- 120 tablet (16 hari lalu) - COMPLETED
+- 80 tablet (4 hari lalu) - APPROVED
 
 ## Fitur yang Dapat Diuji
 
@@ -97,10 +97,10 @@ Permintaan dengan status APPROVED/COMPLETED untuk trending chart:
 - Buka dashboard pengadaan
 - Lihat bagian "Trending Barang"
 - Seharusnya menampilkan top 5 barang yang paling banyak diminta bulan ini:
-  1. Paracetamol (750)
-  2. Amoxicillin (350)
-  3. Vitamin C (300)
-  4. Omeprazole (190)
+  1. Amoxicillin (600)
+  2. Vitamin C (300)
+  3. Omeprazole (250)
+  4. Ibuprofen (200)
 
 ### 4. Permintaan dengan Barang Baru
 - Buka daftar permintaan
