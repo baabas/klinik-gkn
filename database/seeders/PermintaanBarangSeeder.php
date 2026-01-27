@@ -70,7 +70,6 @@ class PermintaanBarangSeeder extends Seeder
             'id_permintaan' => $permintaan1->id,
             'id_barang' => $obatList[0]->id_obat,
             'jumlah_diminta' => 200,
-            'satuan_diminta' => $obatList[0]->satuan_terkecil,
             'kemasan_diminta' => $obatList[0]->kemasan,
             'catatan' => 'Stok kritis, butuh segera',
         ]);
@@ -79,7 +78,6 @@ class PermintaanBarangSeeder extends Seeder
             'id_permintaan' => $permintaan1->id,
             'id_barang' => $obatList[1]->id_obat,
             'jumlah_diminta' => 150,
-            'satuan_diminta' => $obatList[1]->satuan_terkecil,
             'kemasan_diminta' => $obatList[1]->kemasan,
         ]);
 
@@ -99,7 +97,6 @@ class PermintaanBarangSeeder extends Seeder
             'id_permintaan' => $permintaan2->id,
             'id_barang' => $obatList[3]->id_obat,
             'jumlah_diminta' => 100,
-            'satuan_diminta' => $obatList[3]->satuan_terkecil,
             'kemasan_diminta' => $obatList[3]->kemasan,
         ]);
 
@@ -107,7 +104,6 @@ class PermintaanBarangSeeder extends Seeder
             'id_permintaan' => $permintaan2->id,
             'id_barang' => $obatList[4]->id_obat,
             'jumlah_diminta' => 80,
-            'satuan_diminta' => $obatList[4]->satuan_terkecil,
             'kemasan_diminta' => $obatList[4]->kemasan,
         ]);
 
@@ -128,10 +124,8 @@ class PermintaanBarangSeeder extends Seeder
             'id_barang' => null,
             'nama_barang_baru' => 'Salbutamol Inhaler',
             'tipe_barang_baru' => 'OBAT',
-            'satuan_barang_baru' => 'Piece',
             'kemasan_barang_baru' => 'Box',
             'jumlah_diminta' => 20,
-            'satuan_diminta' => 'Piece',
             'kemasan_diminta' => 'Box',
             'catatan_barang_baru' => 'Untuk pasien asma',
         ]);
@@ -152,7 +146,6 @@ class PermintaanBarangSeeder extends Seeder
             'id_permintaan' => $permintaan4->id,
             'id_barang' => $obatList[5]->id_obat ?? $obatList[2]->id_obat,
             'jumlah_diminta' => 150,
-            'satuan_diminta' => ($obatList[5] ?? $obatList[2])->satuan_terkecil,
             'kemasan_diminta' => ($obatList[5] ?? $obatList[2])->kemasan,
         ]);
 
@@ -172,7 +165,6 @@ class PermintaanBarangSeeder extends Seeder
             'id_permintaan' => $permintaan5->id,
             'id_barang' => $obatList[2]->id_obat,
             'jumlah_diminta' => 120,
-            'satuan_diminta' => $obatList[2]->satuan_terkecil,
             'kemasan_diminta' => $obatList[2]->kemasan,
             'catatan' => 'Urgent',
         ]);
@@ -222,7 +214,6 @@ class PermintaanBarangSeeder extends Seeder
                 'id_permintaan' => $permintaan->id,
                 'id_barang' => $obat->id_obat,
                 'jumlah_diminta' => $data['jumlah'],
-                'satuan_diminta' => $obat->satuan_terkecil,
                 'kemasan_diminta' => $obat->kemasan,
                 'jumlah_disetujui' => $data['status'] != 'PENDING' ? $data['jumlah'] : null,
             ]);
