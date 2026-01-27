@@ -91,16 +91,8 @@ class RekamMedisController extends Controller
                             return redirect()->back()->withInput()->with('error', "Stok untuk {$namaObat} tidak mencukupi. Stok tersedia: ".($stok->jumlah ?? 0));
                         }
 
-                        // Validasi stok minimal
-                        $stokSetelahResep = $stok->jumlah - $resep['jumlah'];
-                        $stokMinimal = $barangMedis->stok_minimal ?? 0;
-
-                        if ($stokSetelahResep < $stokMinimal) {
-                            DB::rollBack();
-                            $namaObat = $barangMedis->nama_obat ?? 'Obat';
-
-                            return redirect()->back()->withInput()->with('error', "Resep tidak dapat diproses. Stok {$namaObat} akan berada di bawah batas minimal ({$stokMinimal}). Stok tersedia: {$stok->jumlah}, setelah resep: {$stokSetelahResep}");
-                        }
+                        // Stok minimal hanya sebagai peringatan untuk pengadaan, bukan blocker untuk dokter
+                        // Dokter tetap bisa memberikan resep karena pasien membutuhkan obat
 
                         $rekamMedis->resepObat()->create([
                             'id_obat' => $resep['id_obat'],

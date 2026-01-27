@@ -5,6 +5,7 @@ namespace App\Helpers;
 use App\Models\PermintaanBarang;
 use App\Models\DetailPermintaanBarang;
 use App\Models\PendingStokMasuk;
+use App\Models\BarangMedis;
 use Illuminate\Support\Facades\Auth;
 
 class PengadaanNotificationHelper
@@ -43,13 +44,29 @@ class PengadaanNotificationHelper
     }
 
     /**
+     * Hitung jumlah barang dengan stok kritis (di bawah atau sama dengan stok minimal)
+     * Menggunakan satuan terkecil untuk perbandingan yang lebih akurat
+     */
+    public static function countCriticalStock()
+    {
+        return BarangMedis::withSum('stok as stok_sum_jumlah', 'jumlah')
+            ->get()
+            ->filter(function ($barang) {
+                $totalStok = (int)($barang->stok_sum_jumlah ?? 0);
+                return $barang->isStokKritis($totalStok);
+            })
+            ->count();
+    }
+
+    /**
      * Hitung total semua notifikasi pengadaan
      */
     public static function countTotalNotifications()
     {
         return self::countPendingRequests() + 
                self::countNewItemsToAdd() + 
-               self::countApprovedRequestsForInput();
+               self::countApprovedRequestsForInput() +
+               self::countCriticalStock();
     }
 
     /**
@@ -61,6 +78,7 @@ class PengadaanNotificationHelper
             'pending_requests' => self::countPendingRequests(),
             'new_items_to_add' => self::countNewItemsToAdd(),
             'approved_for_input' => self::countApprovedRequestsForInput(),
+            'critical_stock' => self::countCriticalStock(),
             'total' => self::countTotalNotifications(),
         ];
     }

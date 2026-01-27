@@ -12,6 +12,16 @@ class BarangMedis extends Model
     use HasFactory;
 
     /**
+     * Threshold untuk stok kritis jika stok_minimal tidak diset (dalam satuan terkecil).
+     */
+    const FALLBACK_CRITICAL_THRESHOLD = 50;
+
+    /**
+     * Threshold untuk stok warning jika stok_minimal tidak diset (dalam satuan terkecil).
+     */
+    const FALLBACK_WARNING_THRESHOLD = 100;
+
+    /**
      * Nama tabel yang terhubung dengan model.
      *
      * @var string
@@ -130,5 +140,66 @@ class BarangMedis extends Model
     public function detailPermintaans(): HasMany
     {
         return $this->hasMany(DetailPermintaanBarang::class, 'id_barang', 'id_obat');
+    }
+
+    /**
+     * Hitung jumlah stok dalam satuan terkecil.
+     * 
+     * @param int $stokKemasan Jumlah stok dalam kemasan utama
+     * @return int Jumlah stok dalam satuan terkecil
+     */
+    public function konversiKeStokTerkecil($stokKemasan)
+    {
+        $isiPerKemasan = ($this->isi_kemasan_jumlah ?? 1) * ($this->isi_per_satuan ?? 1);
+        return $stokKemasan * $isiPerKemasan;
+    }
+
+    /**
+     * Cek apakah stok termasuk kritis (di bawah atau sama dengan stok minimal).
+     * Note: Kedua parameter sudah dalam satuan terkecil.
+     * 
+     * @param int $stokTerkecil Jumlah stok dalam satuan terkecil
+     * @return bool True jika stok kritis
+     */
+    public function isStokKritis($stokTerkecil)
+    {
+        $stokMinimal = (int)($this->stok_minimal ?? 0);
+        
+        if ($stokMinimal <= 0) {
+            return false;
+        }
+        
+        // Kedua nilai sudah dalam satuan terkecil, langsung bandingkan
+        return $stokTerkecil <= $stokMinimal;
+    }
+
+    /**
+     * Dapatkan level stok (critical, warning, ok) berdasarkan stok minimal.
+     * Note: Parameter stokTerkecil sudah dalam satuan terkecil.
+     * 
+     * @param int $stokTerkecil Jumlah stok dalam satuan terkecil
+     * @return string 'critical', 'warning', atau 'ok'
+     */
+    public function getStokLevel($stokTerkecil)
+    {
+        $stokMinimal = (int)($this->stok_minimal ?? 0);
+        
+        if ($stokMinimal > 0) {
+            // Kedua nilai sudah dalam satuan terkecil, langsung bandingkan
+            if ($stokTerkecil <= $stokMinimal) {
+                return 'critical';
+            } elseif ($stokTerkecil <= $stokMinimal * 1.5) {
+                return 'warning';
+            }
+        } else {
+            // Fallback threshold jika stok_minimal tidak diset
+            if ($stokTerkecil < self::FALLBACK_CRITICAL_THRESHOLD) {
+                return 'critical';
+            } elseif ($stokTerkecil < self::FALLBACK_WARNING_THRESHOLD) {
+                return 'warning';
+            }
+        }
+        
+        return 'ok';
     }
 }

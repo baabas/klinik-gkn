@@ -32,8 +32,14 @@ class DatabaseSeeder extends Seeder
             // Seeder untuk membuat lokasi klinik dan barang medis (PengadaanSeeder membuat lokasi juga)
             PengadaanSeeder::class,
 
+            // Seeder untuk membuat data obat dengan variasi stok (kritis, menipis, aman)
+            BarangMedisSeeder::class,
+
             // Seeder untuk membuat akun user (Dokter, Pengadaan, dll.) - SETELAH lokasi dibuat
             AdminUserSeeder::class,
+
+            // Seeder untuk membuat permintaan barang (PENDING dan trending bulan ini)
+            PermintaanBarangSeeder::class,
         ]);
     }
 }
