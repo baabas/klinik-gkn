@@ -289,14 +289,15 @@ class PermintaanBarangController extends Controller
 
         $catatanRetur = trim((string) $request->alasan_retur);
         $catatanLama = trim((string) ($permintaan->catatan ?? ''));
-        $catatanBaru = trim($catatanLama . "\n\n[RETUR " . now()->format('d/m/Y H:i') . '] ' . $catatanRetur);
+        $urutanRetur = substr_count($catatanLama, '[RETUR ') + 1;
+        $catatanBaru = trim($catatanLama . "\n\n[RETUR #{$urutanRetur} " . now()->format('d/m/Y H:i') . '] ' . $catatanRetur);
 
         $permintaan->update([
             'status' => 'RETUR',
             'catatan' => $catatanBaru,
         ]);
 
-        return redirect()->route('permintaan.show', $permintaan->id)->with('success', 'Pengajuan retur berhasil dikirim ke pengadaan.');
+        return redirect()->route('permintaan.show', $permintaan->id)->with('success', 'Pengajuan retur berhasil dikirim ke pengadaan. Jika barang pengganti masih belum sesuai, retur dapat diajukan kembali sampai permintaan benar-benar sesuai.');
     }
 
     /**
@@ -313,10 +314,13 @@ class PermintaanBarangController extends Controller
         }
 
         DB::transaction(function () use ($permintaan) {
+            // Hapus pending stok dari pengiriman yang diretur. Jika dokter retur lagi
+            // setelah input ulang berikutnya, siklus ini bisa diulang dari status RETUR.
             PendingStokMasuk::where('id_permintaan', $permintaan->id)->delete();
 
             $catatanLama = trim((string) ($permintaan->catatan ?? ''));
-            $catatanBaru = trim($catatanLama . "\n\n[PROSES RETUR " . now()->format('d/m/Y H:i') . '] Pengadaan membuka ulang permintaan untuk input barang masuk pengganti.');
+            $urutanProsesRetur = substr_count($catatanLama, '[PROSES RETUR ') + 1;
+            $catatanBaru = trim($catatanLama . "\n\n[PROSES RETUR #{$urutanProsesRetur} " . now()->format('d/m/Y H:i') . '] Pengadaan membuka ulang permintaan untuk input barang masuk pengganti.');
 
             $permintaan->update([
                 'status' => 'APPROVED',
@@ -326,7 +330,7 @@ class PermintaanBarangController extends Controller
 
         return redirect()
             ->route('barang-masuk.create', ['request_id' => $permintaan->id])
-            ->with('success', 'Retur diproses. Silakan input ulang barang masuk pengganti untuk permintaan ini.');
+            ->with('success', 'Retur diproses. Silakan input ulang barang masuk pengganti. Setelah semua item diinput, dokter akan konfirmasi kembali; jika masih belum sesuai, dokter dapat mengajukan retur lagi.');
     }
 
     /**
