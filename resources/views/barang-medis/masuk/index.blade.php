@@ -1,15 +1,43 @@
 @extends('layouts.sidebar-layout')
 
 @section('content')
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Riwayat Barang Masuk</h1>
-        <div class="btn-group">
-            <a href="{{ route('barang-medis.index') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Kembali ke Daftar Barang
+    <style>
+        .page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid #e9ecef}
+        .page-head h1{margin-bottom:.25rem;font-weight:700;letter-spacing:-.02em}
+        .page-head .subtitle{color:#6c757d;font-size:.95rem}
+        .action-group{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+        .action-group .btn{min-width:170px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+        .btn-soft-secondary{background:#fff;border:1px solid #d6dbe1;color:#495057;transition:all .2s ease}
+        .btn-soft-secondary:hover{background:#f8f9fa;color:#212529;border-color:#cfd5dc;transform:translateY(-1px)}
+        .card-stat{border:1px solid #e9ecef;box-shadow:0 .125rem .5rem rgba(0,0,0,.04);border-radius:.75rem}
+        .card-stat .card-body{padding:1.25rem}
+        .info-banner{border:1px solid #dbe4ff;background:#f8fbff}
+        .filter-card{border:1px solid #e9ecef;box-shadow:0 .125rem .5rem rgba(0,0,0,.04);border-radius:.75rem}
+        .filter-card .form-label{font-weight:600;color:#495057}
+        .filter-card .form-control,.filter-card .form-select{border:1px solid #d8dde3;box-shadow:0 .125rem .25rem rgba(0,0,0,.03)}
+        .table-wrap{border:1px solid #e9ecef;border-radius:.75rem;overflow:hidden}
+        .table-wrap thead th{font-weight:700;white-space:nowrap;background:#f8f9fa}
+        .table-wrap td,.table-wrap th{vertical-align:middle}
+        .empty-state{padding:2rem 1rem;text-align:center;color:#6c757d}
+        .empty-state i{font-size:2rem;color:#dee2e6;margin-bottom:.5rem}
+        @media (max-width: 768px){
+            .page-head{flex-direction:column;align-items:stretch}
+            .action-group .btn{min-width:100%;width:100%}
+        }
+    </style>
+
+    <div class="page-head">
+        <div>
+            <h1 class="h3 mb-0">Riwayat Barang Masuk</h1>
+            <div class="subtitle">Pantau seluruh transaksi barang masuk dari pengadaan dan input langsung.</div>
+        </div>
+        <div class="action-group">
+            <a href="{{ route('barang-medis.index') }}" class="btn btn-soft-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar Barang
             </a>
             @if(Auth::user()->hasRole('PENGADAAN'))
                 <a href="{{ route('barang-masuk.create') }}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Input Barang Masuk
+                    <i class="bi bi-plus-circle me-1"></i> Input Barang Masuk
                 </a>
             @endif
         </div>
@@ -18,7 +46,7 @@
     <!-- Card Statistik -->
     <div class="row mb-3">
         <div class="col-md-6">
-            <div class="card shadow-sm border-primary">
+            <div class="card card-stat border-primary">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="flex-shrink-0">
@@ -34,7 +62,7 @@
             </div>
         </div>
         <div class="col-md-6">
-            <div class="card shadow-sm border-success">
+            <div class="card card-stat border-success">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="flex-shrink-0">
@@ -51,13 +79,13 @@
         </div>
     </div>
 
-    <div class="alert alert-info mb-3">
+    <div class="alert alert-info info-banner mb-3">
         <i class="bi bi-info-circle me-2"></i>
         <strong>Informasi:</strong> Halaman ini menampilkan riwayat barang yang masuk dari input barang masuk oleh role Pengadaan, 
         baik yang berasal dari permintaan dokter maupun input langsung tanpa permintaan.
     </div>
 
-    <div class="card shadow-sm">
+    <div class="card shadow-sm filter-card">
         <div class="card-body">
             <form action="{{ route('barang-masuk.index') }}" method="GET" class="row g-3 align-items-end mb-4">
                 <div class="col-md-3">
@@ -98,8 +126,8 @@
                 <div class="alert alert-success">{{ session('success') }}</div>
             @endif
 
-            <div class="table-responsive">
-                <table class="table table-bordered table-striped table-hover">
+            <div class="table-responsive table-wrap">
+                <table class="table table-bordered table-striped table-hover mb-0">
                     <thead class="table-light">
                         <tr>
                             <th style="width: 40px;">No</th>
@@ -173,8 +201,10 @@
                         @empty
                             <tr>
                                 <td colspan="10" class="text-center py-4">
-                                    <i class="bi bi-inbox text-muted" style="font-size: 2rem;"></i>
-                                    <div class="text-muted mt-2">Belum ada data barang masuk.</div>
+                                    <div class="empty-state">
+                                        <i class="bi bi-inbox"></i>
+                                        <div>Belum ada data barang masuk.</div>
+                                    </div>
                                 </td>
                             </tr>
                         @endforelse

@@ -2,94 +2,50 @@
 
 @section('content')
 <div class="container-fluid px-3">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="h3 mb-0">Dashboard Pengadaan</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="h3 mb-0">Dashboard Pengadaan</h1>
+            <small class="text-muted">Ringkasan permintaan, stok, dan distribusi barang</small>
+        </div>
         <small class="text-muted">{{ date('d M Y, H:i') }}</small>
     </div>
 
     {{-- Baris pertama - Card Statistik Utama (Golden Ratio Layout) --}}
     <div class="row g-3 mb-4">
-        <!-- Card utama dengan proporsi golden ratio -->
-        <div class="col-lg-8">
-            <div class="row g-3 h-100">
-                <div class="col-md-6">
-                    <div class="card border-left-success shadow-sm h-100">
-                        <div class="card-body py-4">
-                            <div class="d-flex align-items-center">
-                                <div class="flex-grow-1">
-                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-2">Permintaan Disetujui</div>
-                                    <div class="h2 mb-0 font-weight-bold text-dark">{{ $permintaanApproved }}</div>
-                                    <small class="text-muted">Ready untuk distribusi</small>
-                                </div>
-                                <div class="ms-3">
-                                    <i class="bi bi-check-circle-fill text-success opacity-75" style="font-size: 3rem;"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card border-left-info shadow-sm h-100">
-                        <div class="card-body py-4">
-                            <div class="d-flex align-items-center">
-                                <div class="flex-grow-1">
-                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-2">Permintaan Selesai</div>
-                                    <div class="h2 mb-0 font-weight-bold text-dark">{{ $permintaanCompleted }}</div>
-                                    <small class="text-muted">Telah didistribusi</small>
-                                </div>
-                                <div class="ms-3">
-                                    <i class="bi bi-check2-all text-info opacity-75" style="font-size: 3rem;"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Sidebar dengan proporsi golden ratio -->
         <div class="col-lg-4">
-            <div class="row g-3 h-100">
-                <div class="col-12">
-                    <div class="card border-left-primary shadow-sm h-100">
-                        <div class="card-body py-4">
-                            <div class="d-flex align-items-center">
-                                <div class="flex-grow-1">
-                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-2">Kunjungan Bulan Ini</div>
-                                    <div class="h2 mb-0 font-weight-bold text-dark">{{ $kunjunganBulanIni }}</div>
-                                    <small class="text-muted">Total pasien {{ now()->format('F Y') }}</small>
-                                </div>
-                                <div class="ms-3">
-                                    <i class="bi bi-people-fill text-primary opacity-75" style="font-size: 3rem;"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Baris kedua - Card Sekunder --}}
-    <div class="row g-3 mb-4">
-        <div class="col-lg-6">
-            <div class="card border-left-danger shadow-sm">
+            <div class="card border-left-success shadow-sm h-100">
                 <div class="card-body py-4">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-2">Stok Kritis</div>
-                            <div class="h2 mb-0 font-weight-bold text-danger">{{ $stokMenipis }}</div>
-                            <small class="text-muted">Perlu segera diproses</small>
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-2">Permintaan Disetujui</div>
+                            <div class="h2 mb-0 font-weight-bold text-dark">{{ $permintaanApproved }}</div>
+                            <small class="text-muted">Ready untuk distribusi</small>
                         </div>
                         <div class="ms-3">
-                            <i class="bi bi-exclamation-triangle-fill text-danger opacity-75" style="font-size: 3rem;"></i>
+                            <i class="bi bi-check-circle-fill text-success opacity-75" style="font-size: 3rem;"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-6">
-            <div class="card border-left-warning shadow-sm">
+        <div class="col-lg-4">
+            <div class="card border-left-info shadow-sm h-100">
+                <div class="card-body py-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-2">Permintaan Selesai</div>
+                            <div class="h2 mb-0 font-weight-bold text-dark">{{ $permintaanCompleted }}</div>
+                            <small class="text-muted">Telah didistribusi</small>
+                        </div>
+                        <div class="ms-3">
+                            <i class="bi bi-check2-all text-info opacity-75" style="font-size: 3rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-left-warning shadow-sm h-100">
                 <div class="card-body py-4">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
@@ -203,66 +159,52 @@
 
         <!-- Sidebar (38% golden ratio) -->
         <div class="col-lg-4">
-            <div class="row g-3 h-100">
-                <div class="col-12">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
-                            <h6 class="m-0 font-weight-bold">Stok Kritis</h6>
-                            <a href="{{ route('barang-medis.index') }}" class="btn btn-outline-danger btn-sm">Kelola</a>
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                    <h6 class="m-0 font-weight-bold">Stok Kritis</h6>
+                    <a href="{{ route('barang-medis.index') }}" class="btn btn-outline-danger btn-sm">Kelola</a>
+                </div>
+                <div class="card-body p-3" style="max-height: 320px; overflow-y: auto;">
+                    @forelse ($stokTerendah as $barang)
+                    <div class="d-flex justify-content-between align-items-center py-3 border-bottom">
+                        <div class="flex-grow-1 pe-3">
+                            <div class="fw-bold">{{ Str::limit($barang->nama_obat, 22) }}</div>
+                            <small class="text-muted">{{ $barang->kategori_barang }}</small>
                         </div>
-                        <div class="card-body p-3" style="max-height: 320px; overflow-y: auto;">
-                            @forelse ($stokTerendah as $barang)
-                                <tr>
-                            <div class="d-flex justify-content-between align-items-center py-3 border-bottom">
-                                <div class="flex-grow-1">
-                                    <div class="fw-bold">{{ Str::limit($barang->nama_obat, 22) }}</div>
-                                    <small class="text-muted">{{ $barang->kategori_barang }}</small>
-                                </div>
-                                <div class="text-end">
-                                    <div class="d-flex align-items-center">
-                                        <span class="fw-bold fs-5 me-2 {{ (int)$barang->stok_sum_jumlah < 10 ? 'text-danger' : ((int)$barang->stok_sum_jumlah < 30 ? 'text-warning' : 'text-success') }}">
-                                            {{ (int)$barang->stok_sum_jumlah }}
-                                        </span>
-                                        <div class="text-center">
-                                            <small class="text-muted d-block">{{ $barang->kemasan ?? 'Box' }}</small>
-                                            @if((int)$barang->stok_sum_jumlah < 10)
-                                                <i class="bi bi-exclamation-triangle-fill text-danger"></i>
-                                            @elseif((int)$barang->stok_sum_jumlah < 30)
-                                                <i class="bi bi-exclamation-circle-fill text-warning"></i>
-                                            @endif
-                                        </div>
-                                    </div>
-                                </div>
+                        <div class="text-end">
+                            <span class="fw-bold fs-6 d-block {{ (int)$barang->stok_sum_jumlah < $barang->stok_minimal ? 'text-danger' : 'text-warning' }}">
+                                {{ (int)$barang->stok_sum_jumlah }} {{ $barang->satuan_terkecil ?? 'pcs' }}
+                            </span>
+                            <small class="text-muted d-block">min: {{ (int)$barang->stok_minimal }} {{ $barang->satuan_terkecil ?? 'pcs' }}</small>
+                        </div>
+                    </div>
+                    @empty
+                    <div class="text-center py-4">
+                        <i class="bi bi-check-circle fs-1 text-success mb-2"></i>
+                        <p class="text-muted">Semua stok dalam kondisi baik.</p>
+                    </div>
+                    @endforelse
+                    
+                    <!-- Distribusi Lokasi di bagian bawah sidebar -->
+                    <div class="mt-4 pt-3 border-top">
+                        <h6 class="font-weight-bold mb-3">Distribusi Permintaan</h6>
+                        @forelse ($distribusiLokasi as $lokasi)
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="fw-bold">{{ Str::limit($lokasi->nama_lokasi, 18) }}</small>
+                                <span class="badge bg-info rounded-pill">{{ $lokasi->jumlah_permintaan }}</span>
                             </div>
-                            @empty
-                            <div class="text-center py-4">
-                                <i class="bi bi-check-circle fs-1 text-success mb-2"></i>
-                                <p class="text-muted">Semua stok dalam kondisi baik.</p>
-                            </div>
-                            @endforelse
-                            
-                            <!-- Distribusi Lokasi di bagian bawah sidebar -->
-                            <div class="mt-4 pt-3 border-top">
-                                <h6 class="font-weight-bold mb-3">Distribusi Permintaan</h6>
-                                @forelse ($distribusiLokasi as $lokasi)
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <small class="fw-bold">{{ Str::limit($lokasi->nama_lokasi, 18) }}</small>
-                                        <span class="badge bg-info rounded-pill">{{ $lokasi->jumlah_permintaan }}</span>
-                                    </div>
-                                    @php 
-                                        $maxPermintaan = $distribusiLokasi->max('jumlah_permintaan') ?: 1;
-                                        $percentage = ($lokasi->jumlah_permintaan / $maxPermintaan) * 100;
-                                    @endphp
-                                    <div class="progress" style="height: 8px;">
-                                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ $percentage }}%;" aria-valuenow="{{ $lokasi->jumlah_permintaan }}"></div>
-                                    </div>
-                                </div>
-                                @empty
-                                <p class="text-center text-muted small">Belum ada distribusi data.</p>
-                                @endforelse
+                            @php 
+                                $maxPermintaan = $distribusiLokasi->max('jumlah_permintaan') ?: 1;
+                                $percentage = ($lokasi->jumlah_permintaan / $maxPermintaan) * 100;
+                            @endphp
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-info" role="progressbar" style="width: {{ $percentage }}%;" aria-valuenow="{{ $lokasi->jumlah_permintaan }}"></div>
                             </div>
                         </div>
+                        @empty
+                        <p class="text-center text-muted small">Belum ada distribusi data.</p>
+                        @endforelse
                     </div>
                 </div>
             </div>
@@ -470,8 +412,8 @@
     
     /* Golden ratio proportions */
     @media (min-width: 992px) {
-        .col-lg-8 { flex: 0 0 61.803%; max-width: 61.803%; }
-        .col-lg-4 { flex: 0 0 38.197%; max-width: 38.197%; }
+        .col-lg-8 { flex: 0 0 66.666667%; max-width: 66.666667%; }
+        .col-lg-4 { flex: 0 0 33.333333%; max-width: 33.333333%; }
     }
     
     /* Enhanced visual hierarchy */

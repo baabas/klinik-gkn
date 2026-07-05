@@ -155,9 +155,13 @@
 @endpush
 
 @section('content')
-    <h1 class="h2 mb-4">Obat & Alat Medis</h1>
-
     <div class="card shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0">Obat & Alat Medis</h5>
+                <div class="text-muted small">Kelola data obat, alat medis, dan stok</div>
+            </div>
+        </div>
         <div class="card-body">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
                 <div class="d-flex flex-wrap align-items-center navigation-buttons" role="group" aria-label="Navigation buttons">

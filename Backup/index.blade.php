@@ -9,18 +9,9 @@
         .search-form{width:300px}
         .action-col .btn{min-width:36px}
     </style>
-    <!-- Header moved into the card above the table -->
+    <h1 class="h2 mb-4">Daftar Permintaan Barang</h1>
 
     <div class="card shadow-sm">
-        <div class="card-header bg-light d-flex justify-content-between align-items-center">
-            <div>
-                <h5 class="mb-0">Daftar Permintaan Barang</h5>
-                <div class="text-muted small">Kelola permintaan obat dan alat medis</div>
-            </div>
-            <div>
-                <span class="badge bg-secondary">Total: {{ $permintaan->total() ?? $permintaan->count() }}</span>
-            </div>
-        </div>
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
 

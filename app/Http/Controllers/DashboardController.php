@@ -91,9 +91,16 @@ class DashboardController extends Controller
         $permintaanCompleted = PermintaanBarang::where('status', 'COMPLETED')->count();
         $permintaanRejected = PermintaanBarang::where('status', 'REJECTED')->count();
         
-        // Statistik stok
+        // Statistik stok: hanya hitung barang yang total stoknya sudah di bawah stok minimal.
         $stokMenipis = BarangMedis::withSum('stok as stok_sum_jumlah', 'jumlah')
-            ->get()->where('stok_sum_jumlah', '<', 50)->count();
+            ->get()
+            ->filter(function ($barang) {
+                $totalStok = (int) ($barang->stok_sum_jumlah ?? 0);
+                $stokMinimal = (int) ($barang->stok_minimal ?? 0);
+
+                return $stokMinimal > 0 && $totalStok < $stokMinimal;
+            })
+            ->count();
         $totalMasterBarang = BarangMedis::count();
         
         // Permintaan terbaru yang masih pending
@@ -103,9 +110,20 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
             
-        // Stok terendah dengan informasi kemasan
+        // Stok kritis: tampilkan hanya barang yang total stoknya masih dekat dengan stok minimal.
+        // Batas dibuat relatif agar barang yang masih jauh di atas stok minimal tidak ikut tampil.
         $stokTerendah = BarangMedis::withSum('stok as stok_sum_jumlah', 'jumlah')
             ->get()
+            ->filter(function ($barang) {
+                $totalStok = (int) ($barang->stok_sum_jumlah ?? 0);
+                $stokMinimal = (int) ($barang->stok_minimal ?? 0);
+
+                if ($stokMinimal <= 0) {
+                    return $totalStok <= 0;
+                }
+
+                return $totalStok <= ($stokMinimal * 3);
+            })
             ->sortBy('stok_sum_jumlah')
             ->take(5);
 
@@ -184,7 +202,7 @@ class DashboardController extends Controller
         ];
 
         return view('dashboard-pengadaan', compact(
-            'kunjunganBulanIni', 'permintaanPending', 'permintaanApproved', 'permintaanCompleted', 'permintaanRejected',
+            'permintaanPending', 'permintaanApproved', 'permintaanCompleted', 'permintaanRejected',
             'stokMenipis', 'totalMasterBarang', 'permintaanTerbaru', 'stokTerendah',
             'trendingBarang', 'distribusiLokasi', 'barangTerdaftar', 'barangBaru', 'feedbackStats'
         ));
