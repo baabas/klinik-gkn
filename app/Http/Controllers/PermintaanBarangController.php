@@ -300,6 +300,36 @@ class PermintaanBarangController extends Controller
     }
 
     /**
+     * Pengadaan memproses permintaan retur agar barang dapat diinput ulang.
+     */
+    public function prosesRetur(PermintaanBarang $permintaan)
+    {
+        if (!Auth::user()->hasRole('PENGADAAN')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk memproses retur.');
+        }
+
+        if ($permintaan->status !== 'RETUR') {
+            return redirect()->back()->with('error', 'Hanya permintaan berstatus RETUR yang dapat diproses ulang.');
+        }
+
+        DB::transaction(function () use ($permintaan) {
+            PendingStokMasuk::where('id_permintaan', $permintaan->id)->delete();
+
+            $catatanLama = trim((string) ($permintaan->catatan ?? ''));
+            $catatanBaru = trim($catatanLama . "\n\n[PROSES RETUR " . now()->format('d/m/Y H:i') . '] Pengadaan membuka ulang permintaan untuk input barang masuk pengganti.');
+
+            $permintaan->update([
+                'status' => 'APPROVED',
+                'catatan' => $catatanBaru,
+            ]);
+        });
+
+        return redirect()
+            ->route('barang-masuk.create', ['request_id' => $permintaan->id])
+            ->with('success', 'Retur diproses. Silakan input ulang barang masuk pengganti untuk permintaan ini.');
+    }
+
+    /**
      * Generate PDF untuk rincian obat yang diminta
      */
     public function printPdf(PermintaanBarang $permintaan)

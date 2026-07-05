@@ -168,6 +168,7 @@ Route::middleware(['auth'])->group(function () {
 
     // --- RUTE KHUSUS PENGADAAN ---
     Route::middleware(['role:PENGADAAN'])->group(function () {
+        Route::put('/permintaan/{permintaan}/proses-retur', [PermintaanBarangController::class, 'prosesRetur'])->name('permintaan.proses-retur');
         Route::get('barang-masuk/create', [BarangMasukController::class, 'create'])->name('barang-masuk.create');
         Route::post('barang-masuk', [BarangMasukController::class, 'store'])->name('barang-masuk.store');
         Route::post('barang-masuk/store-multiple', [BarangMasukController::class, 'storeMultiple'])->name('barang-masuk.store-multiple');

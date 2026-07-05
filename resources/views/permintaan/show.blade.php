@@ -111,6 +111,20 @@
                 </div>
             @endif
 
+            @if(Auth::user()->hasRole('PENGADAAN') && $permintaan->status == 'RETUR')
+                <hr>
+                <div class="mt-3 text-center">
+                    <p class="mb-2">Permintaan ini diretur oleh dokter. Proses retur akan menghapus data barang masuk pending sebelumnya dan membuka ulang permintaan agar pengadaan dapat input barang pengganti.</p>
+                    <form action="{{ route('permintaan.proses-retur', $permintaan->id) }}" method="POST" onsubmit="return confirm('Proses retur dan buka ulang permintaan ini untuk input barang pengganti?');">
+                        @csrf
+                        @method('PUT')
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-arrow-repeat me-2"></i> Proses Retur & Input Ulang
+                        </button>
+                    </form>
+                </div>
+            @endif
+
             {{-- Tombol untuk PENGADAAN: Cek apakah ada barang baru yang belum ada di master data --}}
             @if(Auth::user()->hasRole('PENGADAAN') && $permintaan->status == 'APPROVED')
                 @php
