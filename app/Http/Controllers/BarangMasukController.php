@@ -175,7 +175,7 @@ class BarangMasukController extends Controller
                         $keteranganBatch .= " | " . $validated['keterangan_umum'];
                     }
 
-                    // Simpan ke pending_stok_masuks
+                    // Simpan ke pending_stok_masuks; stok lokasi dokter baru bertambah saat dokter konfirmasi penerimaan
                     PendingStokMasuk::create([
                         'id_permintaan' => $detailPermintaan->id_permintaan,
                         'id_detail_permintaan' => $validated['id_detail'],
@@ -248,7 +248,7 @@ class BarangMasukController extends Controller
             
             $message = "Item berhasil disimpan dengan " . count($validated['batches']) . " batch. ";
             $message .= $permintaan->status === 'PROCESSING' 
-                ? "Semua item telah diproses, menunggu konfirmasi dokter."
+                ? "Semua item telah diproses dan menunggu konfirmasi dokter; stok belum bertambah."
                 : "Item lainnya masih menunggu diproses.";
             
             return redirect()
@@ -298,7 +298,7 @@ class BarangMasukController extends Controller
                         $keteranganBatch = $batch['keterangan'] ?: 
                             "Batch " . chr(65 + $batchIndex) . " - {$batch['jumlah_kemasan']} {$barang->kemasan}";
 
-                        // Simpan ke pending_stok_masuks (BARU) - Tidak langsung update stok
+                        // Simpan ke pending_stok_masuks; stok lokasi dokter baru bertambah saat dokter konfirmasi penerimaan (BARU) - Tidak langsung update stok
                         PendingStokMasuk::create([
                             'id_permintaan' => $validated['request_id'],
                             'id_detail_permintaan' => $item['id_detail'],
@@ -332,7 +332,7 @@ class BarangMasukController extends Controller
             // Check final status after processing
             $finalPermintaan = PermintaanBarang::find($validated['request_id']);
             $statusMessage = $finalPermintaan->status === 'PROCESSING' 
-                ? "Status permintaan diubah menjadi PROCESSING. Semua item telah diproses."
+                ? "Status permintaan diubah menjadi PROCESSING. Semua item telah diproses dan menunggu konfirmasi dokter; stok belum bertambah."
                 : "Item berhasil disimpan. Permintaan masih menunggu item lainnya diproses.";
                 
             $message = "Berhasil menyimpan {$successItems} barang masuk. {$statusMessage} Barang akan masuk ke stok setelah dikonfirmasi oleh dokter.";

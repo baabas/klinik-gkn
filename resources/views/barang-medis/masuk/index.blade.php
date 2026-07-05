@@ -81,8 +81,7 @@
 
     <div class="alert alert-info info-banner mb-3">
         <i class="bi bi-info-circle me-2"></i>
-        <strong>Informasi:</strong> Halaman ini menampilkan riwayat barang yang masuk dari input barang masuk oleh role Pengadaan, 
-        baik yang berasal dari permintaan dokter maupun input langsung tanpa permintaan.
+        <strong>Informasi:</strong> Input barang yang berasal dari permintaan dokter disimpan sebagai pending terlebih dahulu dan belum menambah stok lokasi dokter sampai dokter klik konfirmasi penerimaan. Input langsung tanpa permintaan tetap langsung menambah stok.
     </div>
 
     <div class="card shadow-sm filter-card">

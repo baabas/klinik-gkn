@@ -54,7 +54,7 @@
                                         <span class="badge bg-info small-badge">DISETUJUI</span>
                                         @break
                                     @case('PROCESSING')
-                                        <span class="badge bg-primary small-badge">SEDANG DIPROSES</span>
+                                        <span class="badge bg-primary small-badge">MENUNGGU KONFIRMASI DOKTER</span>
                                         @break
                                     @case('COMPLETED')
                                         <span class="badge bg-success small-badge">DITERIMA</span>
@@ -76,6 +76,14 @@
                     </div>
                 </div>
             </div>
+
+            @if(Auth::user()->hasRole('PENGADAAN') && $permintaan->status == 'PROCESSING')
+                <hr>
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Barang sudah diinput oleh pengadaan sebagai data pending dan dikirim ke dokter secara fisik. Stok sistem belum bertambah sampai dokter klik <strong>Konfirmasi Obat Diterima</strong>. Jika dokter retur, pengadaan dapat input ulang barang pengganti pada permintaan yang sama.
+                </div>
+            @endif
 
             {{-- [BARU] Tombol Aksi Konfirmasi Penerimaan untuk Dokter --}}
             @if(Auth::user()->hasRole('DOKTER') && $permintaan->status == 'PROCESSING')
@@ -114,7 +122,7 @@
             @if(Auth::user()->hasRole('PENGADAAN') && $permintaan->status == 'RETUR')
                 <hr>
                 <div class="mt-3 text-center">
-                    <p class="mb-2">Permintaan ini diretur oleh dokter. Proses retur akan menghapus data barang masuk pending sebelumnya dan membuka ulang permintaan agar pengadaan dapat input barang pengganti.</p>
+                    <p class="mb-2">Permintaan ini diretur oleh dokter. Proses retur akan menghapus data barang masuk pending sebelumnya dan membuka ulang permintaan agar pengadaan dapat input barang pengganti. Setelah input ulang selesai, dokter perlu konfirmasi kembali; jika masih belum sesuai, dokter tetap bisa retur lagi sampai permintaan benar-benar sesuai.</p>
                     <form action="{{ route('permintaan.proses-retur', $permintaan->id) }}" method="POST" onsubmit="return confirm('Proses retur dan buka ulang permintaan ini untuk input barang pengganti?');">
                         @csrf
                         @method('PUT')

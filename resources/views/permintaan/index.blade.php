@@ -71,7 +71,7 @@
                                             <span class="badge bg-info status-badge">DISETUJUI</span>
                                             @break
                                         @case('PROCESSING')
-                                            <span class="badge bg-primary status-badge">SEDANG DIPROSES</span>
+                                            <span class="badge bg-primary status-badge">MENUNGGU KONFIRMASI DOKTER</span>
                                             @break
                                         @case('COMPLETED')
                                             <span class="badge bg-success status-badge">SELESAI</span>
