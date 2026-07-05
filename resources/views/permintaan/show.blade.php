@@ -79,9 +79,14 @@
 
             @if(Auth::user()->hasRole('PENGADAAN') && $permintaan->status == 'PROCESSING')
                 <hr>
-                <div class="alert alert-info mb-0">
-                    <i class="bi bi-info-circle me-2"></i>
-                    Barang sudah diinput oleh pengadaan sebagai data pending dan dikirim ke dokter secara fisik. Stok sistem belum bertambah sampai dokter klik <strong>Konfirmasi Obat Diterima</strong>. Jika dokter retur, pengadaan dapat input ulang barang pengganti pada permintaan yang sama.
+                <div class="alert alert-info mb-0 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                    <div>
+                        <i class="bi bi-info-circle me-2"></i>
+                        Barang sudah diinput oleh pengadaan sebagai data pending dan dikirim ke dokter secara fisik. Stok sistem belum bertambah sampai dokter klik <strong>Konfirmasi Obat Diterima</strong>. Jika dokter retur, pengadaan dapat input ulang barang pengganti pada permintaan yang sama.
+                    </div>
+                    <a href="{{ route('permintaan.print-pdf', $permintaan->id) }}" class="btn btn-outline-primary btn-sm flex-shrink-0" target="_blank">
+                        <i class="bi bi-printer me-2"></i>Print PDF
+                    </a>
                 </div>
             @endif
 
@@ -164,11 +169,6 @@
     <div class="card shadow-sm">
         <div class="card-header bg-light d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Rincian Obat Diminta</h5>
-            @if($permintaan->status == 'COMPLETED')
-            <a href="{{ route('permintaan.print-pdf', $permintaan->id) }}" class="btn btn-outline-primary btn-sm" target="_blank">
-                <i class="bi bi-printer me-2"></i>Print PDF
-            </a>
-            @endif
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">

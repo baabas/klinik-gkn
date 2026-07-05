@@ -119,7 +119,7 @@
         </div>
         <div class="info-row">
             <div class="info-label">Status</div>
-            <div class="info-value">: DITERIMA</div>
+            <div class="info-value">: MENUNGGU KONFIRMASI DOKTER</div>
         </div>
     </div>
 
@@ -170,24 +170,16 @@
                     @endif
                 </td>
                 <td class="text-center">
-                    @if($item->id_barang && $item->barangMedis->stokHistories->isNotEmpty())
-                        @php
-                            $latestStock = $item->barangMedis->stokHistories->first();
-                        @endphp
-                        {{ $latestStock->expired_at ? \Carbon\Carbon::parse($latestStock->expired_at)->format('d/m/Y') : '-' }}
-                    @else
-                        -
-                    @endif
+                    @php
+                        $latestPending = $item->pendingStokMasuks->first();
+                    @endphp
+                    {{ $latestPending && $latestPending->expired_at ? \Carbon\Carbon::parse($latestPending->expired_at)->format('d/m/Y') : '-' }}
                 </td>
                 <td class="text-center">
-                    @if($item->id_barang && $item->barangMedis->stokHistories->isNotEmpty())
-                        @php
-                            $latestStock = $item->barangMedis->stokHistories->first();
-                        @endphp
-                        {{ $latestStock->tanggal_transaksi ? \Carbon\Carbon::parse($latestStock->tanggal_transaksi)->format('d/m/Y') : \Carbon\Carbon::parse($latestStock->created_at)->format('d/m/Y') }}
-                    @else
-                        -
-                    @endif
+                    @php
+                        $latestPending = $item->pendingStokMasuks->first();
+                    @endphp
+                    {{ $latestPending && $latestPending->tanggal_masuk ? \Carbon\Carbon::parse($latestPending->tanggal_masuk)->format('d/m/Y') : '-' }}
                 </td>
             </tr>
             @empty

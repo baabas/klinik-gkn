@@ -338,19 +338,22 @@ class PermintaanBarangController extends Controller
      */
     public function printPdf(PermintaanBarang $permintaan)
     {
-        // Pastikan permintaan sudah berstatus COMPLETED (DITERIMA)
-        if ($permintaan->status !== 'COMPLETED') {
-            return redirect()->back()->with('error', 'PDF hanya dapat dicetak untuk permintaan yang sudah DITERIMA.');
+        if (!Auth::user()->hasRole('PENGADAAN')) {
+            abort(403, 'PDF permintaan hanya dapat dicetak oleh staf pengadaan.');
         }
 
-        // Load relasi yang diperlukan beserta stok histories untuk mendapatkan tanggal masuk dan expired
+        // PDF dicetak saat barang sudah diinput pengadaan dan sedang menunggu konfirmasi dokter.
+        if ($permintaan->status !== 'PROCESSING') {
+            return redirect()->back()->with('error', 'PDF hanya dapat dicetak saat permintaan menunggu konfirmasi dokter.');
+        }
+
+        // Load pending stok untuk tanggal masuk dan expired barang yang baru diinput pengadaan.
         $permintaan->load([
-            'detail.barangMedis.stokHistories' => function($query) use ($permintaan) {
-                $query->where('id_lokasi', $permintaan->id_lokasi_peminta)
-                      ->where('perubahan', '>', 0) // Hanya transaksi masuk
-                      ->orderBy('tanggal_transaksi', 'desc');
+            'detail.barangMedis',
+            'detail.pendingStokMasuks' => function($query) {
+                $query->orderBy('tanggal_masuk', 'desc');
             },
-            'userPeminta', 
+            'userPeminta',
             'lokasiPeminta'
         ]);
 

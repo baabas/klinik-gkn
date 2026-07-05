@@ -41,4 +41,12 @@ class DetailPermintaanBarang extends Model
     {
         return $this->belongsTo(BarangMedis::class, 'id_barang', 'id_obat');
     }
+
+    /**
+     * Pending stok dari input pengadaan yang menunggu konfirmasi dokter.
+     */
+    public function pendingStokMasuks()
+    {
+        return $this->hasMany(PendingStokMasuk::class, 'id_detail_permintaan', 'id');
+    }
 }
