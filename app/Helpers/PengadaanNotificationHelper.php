@@ -43,13 +43,22 @@ class PengadaanNotificationHelper
     }
 
     /**
+     * Hitung jumlah pengajuan retur dari dokter yang perlu ditindaklanjuti pengadaan.
+     */
+    public static function countReturRequests()
+    {
+        return PermintaanBarang::where('status', 'RETUR')->count();
+    }
+
+    /**
      * Hitung total semua notifikasi pengadaan
      */
     public static function countTotalNotifications()
     {
         return self::countPendingRequests() + 
                self::countNewItemsToAdd() + 
-               self::countApprovedRequestsForInput();
+               self::countApprovedRequestsForInput() +
+               self::countReturRequests();
     }
 
     /**
@@ -61,6 +70,7 @@ class PengadaanNotificationHelper
             'pending_requests' => self::countPendingRequests(),
             'new_items_to_add' => self::countNewItemsToAdd(),
             'approved_for_input' => self::countApprovedRequestsForInput(),
+            'retur_requests' => self::countReturRequests(),
             'total' => self::countTotalNotifications(),
         ];
     }

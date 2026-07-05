@@ -62,6 +62,9 @@
                                     @case('REJECTED')
                                         <span class="badge bg-danger small-badge">DITOLAK</span>
                                         @break
+                                    @case('RETUR')
+                                        <span class="badge bg-danger small-badge">RETUR</span>
+                                        @break
                                     @default
                                         <span class="badge bg-secondary small-badge">{{ $permintaan->status }}</span>
                                 @endswitch
@@ -77,15 +80,34 @@
             {{-- [BARU] Tombol Aksi Konfirmasi Penerimaan untuk Dokter --}}
             @if(Auth::user()->hasRole('DOKTER') && $permintaan->status == 'PROCESSING')
                 <hr>
-                <div class="mt-3 text-center">
-                    <p class="mb-2">Barang sudah diterima di lokasi Anda? Klik tombol di bawah untuk menyelesaikan permintaan ini.</p>
-                    <form action="{{ route('permintaan.terima', $permintaan->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menyelesaikan permintaan ini? Stok akan diperbarui secara otomatis.');">
-                        @csrf
-                        @method('PUT')
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-circle-fill me-2"></i> Konfirmasi Obat Diterima
-                        </button>
-                    </form>
+                <div class="mt-3">
+                    <p class="mb-3 text-center">Barang sudah didistribusikan ke lokasi Anda. Silakan konfirmasi penerimaan jika sesuai, atau ajukan retur jika ada kendala.</p>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100 text-center">
+                                <form action="{{ route('permintaan.terima', $permintaan->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menyelesaikan permintaan ini? Stok akan diperbarui secara otomatis.');">
+                                    @csrf
+                                    @method('PUT')
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle-fill me-2"></i> Konfirmasi Obat Diterima
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <form action="{{ route('permintaan.retur', $permintaan->id) }}" method="POST" onsubmit="return confirm('Ajukan retur untuk permintaan ini? Pengadaan akan melihat status RETUR.');">
+                                    @csrf
+                                    @method('PUT')
+                                    <label for="alasan_retur" class="form-label fw-semibold">Alasan Retur</label>
+                                    <textarea name="alasan_retur" id="alasan_retur" class="form-control mb-2" rows="2" placeholder="Contoh: jumlah tidak sesuai / barang rusak / kedaluwarsa" required>{{ old('alasan_retur') }}</textarea>
+                                    <button type="submit" class="btn btn-outline-danger w-100">
+                                        <i class="bi bi-arrow-counterclockwise me-2"></i> Ajukan Retur
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             @endif
 

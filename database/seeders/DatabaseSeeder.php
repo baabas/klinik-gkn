@@ -33,7 +33,7 @@ class DatabaseSeeder extends Seeder
             PengadaanSeeder::class,
 
             // Seeder untuk data dummy obat dan stok barang
-            BarangMedisSeeder::class,
+            //BarangMedisSeeder::class,
 
             // Seeder untuk membuat akun user (Dokter, Pengadaan, dll.) - SETELAH lokasi dibuat
             AdminUserSeeder::class,

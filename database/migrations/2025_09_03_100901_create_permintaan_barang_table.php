@@ -18,7 +18,7 @@ return new class extends Migration
         $table->foreignId('id_user_peminta')->constrained('users')->onDelete('restrict');
         $table->date('tanggal_permintaan');
         $table->text('catatan')->nullable();
-        $table->enum('status', ['PENDING', 'APPROVED', 'REJECTED', 'PROCESSING', 'COMPLETED'])->default('PENDING');
+        $table->enum('status', ['PENDING', 'APPROVED', 'REJECTED', 'PROCESSING', 'COMPLETED', 'RETUR'])->default('PENDING');
         $table->timestamps();
     });
 }

@@ -62,8 +62,8 @@
                                         <i class="bi bi-list-check me-2 text-success"></i>
                                         Daftar Permintaan
                                     </span>
-                                    @if(isset($pengadaanNotifications) && $pengadaanNotifications['pending_requests'] > 0)
-                                        <span class="badge bg-danger rounded-pill">{{ $pengadaanNotifications['pending_requests'] }}</span>
+                                    @if(isset($pengadaanNotifications) && ($pengadaanNotifications['pending_requests'] + $pengadaanNotifications['retur_requests']) > 0)
+                                        <span class="badge bg-danger rounded-pill" title="Pending + Retur">{{ $pengadaanNotifications['pending_requests'] + $pengadaanNotifications['retur_requests'] }}</span>
                                     @endif
                                 </a>
                             </li>

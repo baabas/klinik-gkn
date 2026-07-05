@@ -163,6 +163,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/laporan/penyakit-kunjungan', [LaporanController::class, 'cetakLaporanPenyakitKunjungan'])->name('laporan.penyakit-kunjungan');
 
         Route::put('/permintaan/{permintaan}/terima', [PermintaanBarangController::class, 'konfirmasiPenerimaan'])->name('permintaan.terima');
+        Route::put('/permintaan/{permintaan}/retur', [PermintaanBarangController::class, 'ajukanRetur'])->name('permintaan.retur');
     });
 
     // --- RUTE KHUSUS PENGADAAN ---

@@ -90,6 +90,7 @@ class DashboardController extends Controller
         $permintaanApproved = PermintaanBarang::where('status', 'APPROVED')->count();
         $permintaanCompleted = PermintaanBarang::where('status', 'COMPLETED')->count();
         $permintaanRejected = PermintaanBarang::where('status', 'REJECTED')->count();
+        $permintaanRetur = PermintaanBarang::where('status', 'RETUR')->count();
         
         // Statistik stok: hanya hitung barang yang total stoknya sudah di bawah stok minimal.
         $stokMenipis = BarangMedis::withSum('stok as stok_sum_jumlah', 'jumlah')
@@ -202,7 +203,7 @@ class DashboardController extends Controller
         ];
 
         return view('dashboard-pengadaan', compact(
-            'permintaanPending', 'permintaanApproved', 'permintaanCompleted', 'permintaanRejected',
+            'permintaanPending', 'permintaanApproved', 'permintaanCompleted', 'permintaanRejected', 'permintaanRetur',
             'stokMenipis', 'totalMasterBarang', 'permintaanTerbaru', 'stokTerendah',
             'trendingBarang', 'distribusiLokasi', 'barangTerdaftar', 'barangBaru', 'feedbackStats'
         ));

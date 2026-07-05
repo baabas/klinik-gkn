@@ -64,7 +64,23 @@
 
     {{-- Baris kedua - Info Card Secondary --}}
     <div class="row g-3 mb-4">
-        <div class="col-lg-12">
+        <div class="col-lg-4">
+            <div class="card border-left-danger shadow-sm h-100">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Pengajuan Retur</div>
+                            <div class="h4 mb-0 font-weight-bold text-dark d-inline">{{ $permintaanRetur }}</div>
+                            <span class="text-muted ms-2">menunggu tindak lanjut</span>
+                        </div>
+                        <div class="ms-3">
+                            <i class="bi bi-arrow-counterclockwise fs-2 text-danger opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8">
             <div class="card border-left-primary shadow-sm">
                 <div class="card-body py-3">
                     <div class="row align-items-center">

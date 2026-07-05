@@ -263,6 +263,42 @@ class PermintaanBarangController extends Controller
         return redirect()->route('permintaan.show', $permintaan->id)->with('success', 'Permintaan barang telah berhasil diselesaikan.');
     }
 
+
+    /**
+     * Dokter mengajukan retur untuk barang yang sudah didistribusikan pengadaan.
+     */
+    public function ajukanRetur(Request $request, PermintaanBarang $permintaan)
+    {
+        if (!Auth::user()->hasRole('DOKTER')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengajukan retur.');
+        }
+
+        if ($permintaan->id_lokasi_peminta !== Auth::user()->id_lokasi) {
+            abort(403, 'Anda hanya dapat mengajukan retur untuk permintaan di lokasi Anda.');
+        }
+
+        if ($permintaan->status !== 'PROCESSING') {
+            return redirect()->back()->with('error', 'Retur hanya dapat diajukan untuk permintaan yang sudah didistribusikan dan belum dikonfirmasi diterima.');
+        }
+
+        $request->validate([
+            'alasan_retur' => 'required|string|max:1000',
+        ], [
+            'alasan_retur.required' => 'Alasan retur wajib diisi.',
+        ]);
+
+        $catatanRetur = trim((string) $request->alasan_retur);
+        $catatanLama = trim((string) ($permintaan->catatan ?? ''));
+        $catatanBaru = trim($catatanLama . "\n\n[RETUR " . now()->format('d/m/Y H:i') . '] ' . $catatanRetur);
+
+        $permintaan->update([
+            'status' => 'RETUR',
+            'catatan' => $catatanBaru,
+        ]);
+
+        return redirect()->route('permintaan.show', $permintaan->id)->with('success', 'Pengajuan retur berhasil dikirim ke pengadaan.');
+    }
+
     /**
      * Generate PDF untuk rincian obat yang diminta
      */

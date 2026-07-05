@@ -70,11 +70,17 @@
                                         @case('APPROVED')
                                             <span class="badge bg-info status-badge">DISETUJUI</span>
                                             @break
+                                        @case('PROCESSING')
+                                            <span class="badge bg-primary status-badge">SEDANG DIPROSES</span>
+                                            @break
                                         @case('COMPLETED')
                                             <span class="badge bg-success status-badge">SELESAI</span>
                                             @break
                                         @case('REJECTED')
                                             <span class="badge bg-danger status-badge">DITOLAK</span>
+                                            @break
+                                        @case('RETUR')
+                                            <span class="badge bg-danger status-badge">RETUR</span>
                                             @break
                                         @default
                                             <span class="badge bg-secondary status-badge">{{ $item->status }}</span>
